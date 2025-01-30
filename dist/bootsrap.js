@@ -1,0 +1,35 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.configureApp = void 0;
+exports.bootstrap = bootstrap;
+const helmet_1 = require("helmet");
+const compression = require("compression");
+const core_1 = require("@nestjs/core");
+const common_1 = require("@nestjs/common");
+const swagger_1 = require("./common/swagger");
+const app_module_1 = require("./app.module");
+const config_1 = require("./config");
+const configureApp = (app) => {
+    app.use((req, res, next) => {
+        console.log('Request Origin:', req.headers.origin || 'No Origin');
+        next();
+    });
+    if (config_1.default.cors) {
+        app.enableCors(config_1.default.cors);
+    }
+    app.use((0, helmet_1.default)());
+    app.use(compression());
+    app.useGlobalPipes(new common_1.ValidationPipe({
+        whitelist: true,
+        transform: true,
+        forbidNonWhitelisted: true,
+    }));
+};
+exports.configureApp = configureApp;
+async function bootstrap() {
+    const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    (0, exports.configureApp)(app);
+    (0, swagger_1.setupSwaggerDocuments)(app);
+    await app.listen(config_1.default.port);
+}
+//# sourceMappingURL=bootsrap.js.map
