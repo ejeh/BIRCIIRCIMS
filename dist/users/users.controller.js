@@ -34,9 +34,26 @@ let UsersController = class UsersController {
         return await this.userService.userModel.find({});
     }
     async updateUserProfile(id, body, file) {
+        if (typeof body.educationalHistory === 'string') {
+            try {
+                const parsedEducationalHistory = JSON.parse(body.educationalHistory);
+                body = { ...body, educationalHistory: parsedEducationalHistory };
+            }
+            catch (error) {
+                throw new common_1.BadRequestException('Invalid educationalHistory format.');
+            }
+        }
+        if (typeof body.employmentHistory === 'string') {
+            try {
+                const parsedEmploymentHistory = JSON.parse(body.employmentHistory);
+                body = { ...body, employmentHistory: parsedEmploymentHistory };
+            }
+            catch (error) {
+                throw new common_1.BadRequestException('Invalid employmentHistory format.');
+            }
+        }
         try {
             const updatedData = { ...body };
-            console.log(process.env.BASE_URL);
             if (file) {
                 updatedData.passportPhoto = `http://localhost:5000/uploads/${file.filename}`;
             }
@@ -54,7 +71,14 @@ let UsersController = class UsersController {
         return await this.userService.userModel.findByIdAndUpdate(id, { ...body }, { new: true });
     }
     async getProfile(id, body) {
-        return await this.userService.findById(id);
+        const user = await this.userService.findById(id);
+        if (!user) {
+            throw new common_1.NotFoundException('User not found');
+        }
+        return {
+            ...user.toObject(),
+            DOB: user.DOB ? user.DOB.toISOString().split('T')[0] : '',
+        };
     }
     async getPaginatedData(page = 1, limit = 10) {
         return this.userService.getPaginatedData(page, limit);

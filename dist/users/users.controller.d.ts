@@ -19,7 +19,7 @@ export declare class UsersController {
     }> & {
         __v: number;
     }>;
-    getProfile(id: string, body: any): Promise<import("./users.schema").UserDocument>;
+    getProfile(id: string, body: any): Promise<any>;
     getPaginatedData(page?: number, limit?: number): Promise<{
         data: (import("mongoose").Document<unknown, {}, import("./users.schema").UserDocument> & User & import("mongoose").Document<unknown, any, any> & import("./users.schema").UserMethods & Required<{
             _id: unknown;

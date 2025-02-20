@@ -42,6 +42,14 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({}),
     __metadata("design:type", String)
+], UserPublicData.prototype, "community", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({}),
+    __metadata("design:type", String)
+], UserPublicData.prototype, "religion", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({}),
+    __metadata("design:type", String)
 ], UserPublicData.prototype, "stateOfOrigin", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({}),
@@ -66,7 +74,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({}),
     __metadata("design:type", String)
-], UserPublicData.prototype, "occupation", void 0);
+], UserPublicData.prototype, "employmentHistory", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({}),
     __metadata("design:type", String)
@@ -74,7 +82,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({}),
     __metadata("design:type", String)
-], UserPublicData.prototype, "education", void 0);
+], UserPublicData.prototype, "educationalHistory", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({}),
     __metadata("design:type", String)
@@ -106,7 +114,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({}),
     __metadata("design:type", String)
-], UserPublicData.prototype, "country", void 0);
+], UserPublicData.prototype, "countryOfResidence", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({}),
     __metadata("design:type", String)
@@ -154,6 +162,18 @@ __decorate([
     (0, swagger_1.ApiProperty)({}),
     __metadata("design:type", String)
 ], UpdateProfileDto.prototype, "lastname", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, swagger_1.ApiProperty)({}),
+    __metadata("design:type", String)
+], UpdateProfileDto.prototype, "community", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, swagger_1.ApiProperty)({}),
+    __metadata("design:type", String)
+], UpdateProfileDto.prototype, "religion", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
@@ -207,7 +227,7 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, swagger_1.ApiProperty)({}),
     __metadata("design:type", String)
-], UpdateProfileDto.prototype, "country", void 0);
+], UpdateProfileDto.prototype, "countryOfResidence", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
@@ -221,7 +241,6 @@ __decorate([
     __metadata("design:type", String)
 ], UpdateProfileDto.prototype, "nationality", void 0);
 __decorate([
-    (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     (0, swagger_1.ApiProperty)({}),
     __metadata("design:type", String)
@@ -241,7 +260,7 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, swagger_1.ApiProperty)({}),
     __metadata("design:type", String)
-], UpdateProfileDto.prototype, "occupation", void 0);
+], UpdateProfileDto.prototype, "employmentHistory", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, swagger_1.ApiProperty)({}),
@@ -256,7 +275,7 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, swagger_1.ApiProperty)({}),
     __metadata("design:type", String)
-], UpdateProfileDto.prototype, "education", void 0);
+], UpdateProfileDto.prototype, "educationalHistory", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, swagger_1.ApiProperty)({}),

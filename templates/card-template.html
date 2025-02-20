@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>National ID Card</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden; /* Prevents extra space */
+      }
+      .id-card-container {
+        width: 85.6mm; /* Standard ID card width */
+        height: 54mm; /* Standard ID card height */
+        background: #fff;
+        border: 1px solid #000;
+        border-radius: 5px;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        overflow: hidden; /* Prevents content overflow */
+        padding: 2mm;
+      }
+      .header {
+        text-align: center;
+        border-bottom: 1px solid #000;
+        font-size: 8px;
+        padding: 1mm 0;
+        text-transform: uppercase;
+      }
+      .content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-grow: 1;
+        padding: 1mm;
+      }
+      .left-section {
+        width: 30%;
+        text-align: center;
+      }
+      .photo {
+        width: 20mm;
+        height: 25mm;
+        border: 1px solid #000;
+        border-radius: 3px;
+      }
+      .center-section {
+        width: 50%;
+        padding-left: 2mm;
+      }
+      .details p {
+        font-size: 10px;
+        margin: 1px 0;
+        padding: 3px 0 3px 0;
+      }
+      .right-section {
+        width: 20%;
+        text-align: center;
+      }
+
+      .right-section p {
+        text-align: center;
+        font-size: 10px;
+        margin: 4px 0;
+      }
+      .qr-code {
+        width: 15mm;
+        height: 15mm;
+      }
+      .footer {
+        text-align: center;
+        font-size: 5px;
+        /* color: gray; */
+        position: absolute;
+        bottom: 1mm;
+        width: 100%;
+      }
+      .footer h1 {
+        font-size: 15px;
+        bottom: 1mm;
+        width: 100%;
+      }
+
+      .footer h2 {
+        font-size: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="id-card-container">
+      <div class="header">
+        Federal Republic Of Nigeria <br />
+        <span> Digital BIN Slip </span>
+      </div>
+      <div class="content">
+        <div class="left-section">
+          <img
+            id="user-photo"
+            class="photo"
+            src="{{passportPhoto}}"
+            alt="ID Photo"
+            crossorigin="anonymous"
+          />
+        </div>
+        <div class="center-section">
+          <div class="details">
+            <p>
+              <strong>Surname:</strong> <span id="surname">{{surname}}</span>
+            </p>
+            <p><strong>Given Names:</strong> <span id="name">{{name}}</span></p>
+            <p><strong>Gender:</strong> <span id="gender">{{gender}}</span></p>
+            <p><strong>Date of Birth:</strong> <span id="dob">{{dob}}</span></p>
+          </div>
+        </div>
+        <div class="right-section">
+          <img class="qr-code" src="{{qrCodeUrl}}" alt="QR Code" />
+          <p>
+            <strong>Issue Date</strong>
+            <span id="issueDate">{{issueDate}}</span>
+          </p>
+        </div>
+      </div>
+      <div class="footer">
+        <h2>Benue State Identity Number (BIN)</h2>
+        <h1 id="bin">{{bin}}</h1>
+        <!-- Issued by Benue state Identity Management Commission -->
+      </div>
+    </div>
+  </body>
+</html>

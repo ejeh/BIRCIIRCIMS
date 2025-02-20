@@ -9,26 +9,72 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EducationalBackgroundSchema = exports.EducationalBackground = void 0;
-const mongoose_1 = require("@nestjs/mongoose");
-const mongoose_2 = require("mongoose");
-let EducationalBackground = class EducationalBackground extends mongoose_2.Document {
+exports.EducationalHistorySchema = exports.EducationalHistory = exports.TertiaryInfoSchema = exports.TertiaryInfo = exports.SchoolInfoSchema = exports.SchoolInfo = void 0;
+const mongoose_1 = require("mongoose");
+const mongoose_2 = require("@nestjs/mongoose");
+let SchoolInfo = class SchoolInfo extends mongoose_1.Document {
 };
-exports.EducationalBackground = EducationalBackground;
+exports.SchoolInfo = SchoolInfo;
 __decorate([
-    (0, mongoose_1.Prop)({ required: true }),
+    (0, mongoose_2.Prop)({ required: false }),
     __metadata("design:type", String)
-], EducationalBackground.prototype, "highestEducationLevel", void 0);
+], SchoolInfo.prototype, "name", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ required: true }),
+    (0, mongoose_2.Prop)({ required: false }),
     __metadata("design:type", String)
-], EducationalBackground.prototype, "institutionAttended", void 0);
+], SchoolInfo.prototype, "address", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ required: true }),
-    __metadata("design:type", Number)
-], EducationalBackground.prototype, "graduationYear", void 0);
-exports.EducationalBackground = EducationalBackground = __decorate([
-    (0, mongoose_1.Schema)()
-], EducationalBackground);
-exports.EducationalBackgroundSchema = mongoose_1.SchemaFactory.createForClass(EducationalBackground);
+    (0, mongoose_2.Prop)({ required: false }),
+    __metadata("design:type", String)
+], SchoolInfo.prototype, "yearOfAttendance", void 0);
+exports.SchoolInfo = SchoolInfo = __decorate([
+    (0, mongoose_2.Schema)()
+], SchoolInfo);
+exports.SchoolInfoSchema = mongoose_2.SchemaFactory.createForClass(SchoolInfo);
+let TertiaryInfo = class TertiaryInfo extends mongoose_1.Document {
+};
+exports.TertiaryInfo = TertiaryInfo;
+__decorate([
+    (0, mongoose_2.Prop)({ required: false }),
+    __metadata("design:type", String)
+], TertiaryInfo.prototype, "name", void 0);
+__decorate([
+    (0, mongoose_2.Prop)({ required: false }),
+    __metadata("design:type", String)
+], TertiaryInfo.prototype, "address", void 0);
+__decorate([
+    (0, mongoose_2.Prop)({ required: false }),
+    __metadata("design:type", String)
+], TertiaryInfo.prototype, "certificateObtained", void 0);
+__decorate([
+    (0, mongoose_2.Prop)({ required: false }),
+    __metadata("design:type", String)
+], TertiaryInfo.prototype, "matricNo", void 0);
+__decorate([
+    (0, mongoose_2.Prop)({ required: false }),
+    __metadata("design:type", String)
+], TertiaryInfo.prototype, "yearOfAttendance", void 0);
+exports.TertiaryInfo = TertiaryInfo = __decorate([
+    (0, mongoose_2.Schema)()
+], TertiaryInfo);
+exports.TertiaryInfoSchema = mongoose_2.SchemaFactory.createForClass(TertiaryInfo);
+let EducationalHistory = class EducationalHistory extends mongoose_1.Document {
+};
+exports.EducationalHistory = EducationalHistory;
+__decorate([
+    (0, mongoose_2.Prop)({ type: exports.SchoolInfoSchema, required: false }),
+    __metadata("design:type", SchoolInfo)
+], EducationalHistory.prototype, "primarySchool", void 0);
+__decorate([
+    (0, mongoose_2.Prop)({ type: exports.SchoolInfoSchema, required: false }),
+    __metadata("design:type", SchoolInfo)
+], EducationalHistory.prototype, "secondarySchool", void 0);
+__decorate([
+    (0, mongoose_2.Prop)({ type: [exports.TertiaryInfoSchema], required: false }),
+    __metadata("design:type", Array)
+], EducationalHistory.prototype, "tertiaryInstitutions", void 0);
+exports.EducationalHistory = EducationalHistory = __decorate([
+    (0, mongoose_2.Schema)()
+], EducationalHistory);
+exports.EducationalHistorySchema = mongoose_2.SchemaFactory.createForClass(EducationalHistory);
 //# sourceMappingURL=users.education.schema.js.map

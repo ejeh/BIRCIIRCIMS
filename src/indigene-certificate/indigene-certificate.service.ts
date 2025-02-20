@@ -5,6 +5,9 @@ import { Response } from 'express';
 import { Certificate } from './indigene-certicate.schema';
 import { UserNotFoundException } from 'src/common/exception';
 import * as PDFDocument from 'pdfkit';
+import * as puppeteer from 'puppeteer';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class IndigeneCertificateService {
@@ -22,9 +25,9 @@ export class IndigeneCertificateService {
   }
 
   async findOne(id: string): Promise<Certificate> {
-    const certicate = await this.certificateModel.findOne({ userId: id });
+    const certificate = await this.certificateModel.findOne({ userId: id });
 
-    return certicate;
+    return certificate;
   }
 
   async findById(id: string): Promise<Certificate> {
@@ -157,6 +160,15 @@ export class IndigeneCertificateService {
     // Create a new PDF document
     const doc = new PDFDocument();
 
+    const date = new Date(applicant.DOB);
+
+    // Format as "February 20, 1991"
+    const formattedDate = date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
     // Set the response headers
     res.setHeader(
       'Content-Disposition',
@@ -187,7 +199,7 @@ export class IndigeneCertificateService {
 
     // Recipient Information
     doc.text(`The Chairman,`);
-    doc.text(`${applicant.LGA}`);
+    doc.text(`${applicant.lgaOfOrigin}`);
     doc.text(`Benue State, Nigeria`).moveDown();
 
     doc
@@ -202,13 +214,13 @@ export class IndigeneCertificateService {
 
     doc
       .text(
-        `I, "senderFistName" senderLastName, a native of ${applicant.ward}, in ${applicant.LGA} of Benue State, hereby write to formally attest that ${applicant.firstname} ${applicant.lastname}, who is a bona fide indigene of ${applicant.ward}, in ${applicant.LGA}, Benue State.`,
+        `I, "senderFistName" senderLastName, a native of ${applicant.ward}, in ${applicant.lgaOfOrigin} of Benue State, hereby write to formally attest that ${applicant.firstname} ${applicant.lastname}, who is a bona fide indigene of ${applicant.ward}, in ${applicant.lgaOfOrigin}, Benue State.`,
       )
       .moveDown();
 
     doc
       .text(
-        `${applicant.firstname} ${applicant.lastname} was born on ${applicant.DOB}, to ${applicant.fathersName} and ${applicant.mothersName}, both of whom are recognized natives of ${applicant.ward}. He/She has continuously identified with our community and has actively participated in cultural and communal activities, confirming his/her roots in this locality.`,
+        `${applicant.firstname} ${applicant.lastname} was born on ${formattedDate}, to ${applicant.fathersName} and ${applicant.mothersName}, both of whom are recognized natives of ${applicant.ward}. He/She has continuously identified with our community and has actively participated in cultural and communal activities, confirming his/her roots in this locality.`,
       )
       .moveDown();
 
@@ -247,4 +259,51 @@ export class IndigeneCertificateService {
     applicant.uploadedAttestationUrl = file.path;
     return applicant.save();
   }
+
+  // Generate Certificate as PDF
+  async generateCertificatePDF(
+    id: string,
+    // certificate: any,
+    html: string,
+  ): Promise<string> {
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    // Generate PDF with specific options to fit on one page
+    const pdfBuffer = await page.pdf({
+      format: 'A5', // Use A4 size (or 'letter' for US letter size)
+      printBackground: true, // Include background graphics
+      margin: {
+        top: '0px',
+        right: '0px',
+        bottom: '0px',
+        left: '0px',
+      },
+      preferCSSPageSize: true, // Use CSS @page rules for sizing
+    });
+
+    await browser.close();
+
+    // Define the temp directory
+    const tempDir = path.join(__dirname, '..', 'temp');
+
+    // Ensure the directory exists
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    // Define the file path
+    const tempFilePath = path.join(tempDir, `certificate_${id}.pdf`);
+
+    // Write the PDF buffer to the file
+    await fs.promises.writeFile(tempFilePath, pdfBuffer);
+
+    return tempFilePath; // Return the file path
+  }
+
+  // Delete Certificate
+  deleteItem = async (item_id: string): Promise<any> => {
+    return await this.certificateModel.deleteOne({ _id: item_id });
+  };
 }

@@ -1,20 +1,51 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Schema, Document } from 'mongoose';
+import { Prop, SchemaFactory, Schema as NestSchema } from '@nestjs/mongoose';
 
-// Define the main schema for a person's educational background
-@Schema()
-export class EducationalBackground extends Document {
-  @Prop({ required: true })
-  highestEducationLevel: string; // e.g., Bachelor's, Master's, etc.
+@NestSchema()
+export class SchoolInfo extends Document {
+  @Prop({ required: false })
+  name: string;
 
-  @Prop({ required: true })
-  institutionAttended: string;
+  @Prop({ required: false })
+  address: string;
 
-  @Prop({ required: true })
-  graduationYear: number;
+  @Prop({ required: false })
+  yearOfAttendance: string;
 }
 
-// Create a schema for EducationalBackground
-export const EducationalBackgroundSchema = SchemaFactory.createForClass(
-  EducationalBackground,
-);
+export const SchoolInfoSchema = SchemaFactory.createForClass(SchoolInfo);
+
+@NestSchema()
+export class TertiaryInfo extends Document {
+  @Prop({ required: false })
+  name: string;
+
+  @Prop({ required: false })
+  address: string;
+
+  @Prop({ required: false })
+  certificateObtained: string;
+
+  @Prop({ required: false })
+  matricNo: string;
+
+  @Prop({ required: false })
+  yearOfAttendance: string;
+}
+
+export const TertiaryInfoSchema = SchemaFactory.createForClass(TertiaryInfo);
+
+@NestSchema()
+export class EducationalHistory extends Document {
+  @Prop({ type: SchoolInfoSchema, required: false })
+  primarySchool: SchoolInfo;
+
+  @Prop({ type: SchoolInfoSchema, required: false })
+  secondarySchool: SchoolInfo;
+
+  @Prop({ type: [TertiaryInfoSchema], required: false })
+  tertiaryInstitutions: TertiaryInfo[];
+}
+
+export const EducationalHistorySchema =
+  SchemaFactory.createForClass(EducationalHistory);

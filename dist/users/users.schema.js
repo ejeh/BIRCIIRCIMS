@@ -1,9 +1,32 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
 };
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
@@ -11,11 +34,11 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserSchema = exports.User = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
-const mongoose = require("mongoose");
+const mongoose = __importStar(require("mongoose"));
 const swagger_1 = require("@nestjs/swagger");
 const users_role_enum_1 = require("./users.role.enum");
 const users_next_of_kin_schema_1 = require("./users.next-of-kin.schema");
-const users_occupation_schema_1 = require("./users.occupation.schema");
+const users_emploment_schema_1 = require("./users.emploment.schema");
 const users_business_schema_1 = require("./users.business.schema");
 const users_education_schema_1 = require("./users.education.schema");
 const users_health_schema_1 = require("./users.health.schema");
@@ -113,7 +136,7 @@ __decorate([
     (0, swagger_1.ApiProperty)(),
     (0, mongoose_1.Prop)({ type: mongoose.SchemaTypes.String, required: false, default: null }),
     __metadata("design:type", String)
-], User.prototype, "country", void 0);
+], User.prototype, "countryOfResidence", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)(),
     (0, mongoose_1.Prop)({ type: mongoose.SchemaTypes.String, required: false, default: null }),
@@ -136,7 +159,7 @@ __decorate([
 ], User.prototype, "expiry_date", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)(),
-    (0, mongoose_1.Prop)({ required: true }),
+    (0, mongoose_1.Prop)({ required: false }),
     __metadata("design:type", String)
 ], User.prototype, "passportPhoto", void 0);
 __decorate([
@@ -146,9 +169,9 @@ __decorate([
 ], User.prototype, "nextOfKin", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)(),
-    (0, mongoose_1.Prop)({ type: [users_occupation_schema_1.OccupationSchema], required: false, default: null }),
+    (0, mongoose_1.Prop)({ type: [users_emploment_schema_1.EmploymentHistorySchema], required: false, default: null }),
     __metadata("design:type", Array)
-], User.prototype, "occupation", void 0);
+], User.prototype, "employmentHistory", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)(),
     (0, mongoose_1.Prop)({ type: [users_business_schema_1.BusinessSchema], required: false, default: null }),
@@ -156,9 +179,9 @@ __decorate([
 ], User.prototype, "business", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)(),
-    (0, mongoose_1.Prop)({ type: [users_education_schema_1.EducationalBackgroundSchema], required: false, default: null }),
-    __metadata("design:type", Array)
-], User.prototype, "education", void 0);
+    (0, mongoose_1.Prop)({ type: users_education_schema_1.EducationalHistorySchema, required: false, default: null }),
+    __metadata("design:type", users_education_schema_1.EducationalHistory)
+], User.prototype, "educationalHistory", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)(),
     (0, mongoose_1.Prop)({ type: [users_health_schema_1.HealthInfoSchema], required: false, default: null }),
@@ -196,6 +219,16 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], User.prototype, "role", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)(),
+    (0, mongoose_1.Prop)({ type: mongoose.SchemaTypes.String, required: false, default: null }),
+    __metadata("design:type", String)
+], User.prototype, "religion", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)(),
+    (0, mongoose_1.Prop)({ type: mongoose.SchemaTypes.String, required: true }),
+    __metadata("design:type", String)
+], User.prototype, "community", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)(),
     (0, mongoose_1.Prop)({ type: mongoose.SchemaTypes.String, required: true }),

@@ -46,4 +46,6 @@ export declare class IndigeneCertificateService {
     }> & {
         __v: number;
     }>;
+    generateCertificatePDF(id: string, html: string): Promise<string>;
+    deleteItem: (item_id: string) => Promise<any>;
 }

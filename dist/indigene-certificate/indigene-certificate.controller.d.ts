@@ -17,8 +17,11 @@ export declare class IndigeneCertificateController {
         __v: number;
     }>;
     downloadCertificate(id: string, res: Response): Promise<Response<any, Record<string, any>>>;
-    private generateCertificatePDF;
-    getCertsRequset(req: Request): Promise<(import("mongoose").Document<unknown, {}, Certificate> & Certificate & Required<{
+    private loadHtmlTemplate;
+    private populateHtmlTemplate;
+    private markCertificateAsDownloaded;
+    private generateQrCode;
+    getCertsRequest(req: Request): Promise<(import("mongoose").Document<unknown, {}, Certificate> & Certificate & Required<{
         _id: unknown;
     }> & {
         __v: number;
@@ -50,6 +53,8 @@ export declare class IndigeneCertificateController {
         })[];
         hasNextPage: boolean;
     }>;
+    getCert(id: string, body: any): Promise<Certificate>;
     getProfile(id: string, body: any): Promise<Certificate>;
     getUserProfile(id: string, body: any): Promise<Certificate>;
+    deleteItem(item: string): Promise<any>;
 }

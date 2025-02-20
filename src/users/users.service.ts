@@ -57,6 +57,7 @@ export class UsersService {
 
       return user;
     } catch (error) {
+      console.log(error);
       throw EmailAlreadyUsedException();
     }
   }

@@ -13,14 +13,13 @@ import config from './config';
  */
 export const configureApp = (app: any) => {
   app.use((req, res, next) => {
-    console.log('Request Origin:', req.headers.origin || 'No Origin');
     next();
   });
   if (config.cors) {
     app.enableCors(config.cors);
   }
   app.use(helmet());
-  app.use(compression());
+  // app.use(compression());
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

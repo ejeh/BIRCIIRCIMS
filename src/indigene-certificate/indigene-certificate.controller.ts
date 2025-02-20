@@ -12,24 +12,26 @@ import {
   Req,
   Query,
   UploadedFile,
+  Delete,
 } from '@nestjs/common';
 import { UserNotFoundException } from 'src/common/exception';
 
-import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { IndigeneCertificateService } from './indigene-certificate.service';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { Response } from 'express';
-import * as PDFDocument from 'pdfkit';
-import * as fs from 'fs';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { UserRole } from 'src/users/users.role.enum';
 import { Certificate } from './indigene-certicate.schema';
 import { UsersService } from 'src/users/users.service';
 import { v4 as uuid } from 'uuid';
+import * as fs from 'fs';
+import * as path from 'path';
+import QRCode from 'qrcode';
 
 @ApiTags('indigene-certificate.controller')
 @UseGuards(JwtAuthGuard)
@@ -110,183 +112,158 @@ export class IndigeneCertificateController {
   }
 
   @Get('download/:id')
-  @UseGuards(RolesGuard)
   @ApiResponse({ type: Certificate, isArray: false })
   async downloadCertificate(@Param('id') id: string, @Res() res: Response) {
     try {
-      // Fetch the certificate details
       const certificate =
         await this.indigeneCertificateService.findCertificateById(id);
+
+      const user = await this.userService.findById(certificate.userId);
 
       if (!certificate) {
         return res.status(404).json({ message: 'Certificate not found' });
       }
 
       if (certificate.downloaded) {
-        throw new Error('Certificate has already been downloaded.');
+        return res
+          .status(400)
+          .json({ message: 'Certificate has already been downloaded.' });
       }
 
-      // Generate the PDF document
-      const pdfPath = await this.generateCertificatePDF(id, certificate);
+      const dateOfIssue = new Date();
 
-      // Stream the PDF file to the response
+      const formattedDate = dateOfIssue.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
+      const qrCodeData = `Name: ${user.firstname} ${user.middlename} ${user.lastname} | issueDate: ${formattedDate} | Sex: ${user.gender} | issuer: Benue Digital Infrastructure Company`;
+
+      const qrCodeUrl = await this.generateQrCode(qrCodeData); // Generate QR code URL
+      certificate.qrCodeUrl = qrCodeUrl; // Save the QR code URL in the certificate
+
+      const htmlTemplate = await this.loadHtmlTemplate(
+        'certificate-template.html',
+      );
+      const populatedHtml = this.populateHtmlTemplate(
+        htmlTemplate,
+        certificate,
+        user,
+      );
+
+      const pdfPath =
+        await this.indigeneCertificateService.generateCertificatePDF(
+          id,
+          // certificate,
+          populatedHtml,
+        );
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename=certificate.pdf',
+      );
+
+      // Stream the file instead of reading it fully into memory
       res.download(pdfPath, 'certificate.pdf', async (err) => {
-        // Clean up the temporary file
-        fs.unlink(pdfPath, (unlinkErr) => {
-          if (unlinkErr) {
-            console.error('Error deleting temporary file:', unlinkErr);
-          }
-        });
-
         if (err) {
           console.error('Error sending file:', err);
           return res.status(500).json({ message: 'Error downloading file' });
         }
 
-        // Mark as downloaded only if no error occurred
-        try {
-          await this.indigeneCertificateService.markAsDownloaded(id);
-        } catch (updateErr) {
-          console.error('Error marking certificate as downloaded:', updateErr);
-        }
+        // Mark as downloaded and delete temp file after sending
+        await this.markCertificateAsDownloaded(id);
+        // this.cleanupTempFile(pdfPath);
       });
     } catch (error) {
-      console.error('Error processing request:', error.message);
-
-      // Return a unified error response with a specific message
-      if (error.message === 'Certificate has already been downloaded.') {
-        res.status(400).json({ message: error.message });
-      } else {
-        res.status(500).json({ message: 'Internal server error' });
-      }
+      console.error('Error processing request:', error);
+      res.status(500).json({ message: 'Internal server error' });
     }
   }
 
-  private async generateCertificatePDF(
-    id: string,
-    certificate,
-  ): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const doc = new PDFDocument({
-        size: 'A4',
-        margins: { top: 50, bottom: 50, left: 50, right: 50 },
-      });
+  private async loadHtmlTemplate(templateName: string): Promise<string> {
+    const templatePath = path.join(
+      __dirname,
+      '..',
+      '..',
+      'templates',
+      templateName,
+    );
+    return fs.promises.readFile(templatePath, 'utf8');
+  }
 
-      const tempPath = `./temp/${id}.pdf`;
-      const stream = fs.createWriteStream(tempPath);
-      doc.pipe(stream);
+  private populateHtmlTemplate(html: string, data: any, user: any): string {
+    const date = new Date(data.DOB);
 
-      // Add border
-      const borderSpacing = 20;
-      const borderWidth = 8;
-      doc
-        .rect(
-          borderSpacing,
-          borderSpacing,
-          doc.page.width - borderSpacing * 2,
-          doc.page.height - borderSpacing * 2,
-        )
-        .lineWidth(borderWidth)
-        .strokeColor('red')
-        .dash(10, { space: 4 })
-        .stroke();
-
-      // Add State Emblem or Icon (Placeholder here, replace with an actual image)
-      const emblemX = doc.page.width / 2 - 25;
-      const emblemY = 60;
-      doc.rect(emblemX, emblemY, 50, 50).strokeColor('black').stroke();
-
-      // Header Section
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(20)
-        .text('BENUE STATE', { align: 'center' })
-        .moveDown(0.5);
-
-      doc
-        .font('Helvetica')
-        .fontSize(12)
-        .text('TO WHOM IT MAY CONCERN', { align: 'center' })
-        .moveDown(1);
-
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(16)
-        .text(`${certificate.LGA} Local Government Area`, { align: 'center' })
-        .moveDown(0.5);
-
-      doc
-        .font('Helvetica')
-        .fontSize(14)
-        .text('Certificate of Benue State Origin', { align: 'center' })
-        .moveDown(2);
-
-      // Dynamic Details Section
-      const startX = 70;
-      let startY = 200;
-
-      doc.font('Helvetica').fontSize(12).text(`I Certify that`, startX, startY);
-
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(12)
-        .text(`${certificate.firstname}`, startX + 120, startY);
-
-      startY += 20;
-      doc
-        .font('Helvetica')
-        .fontSize(12)
-        .text(`Is a native of:`, startX, startY);
-
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(12)
-        .text(`${certificate.ward} `, startX + 120, startY);
-
-      startY += 20;
-      doc.font('Helvetica').fontSize(12).text(`Clan in:`, startX, startY);
-
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(12)
-        .text(`${certificate.district}`, startX + 120, startY);
-
-      startY += 40;
-      doc
-        .font('Helvetica')
-        .fontSize(12)
-        .text(`${certificate.LGA} Local Government Area`, { align: 'center' });
-
-      doc
-        .font('Helvetica')
-        .fontSize(12)
-        .text(`Benue State of Nigeria`, { align: 'center' })
-        .moveDown(1);
-
-      // Date and Signature Section
-      startY += 80;
-      doc
-        .font('Helvetica')
-        .fontSize(12)
-        .text(`Date: ${new Date().toDateString()}`, startX, startY);
-
-      doc
-        .font('Helvetica')
-        .fontSize(12)
-        .text(`Signature: _________________________`, startX + 250, startY);
-
-      doc.end();
-
-      stream.on('finish', () => resolve(tempPath));
-      stream.on('error', (err) => reject(err));
+    // Format as "February 20, 1991"
+    const formattedDate = date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
     });
+
+    const dateOfIssue = new Date();
+
+    // Format as "February 20, 1991"
+    const formattedDateOfIssue = dateOfIssue.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+    return html
+      .replace(
+        /{{name}}/g,
+        user.firstname + ' ' + user.middlename + ' ' + user.lastname,
+      )
+      .replace(/{{lga}}/g, data.lgaOfOrigin)
+      .replace(/{{family}}/g, data.fathersName)
+      .replace(/{{ward}}/g, data.ward)
+      .replace(/{{kindred}}/g, data.kindred)
+      .replace(/{{dob}}/g, formattedDate)
+      .replace(/{{issueDate}}/g, formattedDateOfIssue)
+      .replace(/{{passportPhoto}}/g, user.passportPhoto)
+      .replace(/{{qrCodeUrl}}/g, data.qrCodeUrl);
+  }
+
+  // private async cleanupTempFile(filePath: string): Promise<void> {
+  //   try {
+  //     if (fs.existsSync(filePath)) {
+  //       await fs.promises.unlink(filePath);
+  //       console.log(`Deleted temp file: ${filePath}`);
+  //     }
+  //   } catch (unlinkErr) {
+  //     console.error('Error deleting temporary file:', unlinkErr);
+  //   }
+  // }
+
+  private async markCertificateAsDownloaded(id: string): Promise<void> {
+    try {
+      await this.indigeneCertificateService.markAsDownloaded(id);
+    } catch (updateErr) {
+      console.error('Error marking certificate as downloaded:', updateErr);
+    }
+  }
+
+  private async generateQrCode(data: string): Promise<string> {
+    try {
+      if (!data) {
+        throw new Error('Input data is required');
+      }
+      const qrCodeUrl = await QRCode.toDataURL(data);
+      return qrCodeUrl;
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+      throw new Error('Failed to generate QR code');
+    }
   }
 
   @Get('get-all-request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: Certificate, isArray: true })
   @Roles(UserRole.SUPER_ADMIN)
-  async getCertsRequset(@Req() req: Request) {
+  async getCertsRequest(@Req() req: Request) {
     return await this.indigeneCertificateService.certificateModel.find({});
   }
 
@@ -376,6 +353,12 @@ export class IndigeneCertificateController {
     );
   }
 
+  @Get(':id/get')
+  @ApiResponse({ type: Certificate, isArray: false })
+  async getCert(@Param('id') id: string, @Body() body: any) {
+    return await this.indigeneCertificateService.findById(id);
+  }
+
   @Get(':id')
   @ApiResponse({ type: Certificate, isArray: false })
   async getProfile(@Param('id') id: string, @Body() body: any) {
@@ -386,5 +369,10 @@ export class IndigeneCertificateController {
   @ApiResponse({ type: Certificate, isArray: false })
   async getUserProfile(@Param('id') id: string, @Body() body: any) {
     return await this.indigeneCertificateService.findById(id);
+  }
+
+  @Delete(':item')
+  async deleteItem(@Param('item') item: string): Promise<any> {
+    return this.indigeneCertificateService.deleteItem(item);
   }
 }

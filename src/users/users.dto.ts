@@ -20,8 +20,11 @@ export class UserPublicData {
   @ApiProperty({})
   phone: number;
 
-  // @ApiProperty({})
-  // LGA: string;
+  @ApiProperty({})
+  community: string;
+
+  @ApiProperty({})
+  religion: string;
 
   @ApiProperty({})
   stateOfOrigin: string;
@@ -42,13 +45,13 @@ export class UserPublicData {
   nextOfKin: string;
 
   @ApiProperty({})
-  occupation: string;
+  employmentHistory: string;
 
   @ApiProperty({})
   business: string;
 
   @ApiProperty({})
-  education: string;
+  educationalHistory: string;
 
   @ApiProperty({})
   healthInfo: string;
@@ -72,7 +75,7 @@ export class UserPublicData {
   city_town: string;
 
   @ApiProperty({})
-  country: string;
+  countryOfResidence: string;
 
   @ApiProperty({})
   identification: string;
@@ -109,6 +112,16 @@ export class UpdateProfileDto {
   @IsOptional()
   @ApiProperty({})
   readonly lastname?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiProperty({})
+  readonly community?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiProperty({})
+  readonly religion?: string;
 
   @IsString()
   @IsOptional()
@@ -153,7 +166,7 @@ export class UpdateProfileDto {
   @IsString()
   @IsOptional()
   @ApiProperty({})
-  readonly country?: string;
+  readonly countryOfResidence?: string;
 
   @IsString()
   @IsOptional()
@@ -165,7 +178,7 @@ export class UpdateProfileDto {
   @ApiProperty({})
   readonly nationality?: string;
 
-  @IsString()
+  // @IsString()
   @IsOptional()
   @ApiProperty({})
   readonly DOB?: string;
@@ -181,7 +194,7 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @ApiProperty({})
-  readonly occupation?: string;
+  readonly employmentHistory?: string;
 
   @IsOptional()
   @ApiProperty({})
@@ -193,7 +206,7 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @ApiProperty({})
-  readonly education?: string;
+  readonly educationalHistory?: string;
 
   @IsOptional()
   @ApiProperty({})

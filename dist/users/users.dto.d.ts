@@ -5,15 +5,17 @@ export declare class UserPublicData {
     middlename: string;
     DOB: string;
     phone: number;
+    community: string;
+    religion: string;
     stateOfOrigin: string;
     email: string;
     nationality: string;
     gender: string;
     maritalStatus: string;
     nextOfKin: string;
-    occupation: string;
+    employmentHistory: string;
     business: string;
-    education: string;
+    educationalHistory: string;
     healthInfo: string;
     role: string;
     NIN: number;
@@ -21,7 +23,7 @@ export declare class UserPublicData {
     street_name: string;
     nearest_bus_stop_landmark: string;
     city_town: string;
-    country: string;
+    countryOfResidence: string;
     identification: string;
     id_number: string;
     issue_date: string;
@@ -34,6 +36,8 @@ export declare class UserPublicData {
 export declare class UpdateProfileDto {
     readonly passportPhoto?: string;
     readonly lastname?: string;
+    readonly community?: string;
+    readonly religion?: string;
     readonly middlename?: string;
     readonly house_number?: string;
     readonly maritalStatus?: string;
@@ -42,16 +46,16 @@ export declare class UpdateProfileDto {
     readonly street_name?: string;
     readonly nearest_bus_stop_landmark?: string;
     readonly city_town?: string;
-    readonly country?: string;
+    readonly countryOfResidence?: string;
     readonly address?: string;
     readonly nationality?: string;
     readonly DOB?: string;
     readonly gender?: string;
     readonly nextOfKin?: string;
-    readonly occupation?: string;
+    readonly employmentHistory?: string;
     readonly business?: string;
     readonly neighbor?: string;
-    readonly education?: string;
+    readonly educationalHistory?: string;
     readonly healthInfo?: string;
     readonly family?: string;
     readonly identification?: string;

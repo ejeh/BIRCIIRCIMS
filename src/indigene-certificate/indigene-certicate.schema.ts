@@ -77,7 +77,7 @@ export class Certificate extends Document {
 
   @ApiProperty()
   @Prop({ type: mongoose.SchemaTypes.String, required: true })
-  LGA: string;
+  lgaOfOrigin: string;
 
   @ApiProperty()
   @Prop({ type: mongoose.SchemaTypes.String, required: true })
@@ -94,6 +94,10 @@ export class Certificate extends Document {
     unique: true,
   })
   phone: number;
+
+  @ApiProperty()
+  @Prop({ type: mongoose.SchemaTypes.String, required: true })
+  kindred: string;
 
   @ApiProperty()
   @Prop({ type: mongoose.SchemaTypes.String, required: true })
@@ -127,9 +131,6 @@ export class Certificate extends Document {
   @Prop({ type: mongoose.SchemaTypes.String })
   refNumber: String;
 
-  @Prop({ required: true, default: new Date().toISOString() })
-  dateOfIssue: Date;
-
   @ApiProperty()
   @Prop({ required: true })
   passportPhoto: string; // File path or URL
@@ -148,6 +149,9 @@ export class Certificate extends Document {
 
   @Prop({ required: false, default: null })
   uploadedAttestationUrl: string; // URL for the signed attestation letter
+
+  @Prop({ required: false, default: null })
+  qrCodeUrl?: string; // URL for the QR code
 }
 
 export const CertificateSchema = SchemaFactory.createForClass(Certificate);

@@ -15,10 +15,11 @@ export declare class Certificate extends Document {
     maritalStatus: string;
     gender: string;
     stateOfOrigin: string;
-    LGA: string;
+    lgaOfOrigin: string;
     ward: string;
     address: string;
     phone: number;
+    kindred: string;
     fathersName: string;
     fathersStateOfOrigin: string;
     mothersName: string;
@@ -27,12 +28,12 @@ export declare class Certificate extends Document {
     relationshionToguardian?: string;
     purpose?: string;
     refNumber: String;
-    dateOfIssue: Date;
     passportPhoto: string;
     idCard: string;
     birthCertificate: string;
     parentGuardianIndigeneCert: string;
     uploadedAttestationUrl: string;
+    qrCodeUrl?: string;
 }
 export declare const CertificateSchema: mongoose.Schema<Certificate, mongoose.Model<Certificate, any, any, any, mongoose.Document<unknown, any, Certificate> & Certificate & Required<{
     _id: unknown;

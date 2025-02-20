@@ -11,6 +11,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersService = void 0;
 const common_1 = require("@nestjs/common");
@@ -18,7 +21,7 @@ const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const auth_1 = require("../auth/auth");
 const uuid_1 = require("uuid");
-const config_1 = require("../config");
+const config_1 = __importDefault(require("../config"));
 const users_mailer_service_1 = require("./users.mailer.service");
 const exception_1 = require("../common/exception");
 let UsersService = class UsersService {
@@ -44,6 +47,7 @@ let UsersService = class UsersService {
             return user;
         }
         catch (error) {
+            console.log(error);
             throw (0, exception_1.EmailAlreadyUsedException)();
         }
     }

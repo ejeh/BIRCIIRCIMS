@@ -12,6 +12,8 @@ import {
   UseInterceptors,
   HttpException,
   HttpStatus,
+  NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import {
@@ -84,10 +86,28 @@ export class UsersController {
     @Body(new ParseJSONPipe()) body: UpdateProfileDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    // Parse educationalHistory if it's a string
+    if (typeof body.educationalHistory === 'string') {
+      try {
+        const parsedEducationalHistory = JSON.parse(body.educationalHistory);
+        body = { ...body, educationalHistory: parsedEducationalHistory };
+      } catch (error) {
+        throw new BadRequestException('Invalid educationalHistory format.');
+      }
+    }
+
+    // Parse educationalHistory if it's a string
+    if (typeof body.employmentHistory === 'string') {
+      try {
+        const parsedEmploymentHistory = JSON.parse(body.employmentHistory);
+        body = { ...body, employmentHistory: parsedEmploymentHistory };
+      } catch (error) {
+        throw new BadRequestException('Invalid employmentHistory format.');
+      }
+    }
     try {
       const updatedData: any = { ...body };
       // const BASE_URL = process.env.BASE_URL || 'http://localhost:5000';
-      console.log(process.env.BASE_URL);
       if (file) {
         // updatedData.passportPhoto = file.filename; // Save file name to the database
         updatedData.passportPhoto = `http://localhost:5000/uploads/${file.filename}`;
@@ -129,7 +149,15 @@ export class UsersController {
   @Get(':id')
   @ApiResponse({ type: User, isArray: false })
   async getProfile(@Param('id') id: string, @Body() body: any) {
-    return await this.userService.findById(id);
+    const user = await this.userService.findById(id);
+    if (!user) {
+      throw new NotFoundException('User not found'); // Handle missing user
+    }
+
+    return {
+      ...user.toObject(),
+      DOB: user.DOB ? user.DOB.toISOString().split('T')[0] : '', // Check for null
+    };
   }
 
   @Get()

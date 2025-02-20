@@ -5,11 +5,14 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Document } from 'mongoose';
 import { UserRole } from './users.role.enum';
 import { NextOfKin, NextOfKinSchema } from './users.next-of-kin.schema';
-import { Occupation, OccupationSchema } from './users.occupation.schema';
+import {
+  EmploymentHistory,
+  EmploymentHistorySchema,
+} from './users.emploment.schema';
 import { Business, BusinessSchema } from './users.business.schema';
 import {
-  EducationalBackground,
-  EducationalBackgroundSchema,
+  EducationalHistory,
+  EducationalHistorySchema,
 } from './users.education.schema';
 import { HealthInfo, HealthInfoSchema } from './users.health.schema';
 import { Neighbor, NeighborSchema } from './users.neigbour.schema';
@@ -98,7 +101,7 @@ export class User {
 
   @ApiProperty()
   @Prop({ type: mongoose.SchemaTypes.String, required: false, default: null })
-  country?: string;
+  countryOfResidence?: string;
 
   @ApiProperty()
   @Prop({ type: mongoose.SchemaTypes.String, required: false, default: null })
@@ -117,7 +120,7 @@ export class User {
   expiry_date?: string;
 
   @ApiProperty()
-  @Prop({ required: true })
+  @Prop({ required: false })
   passportPhoto: string; // File path or URL
 
   @ApiProperty()
@@ -125,16 +128,16 @@ export class User {
   nextOfKin?: NextOfKin[];
 
   @ApiProperty()
-  @Prop({ type: [OccupationSchema], required: false, default: null }) // Embed the next-of-kin schema
-  occupation?: Occupation[];
+  @Prop({ type: [EmploymentHistorySchema], required: false, default: null }) // Embed the next-of-kin schema
+  employmentHistory?: EmploymentHistory[]; // Array of employment histories
 
   @ApiProperty()
   @Prop({ type: [BusinessSchema], required: false, default: null }) // Embed the next-of-kin schema
   business?: Business[];
 
   @ApiProperty()
-  @Prop({ type: [EducationalBackgroundSchema], required: false, default: null }) // Embed the next-of-kin schema
-  education?: EducationalBackground[];
+  @Prop({ type: EducationalHistorySchema, required: false, default: null }) // Embed the next-of-kin schema
+  educationalHistory?: EducationalHistory;
 
   @ApiProperty()
   @Prop({ type: [HealthInfoSchema], required: false, default: null }) // Embed the next-of-kin schema
@@ -166,6 +169,14 @@ export class User {
     default: UserRole.USER,
   })
   role?: UserRole;
+
+  @ApiProperty()
+  @Prop({ type: mongoose.SchemaTypes.String, required: false, default: null })
+  religion?: string;
+
+  @ApiProperty()
+  @Prop({ type: mongoose.SchemaTypes.String, required: true })
+  community?: string;
 
   @ApiProperty()
   @Prop({ type: mongoose.SchemaTypes.String, required: true })
