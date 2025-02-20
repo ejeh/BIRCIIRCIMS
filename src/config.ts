@@ -4,7 +4,7 @@ export default {
   isTest,
   host: process.env.API_HOST,
   port: process.env.PORT,
-  db: process.env.MONGO_URL,
+  db: process.env.MONGO_CONNECTION_URL,
   mail: {
     from: {
       name: process.env.MAIL_FROM_NAME,
@@ -23,7 +23,6 @@ export default {
   },
   auth: {
     jwtTokenExpireInSec: '100d', // 1 day
-    // jwtTokenExpireInSec: 200, // 1 day
     passwordResetExpireInMs: 60 * 60 * 1000, // 1 hour
     activationExpireInMs: 24 * 60 * 60 * 1000, // 1 day
     saltRounds: 10,
@@ -34,7 +33,7 @@ export default {
   },
 };
 
-export const dbUrl = process.env.MONGO_URL;
+export const dbUrl = process.env.MONGO_CONNECTION_URL;
 
 function isDev() {
   return process.env.NODE_ENV === 'development';
