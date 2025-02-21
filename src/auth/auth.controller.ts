@@ -39,9 +39,15 @@ export class AuthController {
     // return this.authService.activate(params);
     const result = await this.authService.activate(params);
     if (result.success) {
-      return res.redirect('http://127.0.0.1:5501/auth/activation-success.html');
+      // return res.redirect('http://127.0.0.1:5501/auth/activation-success.html');
+      return res.redirect(
+        'https://bscr-mis-ui.onrender.com//auth/activation-success.html',
+      );
     } else {
-      return res.redirect(`http://127.0.0.1:5501/auth/activation-failed.html`);
+      // return res.redirect(`http://127.0.0.1:5501/auth/activation-failed.html`);
+      return res.redirect(
+        `https://bscr-mis-ui.onrender.com//auth/activation-failed.html`,
+      );
     }
   }
 
