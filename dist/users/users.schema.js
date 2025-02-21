@@ -226,7 +226,7 @@ __decorate([
 ], User.prototype, "religion", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)(),
-    (0, mongoose_1.Prop)({ type: mongoose.SchemaTypes.String, required: true }),
+    (0, mongoose_1.Prop)({ type: mongoose.SchemaTypes.String, required: false }),
     __metadata("design:type", String)
 ], User.prototype, "community", void 0);
 __decorate([

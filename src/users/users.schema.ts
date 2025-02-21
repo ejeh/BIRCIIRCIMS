@@ -175,7 +175,7 @@ export class User {
   religion?: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: true })
+  @Prop({ type: mongoose.SchemaTypes.String, required: false })
   community?: string;
 
   @ApiProperty()
