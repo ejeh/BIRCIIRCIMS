@@ -13,7 +13,9 @@ export class UserMailerService {
     activationToken: string,
     origin: string,
   ) {
-    const activationUrl = `http://localhost:5000/api/auth/activate/${userId}/${activationToken}\n`;
+    // const activationUrl = `http://localhost:5000/api/auth/activate/${userId}/${activationToken}\n`;
+    const activationUrl = `https://identity-management-af43.onrender.com/api/auth/activate/${userId}/${activationToken}\n`;
+
     if (!config.isTest()) {
       console.log(origin);
       this.mailerService
@@ -22,8 +24,8 @@ export class UserMailerService {
           subject: 'Activate your account',
           template: 'activate-account', // The `.pug`, `.ejs` or `.hbs` extension is appended automatically.
           context: {
-            link: `${origin}/api/auth/activate/${userId}/${activationToken}\n`,
-            // link: activationUrl,
+            // link: `${origin}/api/auth/activate/${userId}/${activationToken}\n`,
+            link: activationUrl,
           },
         })
         .catch((error) => {

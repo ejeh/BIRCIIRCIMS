@@ -8,10 +8,14 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { JwtStrategy } from './jwt.strategy';
 import { LocalStrategy } from './localstrategy';
+import { UserMailerService } from 'src/users/users.mailer.service';
+import { UsersService } from 'src/users/users.service';
+import { UserModel } from 'src/users/users.model';
 
 @Module({
   imports: [
     UsersModule,
+    UserModel,
     JwtModule.register({
       secret: config.auth.secret,
       signOptions: {},
@@ -20,7 +24,14 @@ import { LocalStrategy } from './localstrategy';
   ],
   controllers: [AuthController],
 
-  providers: [AuthService, JwtAuthGuard, JwtStrategy, LocalStrategy],
+  providers: [
+    AuthService,
+    JwtAuthGuard,
+    JwtStrategy,
+    LocalStrategy,
+    UserMailerService,
+    UsersService,
+  ],
   exports: [AuthService, JwtAuthGuard],
 })
 export class AuthModule {}

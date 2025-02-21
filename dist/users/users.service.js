@@ -47,7 +47,6 @@ let UsersService = class UsersService {
             return user;
         }
         catch (error) {
-            console.log(error);
             throw (0, exception_1.EmailAlreadyUsedException)();
         }
     }
@@ -81,10 +80,15 @@ let UsersService = class UsersService {
             .where('activationExpires')
             .gt(Date.now())
             .exec();
-        if (!user) {
-            throw (0, exception_1.ActivationTokenInvalidException)();
-        }
         return user;
+    }
+    async resendActivationEmail(email) {
+        const user = await this.userModel.findOne({ email });
+        const activationToken = user.activationToken || Math.random().toString(36).substr(2, 10);
+        user.activationToken = activationToken;
+        await user.save();
+        this.userMailer.sendActivationMail(user.email, user.id, user.activationToken, origin);
+        return { success: true, message: 'Activation email sent successfully' };
     }
     async forgottenPassword(email, origin) {
         const user = await this.userModel.findOneAndUpdate({

@@ -13,6 +13,10 @@ export declare class UsersService {
     }> & {
         __v: number;
     }>;
+    resendActivationEmail(email: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
     forgottenPassword(email: string, origin: string): Promise<void>;
     resetPassword(email: string, passwordResetToken: string, password: string): Promise<import("mongoose").Document<unknown, {}, UserDocument> & import("./users.schema").User & import("mongoose").Document<unknown, any, any> & import("./users.schema").UserMethods & Required<{
         _id: unknown;

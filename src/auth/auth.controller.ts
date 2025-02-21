@@ -5,6 +5,7 @@ import {
   Param,
   Post,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -19,7 +20,7 @@ import {
   SignUpDto,
 } from './auth.interface';
 import { getOriginHeader } from './auth';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { AppRequest } from 'src/generic/generic.interface';
 import { console } from 'inspector';
@@ -34,8 +35,25 @@ export class AuthController {
   ) {}
 
   @Get('activate/:userId/:activationToken')
-  activate(@Param() params: ActivateParams) {
-    return this.authService.activate(params);
+  async activate(@Param() params: ActivateParams, @Res() res: Response) {
+    // return this.authService.activate(params);
+    const result = await this.authService.activate(params);
+    if (result.success) {
+      return res.redirect('http://127.0.0.1:5501/auth/activation-success.html');
+    } else {
+      return res.redirect(`http://127.0.0.1:5501/auth/activation-failed.html`);
+    }
+  }
+
+  @Post('resend-activation')
+  async resendActivationEmail(
+    @Body('email') email: string,
+    @Req() req: Request,
+  ) {
+    return await this.authService.resendActivationEmail(
+      email,
+      getOriginHeader(req),
+    );
   }
 
   @Post('signup')

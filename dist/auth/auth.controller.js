@@ -25,8 +25,17 @@ let AuthController = class AuthController {
         this.authService = authService;
         this.userService = userService;
     }
-    activate(params) {
-        return this.authService.activate(params);
+    async activate(params, res) {
+        const result = await this.authService.activate(params);
+        if (result.success) {
+            return res.redirect('http://127.0.0.1:5501/auth/activation-success.html');
+        }
+        else {
+            return res.redirect(`http://127.0.0.1:5501/auth/activation-failed.html`);
+        }
+    }
+    async resendActivationEmail(email, req) {
+        return await this.authService.resendActivationEmail(email, (0, auth_1.getOriginHeader)(req));
     }
     signup(signUpDto, req) {
         return this.authService.signUpUser(signUpDto, (0, auth_1.getOriginHeader)(req), 'user');
@@ -45,10 +54,19 @@ exports.AuthController = AuthController;
 __decorate([
     (0, common_1.Get)('activate/:userId/:activationToken'),
     __param(0, (0, common_1.Param)()),
+    __param(1, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [auth_interface_1.ActivateParams]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [auth_interface_1.ActivateParams, Object]),
+    __metadata("design:returntype", Promise)
 ], AuthController.prototype, "activate", null);
+__decorate([
+    (0, common_1.Post)('resend-activation'),
+    __param(0, (0, common_1.Body)('email')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "resendActivationEmail", null);
 __decorate([
     (0, common_1.Post)('signup'),
     (0, swagger_1.ApiResponse)({ type: auth_interface_1.AuthenticatedUser }),

@@ -107,10 +107,9 @@ export class UsersController {
     }
     try {
       const updatedData: any = { ...body };
-      // const BASE_URL = process.env.BASE_URL || 'http://localhost:5000';
       if (file) {
-        // updatedData.passportPhoto = file.filename; // Save file name to the database
-        updatedData.passportPhoto = `http://localhost:5000/uploads/${file.filename}`;
+        // updatedData.passportPhoto = `http://localhost:5000/uploads/${file.filename}`;
+        updatedData.passportPhoto = `https://identity-management-af43.onrender.com/uploads/${file.filename}`;
       }
 
       const user = await this.userService.userModel.findByIdAndUpdate(

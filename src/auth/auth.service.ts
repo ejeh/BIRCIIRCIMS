@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UserDocument } from 'src/users/users.schema';
+import { User, UserDocument } from 'src/users/users.schema';
 import { UsersService } from 'src/users/users.service';
 import { comparePassword } from './auth';
 import { LoginCredentialsException } from 'src/common/exception';
@@ -10,10 +10,17 @@ import {
   ResetPasswordDto,
   SignUpDto,
 } from './auth.interface';
+import { Model } from 'mongoose';
+import { UserMailerService } from 'src/users/users.mailer.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { v4 as uuid } from 'uuid';
+import config from 'src/config';
 
 @Injectable()
 export class AuthService {
   constructor(
+    @InjectModel(User.name) public readonly userModel: Model<User>,
+    private readonly userMailer: UserMailerService,
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
   ) {}
@@ -29,11 +36,45 @@ export class AuthService {
 
   async activate({ userId, activationToken }: ActivateParams) {
     const user = await this.usersService.activate(userId, activationToken);
+    if (!user) {
+      return { success: false, message: 'Invalid or expired token' };
+    }
 
     return {
+      success: true,
+      message: 'Account activated successfully',
       token: this.jwtService.sign({ id: user.id }, { subject: `${user.id}` }),
       user: user.getPublicData(),
     };
+  }
+
+  async resendActivationEmail(email: string, origin: string) {
+    const user = await this.userModel.findOne({ email });
+    if (!user) {
+      return { success: false, message: 'User not found' };
+    }
+
+    if (user.isActive) {
+      return { success: false, message: 'Account is already activated' };
+    }
+
+    // Generate a new activation token (or reuse the old one)
+    const activationToken = user.activationToken || uuid();
+    user.activationToken = activationToken;
+    (user.activationExpires = new Date(
+      Date.now() + config.auth.activationExpireInMs,
+    )),
+      await user.save();
+
+    // Send email with activation link
+    this.userMailer.sendActivationMail(
+      user.email,
+      user.id,
+      user.activationToken,
+      origin,
+    );
+
+    return { success: true, message: 'Activation email sent successfully' };
   }
 
   async signUpUser(userData: SignUpDto, origin: string, role: string) {
@@ -71,23 +112,7 @@ export class AuthService {
       user: user?.getPublicData(),
     };
   }
-  // async loginAdmin(user?: any) {
-  //   if (user.role == 'admin') {
-  //     return {
-  //       token: this.jwtService.sign(
-  //         //@ts-ignore
-  //         { ...user?.getPublicData() },
-  //         //@ts-ignore
-  //         { subject: `${user?.id}` },
-  //       ),
-  //       //@ts-ignore
-  //       user: user?.getPublicData(),
-  //     };
-  //   }
-  //   throw new UnauthorizedException(
-  //     'Account roles doesnt support admin activities',
-  //   );
-  // }
+
   async forgottenPassword({ email }: ForgottenPasswordDto, origin: string) {
     return await this.usersService.forgottenPassword(email, origin);
   }

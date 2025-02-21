@@ -13,7 +13,6 @@ export default {
   },
 
   cors: {
-    // https://github.com/expressjs/cors#configuration-options
     origin: '*',
     methods: 'POST,GET,PUT,OPTIONS,DELETE, PATCH',
     allowedHeaders:

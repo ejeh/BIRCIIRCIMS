@@ -57,7 +57,6 @@ export class UsersService {
 
       return user;
     } catch (error) {
-      console.log(error);
       throw EmailAlreadyUsedException();
     }
   }
@@ -102,11 +101,37 @@ export class UsersService {
       .gt(Date.now())
       .exec();
 
-    if (!user) {
-      throw ActivationTokenInvalidException();
-    }
+    // if (!user) {
+    //   throw ActivationTokenInvalidException();
+    // }
 
     return user;
+  }
+
+  async resendActivationEmail(email: string) {
+    const user = await this.userModel.findOne({ email });
+    // Generate a new activation token (or reuse the old one)
+    const activationToken =
+      user.activationToken || Math.random().toString(36).substr(2, 10);
+    user.activationToken = activationToken;
+    await user.save();
+
+    // Send email with activation link
+    //  await this.mailerService.sendMail({
+    //    to: user.email,
+    //    subject: 'Activate Your Account',
+    //    html: `<p>Click <a href="http://yourdomain.com/auth/activate?token=${activationToken}">here</a> to activate your account.</p>`,
+    //  });
+
+    this.userMailer.sendActivationMail(
+      user.email,
+      user.id,
+      user.activationToken,
+      origin,
+    );
+    return { success: true, message: 'Activation email sent successfully' };
+
+    // return user;
   }
 
   async forgottenPassword(email: string, origin: string) {

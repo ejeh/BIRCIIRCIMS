@@ -21,7 +21,7 @@ let UserMailerService = class UserMailerService {
         this.mailerService = mailerService;
     }
     sendActivationMail(email, userId, activationToken, origin) {
-        const activationUrl = `http://localhost:5000/api/auth/activate/${userId}/${activationToken}\n`;
+        const activationUrl = `https://identity-management-af43.onrender.com/api/auth/activate/${userId}/${activationToken}\n`;
         if (!config_1.default.isTest()) {
             console.log(origin);
             this.mailerService
@@ -30,7 +30,7 @@ let UserMailerService = class UserMailerService {
                 subject: 'Activate your account',
                 template: 'activate-account',
                 context: {
-                    link: `${origin}/api/auth/activate/${userId}/${activationToken}\n`,
+                    link: activationUrl,
                 },
             })
                 .catch((error) => {
