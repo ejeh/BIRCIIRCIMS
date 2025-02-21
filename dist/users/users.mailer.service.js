@@ -30,7 +30,7 @@ let UserMailerService = class UserMailerService {
                 subject: 'Activate your account',
                 template: 'activate-account',
                 context: {
-                    link: `${origin}/auth/activate/${userId}/${activationToken}\n`,
+                    link: `${origin}/api/auth/activate/${userId}/${activationToken}\n`,
                 },
             })
                 .catch((error) => {
