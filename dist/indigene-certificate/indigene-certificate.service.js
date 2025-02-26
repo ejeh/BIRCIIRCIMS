@@ -34,6 +34,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IndigeneCertificateService = void 0;
 const common_1 = require("@nestjs/common");
@@ -41,7 +44,7 @@ const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const indigene_certicate_schema_1 = require("./indigene-certicate.schema");
 const exception_1 = require("../common/exception");
-const PDFDocument = __importStar(require("pdfkit"));
+const pdfkit_1 = __importDefault(require("pdfkit"));
 const puppeteer = __importStar(require("puppeteer"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
@@ -153,7 +156,7 @@ let IndigeneCertificateService = class IndigeneCertificateService {
         const applicant = await this.certificateModel.findById(id);
         if (!applicant)
             throw new common_1.NotFoundException('User not found');
-        const doc = new PDFDocument();
+        const doc = new pdfkit_1.default();
         const date = new Date(applicant.DOB);
         const formattedDate = date.toLocaleDateString('en-US', {
             year: 'numeric',

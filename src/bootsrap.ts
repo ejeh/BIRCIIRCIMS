@@ -5,6 +5,8 @@ import { ValidationPipe } from '@nestjs/common';
 
 import { setupSwaggerDocuments } from './common/swagger';
 import { AppModule } from './app.module';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 import config from './config';
 
 /**
@@ -30,7 +32,8 @@ export const configureApp = (app: any) => {
 };
 
 export async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.useStaticAssets(join(__dirname, '..', 'public')); // Serve static files
 
   configureApp(app);
 

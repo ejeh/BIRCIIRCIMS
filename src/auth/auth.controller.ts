@@ -41,12 +41,12 @@ export class AuthController {
     if (result.success) {
       // return res.redirect('http://127.0.0.1:5501/auth/activation-success.html');
       return res.redirect(
-        'https://bscr-mis-ui.onrender.com//auth/activation-success.html',
+        'https://bscr-mis-ui.onrender.com/auth/activation-success.html',
       );
     } else {
       // return res.redirect(`http://127.0.0.1:5501/auth/activation-failed.html`);
       return res.redirect(
-        `https://bscr-mis-ui.onrender.com//auth/activation-failed.html`,
+        `https://bscr-mis-ui.onrender.com/auth/activation-failed.html`,
       );
     }
   }

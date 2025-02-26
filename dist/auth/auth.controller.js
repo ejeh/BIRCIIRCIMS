@@ -28,10 +28,10 @@ let AuthController = class AuthController {
     async activate(params, res) {
         const result = await this.authService.activate(params);
         if (result.success) {
-            return res.redirect('https://bscr-mis-ui.onrender.com//auth/activation-success.html');
+            return res.redirect('https://bscr-mis-ui.onrender.com/auth/activation-success.html');
         }
         else {
-            return res.redirect(`https://bscr-mis-ui.onrender.com//auth/activation-failed.html`);
+            return res.redirect(`https://bscr-mis-ui.onrender.com/auth/activation-failed.html`);
         }
     }
     async resendActivationEmail(email, req) {

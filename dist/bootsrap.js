@@ -10,6 +10,7 @@ const core_1 = require("@nestjs/core");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("./common/swagger");
 const app_module_1 = require("./app.module");
+const path_1 = require("path");
 const config_1 = __importDefault(require("./config"));
 const configureApp = (app) => {
     app.use((req, res, next) => {
@@ -28,6 +29,7 @@ const configureApp = (app) => {
 exports.configureApp = configureApp;
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    app.useStaticAssets((0, path_1.join)(__dirname, '..', 'public'));
     (0, exports.configureApp)(app);
     (0, swagger_1.setupSwaggerDocuments)(app);
     await app.listen(config_1.default.port);
