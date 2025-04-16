@@ -3,9 +3,6 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class UserPublicData {
   @ApiProperty({})
-  userId: string;
-
-  @ApiProperty({})
   firstname: string;
 
   @ApiProperty({})

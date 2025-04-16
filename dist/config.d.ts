@@ -1,7 +1,7 @@
-declare const _default: {
-    isDev: typeof isDev;
-    isProd: typeof isProd;
-    isTest: typeof isTest;
+declare const config: {
+    isDev: boolean;
+    isProd: boolean;
+    isTest: boolean;
     host: string;
     port: string;
     db: string;
@@ -13,7 +13,7 @@ declare const _default: {
     };
     cors: {
         origin: string;
-        methods: string;
+        methods: string[];
         allowedHeaders: string;
         preflightContinue: boolean;
         optionsSuccessStatus: number;
@@ -29,8 +29,5 @@ declare const _default: {
         maxAge: string | number;
     };
 };
-export default _default;
+export default config;
 export declare const dbUrl: string;
-declare function isDev(): boolean;
-declare function isProd(): boolean;
-declare function isTest(): boolean;

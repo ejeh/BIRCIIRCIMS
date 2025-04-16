@@ -13,12 +13,17 @@ import {
   Query,
   UploadedFile,
   Delete,
+  BadRequestException,
 } from '@nestjs/common';
 import { UserNotFoundException } from 'src/common/exception';
 
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { IndigeneCertificateService } from './indigene-certificate.service';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import {
+  AnyFilesInterceptor,
+  FileInterceptor,
+  FilesInterceptor,
+} from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -32,6 +37,7 @@ import { v4 as uuid } from 'uuid';
 import * as fs from 'fs';
 import * as path from 'path';
 import QRCode from 'qrcode';
+import config from 'src/config';
 
 @ApiTags('indigene-certificate.controller')
 @UseGuards(JwtAuthGuard)
@@ -44,41 +50,109 @@ export class IndigeneCertificateController {
 
   @Post('create')
   @UseInterceptors(
-    FilesInterceptor('files', 4, {
-      dest: './uploads',
-      limits: { fileSize: 1024 * 1024 * 5 },
+    AnyFilesInterceptor({
+      limits: { fileSize: 5 * 1024 * 1024 },
       storage: diskStorage({
         destination: './uploads',
         filename: (req, file, cb) => {
-          const randomName = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, `${randomName}${extname(file.originalname)}`);
+          const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+          const ext = extname(file.originalname);
+          cb(null, `${uniqueSuffix}${ext}`);
         },
       }),
+
+      fileFilter: (req, file, cb) => {
+        const fieldTypeRules = {
+          passportPhoto: {
+            mime: ['image/jpeg', 'image/png', 'image/jpg'],
+            ext: ['.jpeg', '.jpg', '.png'],
+            message: 'Passport Photo must be an image (.jpg, .jpeg, .png)',
+          },
+          idCard: {
+            mime: ['application/pdf'],
+            ext: ['.pdf'],
+            message: 'ID Card must be a PDF file',
+          },
+          birthCertificate: {
+            mime: ['application/pdf'],
+            ext: ['.pdf'],
+            message: 'Birth Certificate must be a PDF file',
+          },
+          parentGuardianIndigeneCert: {
+            mime: ['application/pdf'],
+            ext: ['.pdf'],
+            message: 'Parent/Guardian Certificate must be a PDF file',
+          },
+        };
+
+        const rules = fieldTypeRules[file.fieldname];
+        const ext = extname(file.originalname).toLowerCase();
+
+        if (!rules) {
+          return cb(
+            new BadRequestException(`Unexpected file field: ${file.fieldname}`),
+            false,
+          );
+        }
+
+        const isValidMime = rules.mime.includes(file.mimetype);
+        const isValidExt = rules.ext.includes(ext);
+
+        if (!isValidMime || !isValidExt) {
+          return cb(new BadRequestException(rules.message), false);
+        }
+
+        cb(null, true);
+      },
     }),
   )
   async createCertificate(
     @Body() body: any,
     @UploadedFiles() files: Array<Express.Multer.File>,
   ) {
+    // Convert array to map for easier access
+    const fileMap = files.reduce(
+      (acc, file) => {
+        acc[file.fieldname] = file;
+        return acc;
+      },
+      {} as Record<string, Express.Multer.File>,
+    );
+
+    const requiredFields = [
+      'passportPhoto',
+      'idCard',
+      'birthCertificate',
+      'parentGuardianIndigeneCert',
+    ];
+
+    for (const field of requiredFields) {
+      if (!fileMap[field]) {
+        throw new BadRequestException(`${field} file is required.`);
+      }
+    }
+
+    const getBaseUrl = (): string =>
+      config.isDev
+        ? process.env.BASE_URL || 'http://localhost:5000'
+        : 'https://identity-management-af43.onrender.com';
+
+    const fileUrl = (file: Express.Multer.File) =>
+      `${getBaseUrl()}/uploads/${file.filename}`;
+
     const data = {
       ...body,
       refNumber: uuid(),
-      passportPhoto: files[0]?.path,
-      idCard: files[1]?.path,
-      birthCertificate: files[2]?.path,
-      parentGuardianIndigeneCert: files[3]?.path,
+      passportPhoto: fileUrl(fileMap.passportPhoto),
+      idCard: fileUrl(fileMap.idCard),
+      birthCertificate: fileUrl(fileMap.birthCertificate),
+      parentGuardianIndigeneCert: fileUrl(fileMap.parentGuardianIndigeneCert),
     };
 
-    // Notify admin
-    const adminEmail = 'ejehgodfrey@gmail.com';
-    const adminPhone = '+1234567890';
-
     await this.userService.sendRequest(
-      adminEmail,
+      'ejehgodfrey@gmail.com',
       'New Request',
-      `Request for certificate of origin 
-      from ${body.email}
-      `,
+      `Request for certificate of origin from ${body.email}`,
     );
 
     return this.indigeneCertificateService.createCertificate(data);
@@ -269,7 +343,7 @@ export class IndigeneCertificateController {
 
   @Patch(':id/approve')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.KINDRED_HEAD)
   @ApiResponse({ type: Certificate, isArray: false })
   async approveCert(@Param('id') id: string, @Body() Body: any) {
     return await this.indigeneCertificateService.approveCertificate(id);
@@ -338,7 +412,7 @@ export class IndigeneCertificateController {
   @Get('request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: Certificate, isArray: true })
-  @Roles(UserRole.SUPPORT_ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.SUPPORT_ADMIN, UserRole.SUPER_ADMIN, UserRole.KINDRED_HEAD)
   async getRequestsByStatuses(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,

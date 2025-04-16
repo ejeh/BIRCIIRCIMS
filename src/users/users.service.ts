@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { UserDocument } from './users.schema';
 import { Model } from 'mongoose';
@@ -31,6 +31,8 @@ export class UsersService {
     email: string,
     password: string,
     phone: number,
+    stateOfOrigin: string,
+    lgaOfOrigin: string,
     NIN: number,
     role: string,
     origin: string,
@@ -41,6 +43,8 @@ export class UsersService {
         firstname,
         lastname,
         phone,
+        stateOfOrigin,
+        lgaOfOrigin,
         NIN,
         role,
         origin,
@@ -77,6 +81,16 @@ export class UsersService {
     if (!user) {
       throw UserNotFoundException();
     }
+    return user;
+  }
+
+  async findAdminByEmail(email: string): Promise<UserDocument> {
+    const user = await this.userModel.findOne(
+      { email: email.toLowerCase() },
+      // {password: 0}
+      '+password',
+    );
+
     return user;
   }
 
@@ -220,5 +234,13 @@ export class UsersService {
 
     this.userMailer.sendMailRequest(user.email, subject, body);
     return user;
+  }
+
+  async deleteUserById(userId: string): Promise<void> {
+    const result = await this.userModel.findByIdAndDelete(userId);
+
+    if (!result) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
   }
 }

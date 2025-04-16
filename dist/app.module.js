@@ -48,6 +48,8 @@ const indigene_certificate_module_1 = require("./indigene-certificate/indigene-c
 const idcard_module_1 = require("./idcard/idcard.module");
 const serve_static_2 = require("@nestjs/serve-static");
 const path_1 = require("path");
+const transaction_module_1 = require("./transaction/transaction.module");
+const kindred_module_1 = require("./kindred/kindred.module");
 const DEV_TRANSPORTER = {
     host: 'smtp-relay.sendinblue.com',
     port: 587,
@@ -60,7 +62,7 @@ let AppModule = class AppModule {
     configure(consumer) {
         serve_static_1.ServeStaticMiddleware.configure(path.resolve(__dirname, '..', '..', 'public'), config_1.default.static);
         consumer.apply(serve_static_1.ServeStaticMiddleware).forRoutes('public');
-        if (!config_1.default.isTest()) {
+        if (!config_1.default.isTest) {
             consumer.apply(logger_1.LoggerMiddleware).forRoutes('api');
         }
     }
@@ -107,6 +109,8 @@ exports.AppModule = AppModule = __decorate([
             auth_module_1.AuthModule,
             indigene_certificate_module_1.IndigeneCertificateModule,
             idcard_module_1.IdcardModule,
+            transaction_module_1.TransactionModule,
+            kindred_module_1.KindredModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

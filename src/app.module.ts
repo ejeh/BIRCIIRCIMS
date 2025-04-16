@@ -22,6 +22,9 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { IdcardModule } from './idcard/idcard.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { TransactionModule } from './transaction/transaction.module';
+import { KindredService } from './kindred/kindred.service';
+import { KindredModule } from './kindred/kindred.module';
 
 const DEV_TRANSPORTER = {
   host: 'smtp-relay.sendinblue.com',
@@ -72,6 +75,8 @@ const DEV_TRANSPORTER = {
     AuthModule,
     IndigeneCertificateModule,
     IdcardModule,
+    TransactionModule,
+    KindredModule,
   ],
   controllers: [AppController],
   providers: [AppService],
@@ -84,7 +89,7 @@ export class AppModule implements NestModule {
     );
     consumer.apply(ServeStaticMiddleware).forRoutes('public');
 
-    if (!config.isTest()) {
+    if (!config.isTest) {
       consumer.apply(LoggerMiddleware).forRoutes('api');
     }
   }

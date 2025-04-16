@@ -40,6 +40,16 @@ export class SignUpDto {
   @ApiProperty({ example: 'password', minLength: 8 })
   @MinLength(8)
   readonly password!: string;
+
+  @IsNotEmpty()
+  @MaxLength(255)
+  @ApiProperty({})
+  readonly stateOfOrigin!: string;
+
+  @IsNotEmpty()
+  @MaxLength(255)
+  @ApiProperty({})
+  readonly lgaOfOrigin!: string;
 }
 
 export class ActivateParams {

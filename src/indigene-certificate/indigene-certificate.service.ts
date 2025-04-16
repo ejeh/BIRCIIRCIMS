@@ -1,24 +1,34 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Response } from 'express';
 import { Certificate } from './indigene-certicate.schema';
 import { UserNotFoundException } from 'src/common/exception';
+import { KindredModel } from 'src/kindred/kindred.model';
 // import * as PDFDocument from 'pdfkit';
 import PDFDocument from 'pdfkit';
 import * as puppeteer from 'puppeteer';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Kindred } from 'src/kindred/kindred.schema';
+import { UserDocument } from 'src/users/users.schema';
 
 @Injectable()
 export class IndigeneCertificateService {
   constructor(
     @InjectModel(Certificate.name)
     public readonly certificateModel: Model<Certificate>,
+    @InjectModel('Kindred') private readonly kindredModel: Model<Kindred>,
+    @InjectModel('User') public readonly userModel: Model<UserDocument>,
   ) {}
 
   async createCertificate(data: Partial<Certificate>): Promise<Certificate> {
-    return this.certificateModel.create(data);
+    return await this.certificateModel.create(data);
   }
 
   async findCertificateById(id: string): Promise<Certificate> {
@@ -307,4 +317,10 @@ export class IndigeneCertificateService {
   deleteItem = async (item_id: string): Promise<any> => {
     return await this.certificateModel.deleteOne({ _id: item_id });
   };
+
+  // fetch items by their IDs
+  async findByIds(ids: string[]): Promise<any[]> {
+    const objectIds = ids.map((id) => new Types.ObjectId(id));
+    return this.certificateModel.find({ _id: { $in: objectIds } }).exec();
+  }
 }

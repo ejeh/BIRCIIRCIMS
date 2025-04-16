@@ -29,13 +29,15 @@ let UsersService = class UsersService {
         this.userModel = userModel;
         this.userMailer = userMailer;
     }
-    async create(firstname, lastname, email, password, phone, NIN, role, origin) {
+    async create(firstname, lastname, email, password, phone, stateOfOrigin, lgaOfOrigin, NIN, role, origin) {
         try {
             const user = await this.userModel.create({
                 email: email.toLocaleLowerCase(),
                 firstname,
                 lastname,
                 phone,
+                stateOfOrigin,
+                lgaOfOrigin,
                 NIN,
                 role,
                 origin,
@@ -62,6 +64,10 @@ let UsersService = class UsersService {
         if (!user) {
             throw (0, exception_1.UserNotFoundException)();
         }
+        return user;
+    }
+    async findAdminByEmail(email) {
+        const user = await this.userModel.findOne({ email: email.toLowerCase() }, '+password');
         return user;
     }
     async activate(userId, activationToken) {
@@ -143,6 +149,12 @@ let UsersService = class UsersService {
         }
         this.userMailer.sendMailRequest(user.email, subject, body);
         return user;
+    }
+    async deleteUserById(userId) {
+        const result = await this.userModel.findByIdAndDelete(userId);
+        if (!result) {
+            throw new common_1.NotFoundException(`User with ID ${userId} not found`);
+        }
     }
 };
 exports.UsersService = UsersService;

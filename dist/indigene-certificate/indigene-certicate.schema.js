@@ -81,7 +81,7 @@ __decorate([
 ], Certificate.prototype, "downloaded", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)(),
-    (0, mongoose_1.Prop)({ type: mongoose.SchemaTypes.String, required: true, unique: true }),
+    (0, mongoose_1.Prop)({ type: mongoose.SchemaTypes.String, required: true }),
     __metadata("design:type", String)
 ], Certificate.prototype, "email", void 0);
 __decorate([
@@ -139,7 +139,6 @@ __decorate([
     (0, mongoose_1.Prop)({
         type: mongoose.SchemaTypes.String,
         required: true,
-        unique: true,
     }),
     __metadata("design:type", Number)
 ], Certificate.prototype, "phone", void 0);

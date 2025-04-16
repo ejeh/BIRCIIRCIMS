@@ -52,6 +52,18 @@ __decorate([
     (0, class_validator_1.MinLength)(8),
     __metadata("design:type", String)
 ], SignUpDto.prototype, "password", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.MaxLength)(255),
+    (0, swagger_1.ApiProperty)({}),
+    __metadata("design:type", String)
+], SignUpDto.prototype, "stateOfOrigin", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.MaxLength)(255),
+    (0, swagger_1.ApiProperty)({}),
+    __metadata("design:type", String)
+], SignUpDto.prototype, "lgaOfOrigin", void 0);
 class ActivateParams {
 }
 exports.ActivateParams = ActivateParams;

@@ -7,10 +7,12 @@ import setupSwagger from '../users/users.swagger';
 import { UsersService } from 'src/users/users.service';
 import { UserMailerService } from 'src/users/users.mailer.service';
 import { UserModel } from 'src/users/users.model';
+import { KindredModel } from 'src/kindred/kindred.model';
 
 @Module({
   imports: [
     UserModel,
+    KindredModel,
     MongooseModule.forFeature([
       { name: Certificate.name, schema: CertificateSchema },
     ]),

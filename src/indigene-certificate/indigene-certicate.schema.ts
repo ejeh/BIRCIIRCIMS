@@ -44,7 +44,7 @@ export class Certificate extends Document {
   downloaded: Boolean;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: true, unique: true })
+  @Prop({ type: mongoose.SchemaTypes.String, required: true })
   email: string;
 
   @ApiProperty()
@@ -91,7 +91,6 @@ export class Certificate extends Document {
   @Prop({
     type: mongoose.SchemaTypes.String,
     required: true,
-    unique: true,
   })
   phone: number;
 

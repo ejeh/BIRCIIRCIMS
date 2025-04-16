@@ -49,14 +49,16 @@ const puppeteer = __importStar(require("puppeteer"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 let IndigeneCertificateService = class IndigeneCertificateService {
-    constructor(certificateModel) {
+    constructor(certificateModel, kindredModel, userModel) {
         this.certificateModel = certificateModel;
+        this.kindredModel = kindredModel;
+        this.userModel = userModel;
         this.deleteItem = async (item_id) => {
             return await this.certificateModel.deleteOne({ _id: item_id });
         };
     }
     async createCertificate(data) {
-        return this.certificateModel.create(data);
+        return await this.certificateModel.create(data);
     }
     async findCertificateById(id) {
         return this.certificateModel.findById(id);
@@ -241,11 +243,19 @@ let IndigeneCertificateService = class IndigeneCertificateService {
         await fs.promises.writeFile(tempFilePath, pdfBuffer);
         return tempFilePath;
     }
+    async findByIds(ids) {
+        const objectIds = ids.map((id) => new mongoose_2.Types.ObjectId(id));
+        return this.certificateModel.find({ _id: { $in: objectIds } }).exec();
+    }
 };
 exports.IndigeneCertificateService = IndigeneCertificateService;
 exports.IndigeneCertificateService = IndigeneCertificateService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(indigene_certicate_schema_1.Certificate.name)),
-    __metadata("design:paramtypes", [mongoose_2.Model])
+    __param(1, (0, mongoose_1.InjectModel)('Kindred')),
+    __param(2, (0, mongoose_1.InjectModel)('User')),
+    __metadata("design:paramtypes", [mongoose_2.Model,
+        mongoose_2.Model,
+        mongoose_2.Model])
 ], IndigeneCertificateService);
 //# sourceMappingURL=indigene-certificate.service.js.map

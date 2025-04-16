@@ -13,11 +13,10 @@ export class UserMailerService {
     activationToken: string,
     origin: string,
   ) {
-    // const activationUrl = `http://localhost:5000/api/auth/activate/${userId}/${activationToken}\n`;
-    const activationUrl = `https://identity-management-af43.onrender.com/api/auth/activate/${userId}/${activationToken}\n`;
+    const activationUrl = `http://localhost:5000/api/auth/activate/${userId}/${activationToken}\n`;
+    // const activationUrl = `https://identity-management-af43.onrender.com/api/auth/activate/${userId}/${activationToken}\n`;
 
-    if (!config.isTest()) {
-      console.log(origin);
+    if (!config.isTest) {
       this.mailerService
         .sendMail({
           to: email,
@@ -38,7 +37,7 @@ export class UserMailerService {
     passwordResetToken: string,
     origin: string,
   ) {
-    if (!config.isTest()) {
+    if (!config.isTest) {
       this.mailerService
         .sendMail({
           to: email,
@@ -59,7 +58,7 @@ If you did not request this, please ignore this email and your password will rem
   }
 
   sendResetPasswordMail(email: string) {
-    if (!config.isTest()) {
+    if (!config.isTest) {
       this.mailerService
         .sendMail({
           to: email,
@@ -72,7 +71,7 @@ If you did not request this, please ignore this email and your password will rem
     }
   }
   sendMailRequest(email: string, subject: string, body: string) {
-    if (!config.isTest()) {
+    if (!config.isTest) {
       this.mailerService
         .sendMail({
           to: email,

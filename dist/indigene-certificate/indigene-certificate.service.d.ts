@@ -1,9 +1,13 @@
 import { Model } from 'mongoose';
 import { Response } from 'express';
 import { Certificate } from './indigene-certicate.schema';
+import { Kindred } from 'src/kindred/kindred.schema';
+import { UserDocument } from 'src/users/users.schema';
 export declare class IndigeneCertificateService {
     readonly certificateModel: Model<Certificate>;
-    constructor(certificateModel: Model<Certificate>);
+    private readonly kindredModel;
+    readonly userModel: Model<UserDocument>;
+    constructor(certificateModel: Model<Certificate>, kindredModel: Model<Kindred>, userModel: Model<UserDocument>);
     createCertificate(data: Partial<Certificate>): Promise<Certificate>;
     findCertificateById(id: string): Promise<Certificate>;
     findOne(id: string): Promise<Certificate>;
@@ -48,4 +52,5 @@ export declare class IndigeneCertificateService {
     }>;
     generateCertificatePDF(id: string, html: string): Promise<string>;
     deleteItem: (item_id: string) => Promise<any>;
+    findByIds(ids: string[]): Promise<any[]>;
 }
