@@ -6,6 +6,8 @@ export declare class SignUpDto {
     readonly NIN: number;
     readonly email: string;
     readonly password: string;
+    readonly stateOfOrigin: string;
+    readonly lgaOfOrigin: string;
 }
 export declare class ActivateParams {
     readonly userId: string;

@@ -11,11 +11,14 @@ import { LocalStrategy } from './localstrategy';
 import { UserMailerService } from 'src/users/users.mailer.service';
 import { UsersService } from 'src/users/users.service';
 import { UserModel } from 'src/users/users.model';
+import { KindredService } from 'src/kindred/kindred.service';
+import { KindredModel } from 'src/kindred/kindred.model';
 
 @Module({
   imports: [
     UsersModule,
     UserModel,
+    KindredModel,
     JwtModule.register({
       secret: config.auth.secret,
       signOptions: {},
@@ -31,6 +34,7 @@ import { UserModel } from 'src/users/users.model';
     LocalStrategy,
     UserMailerService,
     UsersService,
+    KindredService,
   ],
   exports: [AuthService, JwtAuthGuard],
 })

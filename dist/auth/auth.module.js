@@ -23,6 +23,8 @@ const localstrategy_1 = require("./localstrategy");
 const users_mailer_service_1 = require("../users/users.mailer.service");
 const users_service_1 = require("../users/users.service");
 const users_model_1 = require("../users/users.model");
+const kindred_service_1 = require("../kindred/kindred.service");
+const kindred_model_1 = require("../kindred/kindred.model");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -31,6 +33,7 @@ exports.AuthModule = AuthModule = __decorate([
         imports: [
             users_module_1.UsersModule,
             users_model_1.UserModel,
+            kindred_model_1.KindredModel,
             jwt_1.JwtModule.register({
                 secret: config_1.default.auth.secret,
                 signOptions: {},
@@ -45,6 +48,7 @@ exports.AuthModule = AuthModule = __decorate([
             localstrategy_1.LocalStrategy,
             users_mailer_service_1.UserMailerService,
             users_service_1.UsersService,
+            kindred_service_1.KindredService,
         ],
         exports: [auth_service_1.AuthService, jwt_auth_guard_1.JwtAuthGuard],
     })

@@ -52,71 +52,71 @@ export class User {
   isActive: boolean;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.Date, required: false, default: null })
+  @Prop({ type: mongoose.SchemaTypes.Date })
   DOB?: Date;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: false, default: null })
+  @Prop({ type: mongoose.SchemaTypes.String })
   maritalStatus?: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: false, default: null })
+  @Prop({ type: mongoose.SchemaTypes.String })
   gender?: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: false, default: null })
+  @Prop({ type: mongoose.SchemaTypes.String })
   nationality?: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: false, default: null })
+  @Prop({ type: mongoose.SchemaTypes.String })
   stateOfOrigin?: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: false, default: null })
+  @Prop({ type: mongoose.SchemaTypes.String })
   lgaOfOrigin?: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: false, default: null })
+  @Prop({ type: mongoose.SchemaTypes.String })
   stateOfResidence?: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: false, default: null })
+  @Prop({ type: mongoose.SchemaTypes.String })
   lgaOfResidence?: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: false, default: null })
+  @Prop({ type: mongoose.SchemaTypes.String })
   house_number?: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: false, default: null })
+  @Prop({ type: mongoose.SchemaTypes.String })
   street_name?: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: false, default: null })
+  @Prop({ type: mongoose.SchemaTypes.String })
   nearest_bus_stop_landmark?: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: false, default: null })
+  @Prop({ type: mongoose.SchemaTypes.String })
   city_town?: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: false, default: null })
+  @Prop({ type: mongoose.SchemaTypes.String })
   countryOfResidence?: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: false, default: null })
+  @Prop({ type: mongoose.SchemaTypes.String })
   identification?: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: false, default: null })
+  @Prop({ type: mongoose.SchemaTypes.String })
   id_number?: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: false, default: null })
+  @Prop({ type: mongoose.SchemaTypes.String })
   issue_date?: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: false, default: null })
+  @Prop({ type: mongoose.SchemaTypes.String })
   expiry_date?: string;
 
   @ApiProperty()
@@ -124,31 +124,31 @@ export class User {
   passportPhoto: string; // File path or URL
 
   @ApiProperty()
-  @Prop({ type: [NextOfKinSchema], required: false, default: null }) // Embed the next-of-kin schema
+  @Prop({ type: [NextOfKinSchema] }) // Embed the next-of-kin schema
   nextOfKin?: NextOfKin[];
 
   @ApiProperty()
-  @Prop({ type: [EmploymentHistorySchema], required: false, default: null }) // Embed the next-of-kin schema
+  @Prop({ type: [EmploymentHistorySchema] }) // Embed the next-of-kin schema
   employmentHistory?: EmploymentHistory[]; // Array of employment histories
 
   @ApiProperty()
-  @Prop({ type: [BusinessSchema], required: false, default: null }) // Embed the next-of-kin schema
+  @Prop({ type: [BusinessSchema] }) // Embed the next-of-kin schema
   business?: Business[];
 
   @ApiProperty()
-  @Prop({ type: EducationalHistorySchema, required: false, default: null }) // Embed the next-of-kin schema
+  @Prop({ type: EducationalHistorySchema }) // Embed the next-of-kin schema
   educationalHistory?: EducationalHistory;
 
   @ApiProperty()
-  @Prop({ type: [HealthInfoSchema], required: false, default: null }) // Embed the next-of-kin schema
+  @Prop({ type: [HealthInfoSchema] }) // Embed the next-of-kin schema
   healthInfo?: HealthInfo[];
 
   @ApiProperty()
-  @Prop({ type: [NeighborSchema], required: false, default: null }) // Embed the next-of-kin schema
+  @Prop({ type: [NeighborSchema] }) // Embed the next-of-kin schema
   neighbor?: Neighbor[];
 
   @ApiProperty()
-  @Prop({ type: [FamilySchema], required: false, default: null }) // Embed the next-of-kin schema
+  @Prop({ type: [FamilySchema] }) // Embed the next-of-kin schema
   family?: Family[];
 
   @ApiProperty()
@@ -171,11 +171,11 @@ export class User {
   role?: UserRole;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: false, default: null })
+  @Prop({ type: mongoose.SchemaTypes.String })
   religion?: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: false })
+  @Prop({ type: mongoose.SchemaTypes.String })
   community?: string;
 
   @ApiProperty()
@@ -183,7 +183,7 @@ export class User {
   password: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.Boolean, default: false })
+  @Prop({ type: mongoose.SchemaTypes.Boolean })
   isVerified: boolean;
 
   @ApiProperty()

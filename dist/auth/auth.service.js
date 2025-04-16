@@ -27,12 +27,58 @@ const users_mailer_service_1 = require("../users/users.mailer.service");
 const mongoose_2 = require("@nestjs/mongoose");
 const uuid_1 = require("uuid");
 const config_1 = __importDefault(require("../config"));
+const kindred_service_1 = require("../kindred/kindred.service");
 let AuthService = class AuthService {
-    constructor(userModel, userMailer, usersService, jwtService) {
+    constructor(userModel, userMailer, usersService, jwtService, kindredService) {
         this.userModel = userModel;
         this.userMailer = userMailer;
         this.usersService = usersService;
         this.jwtService = jwtService;
+        this.kindredService = kindredService;
+        this.fakeDatabase = {
+            '12345678901': {
+                firstname: 'Godfrey',
+                lastname: 'Ejeh',
+                stateOfOrigin: 'Benue',
+                lga: 'Ogbadibo',
+                status: 'verified',
+            },
+            '98765432109': {
+                firstname: 'John',
+                lastname: 'Doe',
+                stateOfOrigin: 'Benue',
+                lga: 'Buruku',
+                status: 'verified',
+            },
+            '98765432102': {
+                firstname: 'Simon',
+                lastname: 'Iber',
+                stateOfOrigin: 'Benue',
+                lga: 'Buruku',
+                status: 'verified',
+            },
+            '98765432162': {
+                firstname: 'Sheyi',
+                lastname: 'Shay',
+                stateOfOrigin: 'Ogun',
+                lga: 'Ifo',
+                status: 'verified',
+            },
+            '88765432102': {
+                firstname: 'Arome',
+                lastname: 'Mbur',
+                stateOfOrigin: 'Kogi',
+                lga: 'Okene',
+                status: 'verified',
+            },
+            '88765432105': {
+                firstname: 'Derick',
+                lastname: 'Gbaden',
+                stateOfOrigin: 'Benue',
+                lga: 'Gboko',
+                status: 'verified',
+            },
+        };
     }
     async validateUser(email, password) {
         const user = await this.usersService.findByEmail(email);
@@ -69,7 +115,57 @@ let AuthService = class AuthService {
         return { success: true, message: 'Activation email sent successfully' };
     }
     async signUpUser(userData, origin, role) {
-        const user = await this.usersService.create(userData.firstname, userData.lastname, userData.email, userData.password, userData.phone, userData.NIN, role, origin);
+        const { NIN, firstname, lastname, stateOfOrigin } = userData;
+        if (!this.fakeDatabase[NIN]) {
+            throw new common_1.BadRequestException('NIN not found');
+        }
+        const storedData = this.fakeDatabase[NIN];
+        if (storedData.firstname !== firstname ||
+            storedData.lastname !== lastname ||
+            storedData.stateOfOrigin.toLocaleLowerCase() !==
+                stateOfOrigin.toLocaleLowerCase()) {
+            throw new common_1.BadRequestException('User details do not match the NIN record');
+        }
+        const user = await this.usersService.create(userData.firstname, userData.lastname, userData.email, userData.password, userData.phone, userData.stateOfOrigin, userData.lgaOfOrigin, userData.NIN, role, origin);
+        return {
+            token: this.jwtService.sign({ ...user.getPublicData() }, { subject: `${user.id}` }),
+            user: user.getPublicData(),
+            success: true,
+            message: 'NIN Verified Successfully',
+        };
+    }
+    async signUpKindred(userData, origin) {
+        console.log('creating new account');
+        const { NIN, firstname, lastname, stateOfOrigin } = userData;
+        if (!this.fakeDatabase[NIN]) {
+            throw new common_1.BadRequestException('NIN not found');
+        }
+        const storedData = this.fakeDatabase[NIN];
+        if (storedData.firstname !== firstname ||
+            storedData.lastname !== lastname ||
+            storedData.stateOfOrigin.toLocaleLowerCase() !==
+                stateOfOrigin.toLocaleLowerCase()) {
+            throw new common_1.BadRequestException('User details do not match the NIN record');
+        }
+        const user = await this.usersService.create(userData.firstname, userData.lastname, userData.email, userData.password, userData.phone, userData.stateOfOrigin, userData.lgaOfOrigin, userData.NIN, 'kindred_head', origin);
+        try {
+            await this.kindredService.createKindred({
+                userId: userData.userId,
+                firstname: user.firstname,
+                lastname: user.lastname,
+                email: user.email,
+                lga: userData.lga,
+                stateOfOrigin: user.stateOfOrigin,
+                address: userData.address,
+                phone: userData.phone,
+                kindred: userData.kindred,
+            });
+        }
+        catch (err) {
+            console.error('Kindred creation failed:', err);
+            await this.usersService.deleteUserById(user.id);
+            throw new common_1.InternalServerErrorException('Failed to create kindred: ' + err.message);
+        }
         return {
             token: this.jwtService.sign({ ...user.getPublicData() }, { subject: `${user.id}` }),
             user: user.getPublicData(),
@@ -83,6 +179,15 @@ let AuthService = class AuthService {
             token: this.jwtService.sign({ ...user?.getPublicData() }, { subject: `${user?.id}` }),
             user: user?.getPublicData(),
         };
+    }
+    async loginKindred(user) {
+        if (user.role == 'kindred_head') {
+            return {
+                token: this.jwtService.sign({ ...user?.getPublicData() }, { subject: `${user?.id}` }),
+                user: user?.getPublicData(),
+            };
+        }
+        throw new common_1.UnauthorizedException('Account does not support kindred activities.');
     }
     async forgottenPassword({ email }, origin) {
         return await this.usersService.forgottenPassword(email, origin);
@@ -102,6 +207,7 @@ exports.AuthService = AuthService = __decorate([
     __metadata("design:paramtypes", [mongoose_1.Model,
         users_mailer_service_1.UserMailerService,
         users_service_1.UsersService,
-        jwt_1.JwtService])
+        jwt_1.JwtService,
+        kindred_service_1.KindredService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

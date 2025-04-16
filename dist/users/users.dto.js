@@ -18,10 +18,6 @@ exports.UserPublicData = UserPublicData;
 __decorate([
     (0, swagger_1.ApiProperty)({}),
     __metadata("design:type", String)
-], UserPublicData.prototype, "userId", void 0);
-__decorate([
-    (0, swagger_1.ApiProperty)({}),
-    __metadata("design:type", String)
 ], UserPublicData.prototype, "firstname", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({}),

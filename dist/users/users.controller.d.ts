@@ -4,11 +4,6 @@ import { UpdateProfileDto, UpdateUserRoleDto } from './users.dto';
 export declare class UsersController {
     private readonly userService;
     constructor(userService: UsersService);
-    getSystemUsers(req: Request): Promise<(import("mongoose").Document<unknown, {}, import("./users.schema").UserDocument> & User & import("mongoose").Document<unknown, any, any> & import("./users.schema").UserMethods & Required<{
-        _id: unknown;
-    }> & {
-        __v: number;
-    })[]>;
     updateUserProfile(id: string, body: UpdateProfileDto, file: Express.Multer.File): Promise<import("mongoose").Document<unknown, {}, import("./users.schema").UserDocument> & User & import("mongoose").Document<unknown, any, any> & import("./users.schema").UserMethods & Required<{
         _id: unknown;
     }> & {

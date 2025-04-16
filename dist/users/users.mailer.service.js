@@ -21,9 +21,8 @@ let UserMailerService = class UserMailerService {
         this.mailerService = mailerService;
     }
     sendActivationMail(email, userId, activationToken, origin) {
-        const activationUrl = `https://identity-management-af43.onrender.com/api/auth/activate/${userId}/${activationToken}\n`;
-        if (!config_1.default.isTest()) {
-            console.log(origin);
+        const activationUrl = `http://localhost:5000/api/auth/activate/${userId}/${activationToken}\n`;
+        if (!config_1.default.isTest) {
             this.mailerService
                 .sendMail({
                 to: email,
@@ -39,7 +38,7 @@ let UserMailerService = class UserMailerService {
         }
     }
     sendForgottenPasswordMail(email, passwordResetToken, origin) {
-        if (!config_1.default.isTest()) {
+        if (!config_1.default.isTest) {
             this.mailerService
                 .sendMail({
                 to: email,
@@ -59,7 +58,7 @@ If you did not request this, please ignore this email and your password will rem
         }
     }
     sendResetPasswordMail(email) {
-        if (!config_1.default.isTest()) {
+        if (!config_1.default.isTest) {
             this.mailerService
                 .sendMail({
                 to: email,
@@ -72,7 +71,7 @@ If you did not request this, please ignore this email and your password will rem
         }
     }
     sendMailRequest(email, subject, body) {
-        if (!config_1.default.isTest()) {
+        if (!config_1.default.isTest) {
             this.mailerService
                 .sendMail({
                 to: email,

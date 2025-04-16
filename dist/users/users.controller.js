@@ -11,6 +11,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersController = void 0;
 const common_1 = require("@nestjs/common");
@@ -26,12 +29,10 @@ const platform_express_1 = require("@nestjs/platform-express");
 const multer_1 = require("multer");
 const path_1 = require("path");
 const parse_json_pipe_1 = require("./parse-json.pipe");
+const config_1 = __importDefault(require("../config"));
 let UsersController = class UsersController {
     constructor(userService) {
         this.userService = userService;
-    }
-    async getSystemUsers(req) {
-        return await this.userService.userModel.find({});
     }
     async updateUserProfile(id, body, file) {
         if (typeof body.educationalHistory === 'string') {
@@ -54,8 +55,13 @@ let UsersController = class UsersController {
         }
         try {
             const updatedData = { ...body };
+            const getBaseUrl = () => {
+                return config_1.default.isDev
+                    ? process.env.BASE_URL || 'http://localhost:5000'
+                    : 'https://identity-management-af43.onrender.com';
+            };
             if (file) {
-                updatedData.passportPhoto = `https://identity-management-af43.onrender.com/uploads/${file.filename}`;
+                updatedData.passportPhoto = `${getBaseUrl()}/uploads/${file.filename}`;
             }
             const user = await this.userService.userModel.findByIdAndUpdate(id, updatedData, { new: true });
             if (!user) {
@@ -85,16 +91,6 @@ let UsersController = class UsersController {
     }
 };
 exports.UsersController = UsersController;
-__decorate([
-    (0, common_1.Get)('get-system-users'),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, swagger_1.ApiResponse)({ type: users_schema_1.User, isArray: true }),
-    (0, roles_decorator_1.Roles)(users_role_enum_1.UserRole.SUPER_ADMIN, users_role_enum_1.UserRole.SUPPORT_ADMIN),
-    __param(0, (0, common_1.Req)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Request]),
-    __metadata("design:returntype", Promise)
-], UsersController.prototype, "getSystemUsers", null);
 __decorate([
     (0, common_1.Put)(':id'),
     (0, swagger_1.ApiResponse)({ type: users_schema_1.User, isArray: false }),
@@ -155,7 +151,7 @@ __decorate([
     (0, common_1.Get)(),
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
     (0, swagger_1.ApiResponse)({ type: users_schema_1.User, isArray: true }),
-    (0, roles_decorator_1.Roles)(users_role_enum_1.UserRole.SUPER_ADMIN),
+    (0, roles_decorator_1.Roles)(users_role_enum_1.UserRole.SUPER_ADMIN, users_role_enum_1.UserRole.SUPPORT_ADMIN, users_role_enum_1.UserRole.KINDRED_HEAD),
     __param(0, (0, common_1.Query)('page')),
     __param(1, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),

@@ -56,25 +56,41 @@ const uuid_1 = require("uuid");
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const qrcode_1 = __importDefault(require("qrcode"));
+const config_1 = __importDefault(require("../config"));
 let IndigeneCertificateController = class IndigeneCertificateController {
     constructor(indigeneCertificateService, userService) {
         this.indigeneCertificateService = indigeneCertificateService;
         this.userService = userService;
     }
     async createCertificate(body, files) {
+        const fileMap = files.reduce((acc, file) => {
+            acc[file.fieldname] = file;
+            return acc;
+        }, {});
+        const requiredFields = [
+            'passportPhoto',
+            'idCard',
+            'birthCertificate',
+            'parentGuardianIndigeneCert',
+        ];
+        for (const field of requiredFields) {
+            if (!fileMap[field]) {
+                throw new common_1.BadRequestException(`${field} file is required.`);
+            }
+        }
+        const getBaseUrl = () => config_1.default.isDev
+            ? process.env.BASE_URL || 'http://localhost:5000'
+            : 'https://identity-management-af43.onrender.com';
+        const fileUrl = (file) => `${getBaseUrl()}/uploads/${file.filename}`;
         const data = {
             ...body,
             refNumber: (0, uuid_1.v4)(),
-            passportPhoto: files[0]?.path,
-            idCard: files[1]?.path,
-            birthCertificate: files[2]?.path,
-            parentGuardianIndigeneCert: files[3]?.path,
+            passportPhoto: fileUrl(fileMap.passportPhoto),
+            idCard: fileUrl(fileMap.idCard),
+            birthCertificate: fileUrl(fileMap.birthCertificate),
+            parentGuardianIndigeneCert: fileUrl(fileMap.parentGuardianIndigeneCert),
         };
-        const adminEmail = 'ejehgodfrey@gmail.com';
-        const adminPhone = '+1234567890';
-        await this.userService.sendRequest(adminEmail, 'New Request', `Request for certificate of origin 
-      from ${body.email}
-      `);
+        await this.userService.sendRequest('ejehgodfrey@gmail.com', 'New Request', `Request for certificate of origin from ${body.email}`);
         return this.indigeneCertificateService.createCertificate(data);
     }
     async downloadTemplate(id, res) {
@@ -216,16 +232,51 @@ let IndigeneCertificateController = class IndigeneCertificateController {
 exports.IndigeneCertificateController = IndigeneCertificateController;
 __decorate([
     (0, common_1.Post)('create'),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FilesInterceptor)('files', 4, {
-        dest: './uploads',
-        limits: { fileSize: 1024 * 1024 * 5 },
+    (0, common_1.UseInterceptors)((0, platform_express_1.AnyFilesInterceptor)({
+        limits: { fileSize: 5 * 1024 * 1024 },
         storage: (0, multer_1.diskStorage)({
             destination: './uploads',
             filename: (req, file, cb) => {
-                const randomName = Date.now() + '-' + Math.round(Math.random() * 1e9);
-                cb(null, `${randomName}${(0, path_1.extname)(file.originalname)}`);
+                const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+                const ext = (0, path_1.extname)(file.originalname);
+                cb(null, `${uniqueSuffix}${ext}`);
             },
         }),
+        fileFilter: (req, file, cb) => {
+            const fieldTypeRules = {
+                passportPhoto: {
+                    mime: ['image/jpeg', 'image/png', 'image/jpg'],
+                    ext: ['.jpeg', '.jpg', '.png'],
+                    message: 'Passport Photo must be an image (.jpg, .jpeg, .png)',
+                },
+                idCard: {
+                    mime: ['application/pdf'],
+                    ext: ['.pdf'],
+                    message: 'ID Card must be a PDF file',
+                },
+                birthCertificate: {
+                    mime: ['application/pdf'],
+                    ext: ['.pdf'],
+                    message: 'Birth Certificate must be a PDF file',
+                },
+                parentGuardianIndigeneCert: {
+                    mime: ['application/pdf'],
+                    ext: ['.pdf'],
+                    message: 'Parent/Guardian Certificate must be a PDF file',
+                },
+            };
+            const rules = fieldTypeRules[file.fieldname];
+            const ext = (0, path_1.extname)(file.originalname).toLowerCase();
+            if (!rules) {
+                return cb(new common_1.BadRequestException(`Unexpected file field: ${file.fieldname}`), false);
+            }
+            const isValidMime = rules.mime.includes(file.mimetype);
+            const isValidExt = rules.ext.includes(ext);
+            if (!isValidMime || !isValidExt) {
+                return cb(new common_1.BadRequestException(rules.message), false);
+            }
+            cb(null, true);
+        },
     })),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.UploadedFiles)()),
@@ -280,7 +331,7 @@ __decorate([
 __decorate([
     (0, common_1.Patch)(':id/approve'),
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)(users_role_enum_1.UserRole.SUPER_ADMIN),
+    (0, roles_decorator_1.Roles)(users_role_enum_1.UserRole.SUPER_ADMIN, users_role_enum_1.UserRole.KINDRED_HEAD),
     (0, swagger_1.ApiResponse)({ type: indigene_certicate_schema_1.Certificate, isArray: false }),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
@@ -334,7 +385,7 @@ __decorate([
     (0, common_1.Get)('request'),
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
     (0, swagger_1.ApiResponse)({ type: indigene_certicate_schema_1.Certificate, isArray: true }),
-    (0, roles_decorator_1.Roles)(users_role_enum_1.UserRole.SUPPORT_ADMIN, users_role_enum_1.UserRole.SUPER_ADMIN),
+    (0, roles_decorator_1.Roles)(users_role_enum_1.UserRole.SUPPORT_ADMIN, users_role_enum_1.UserRole.SUPER_ADMIN, users_role_enum_1.UserRole.KINDRED_HEAD),
     __param(0, (0, common_1.Query)('page')),
     __param(1, (0, common_1.Query)('limit')),
     __param(2, (0, common_1.Query)('statuses')),

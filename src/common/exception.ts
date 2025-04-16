@@ -23,3 +23,6 @@ export const LoginCredentialsException = () =>
 
 export const ClientErrorException = () =>
   new BadRequestException('Client Error.');
+
+export const PhoneAlreadyUsedException = () =>
+  new ConflictException('Phone number already in use');

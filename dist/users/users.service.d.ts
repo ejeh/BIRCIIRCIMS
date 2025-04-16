@@ -5,9 +5,10 @@ export declare class UsersService {
     readonly userModel: Model<UserDocument>;
     private readonly userMailer;
     constructor(userModel: Model<UserDocument>, userMailer: UserMailerService);
-    create(firstname: string, lastname: string, email: string, password: string, phone: number, NIN: number, role: string, origin: string): Promise<UserDocument>;
+    create(firstname: string, lastname: string, email: string, password: string, phone: number, stateOfOrigin: string, lgaOfOrigin: string, NIN: number, role: string, origin: string): Promise<UserDocument>;
     findById(id: string): Promise<UserDocument>;
     findByEmail(email: string): Promise<UserDocument>;
+    findAdminByEmail(email: string): Promise<UserDocument>;
     activate(userId: string, activationToken: string): Promise<import("mongoose").Document<unknown, {}, UserDocument> & import("./users.schema").User & import("mongoose").Document<unknown, any, any> & import("./users.schema").UserMethods & Required<{
         _id: unknown;
     }> & {
@@ -32,4 +33,5 @@ export declare class UsersService {
         hasNextPage: boolean;
     }>;
     sendRequest(email: string, subject: string, body: string): Promise<UserDocument>;
+    deleteUserById(userId: string): Promise<void>;
 }

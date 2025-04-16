@@ -33,6 +33,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { ParseJSONPipe } from './parse-json.pipe'; // Create a custom pipe to handle JSON parsing.
+import config from 'src/config';
 
 @ApiTags('users-controller')
 @ApiBearerAuth()
@@ -40,14 +41,6 @@ import { ParseJSONPipe } from './parse-json.pipe'; // Create a custom pipe to ha
 @UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly userService: UsersService) {}
-
-  @Get('get-system-users')
-  @UseGuards(RolesGuard)
-  @ApiResponse({ type: User, isArray: true })
-  @Roles(UserRole.SUPER_ADMIN, UserRole.SUPPORT_ADMIN)
-  async getSystemUsers(@Req() req: Request) {
-    return await this.userService.userModel.find({});
-  }
 
   @Put(':id')
   @ApiResponse({ type: User, isArray: false })
@@ -107,9 +100,17 @@ export class UsersController {
     }
     try {
       const updatedData: any = { ...body };
+
+      const getBaseUrl = () => {
+        // console.log(`isDev: ${config.isDev}, isProd: ${config.isProd}`); // Debugging
+
+        return config.isDev
+          ? process.env.BASE_URL || 'http://localhost:5000'
+          : 'https://identity-management-af43.onrender.com';
+      };
+
       if (file) {
-        // updatedData.passportPhoto = `http://localhost:5000/uploads/${file.filename}`;
-        updatedData.passportPhoto = `https://identity-management-af43.onrender.com/uploads/${file.filename}`;
+        updatedData.passportPhoto = `${getBaseUrl()}/uploads/${file.filename}`;
       }
 
       const user = await this.userService.userModel.findByIdAndUpdate(
@@ -162,7 +163,7 @@ export class UsersController {
   @Get()
   @UseGuards(RolesGuard)
   @ApiResponse({ type: User, isArray: true })
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.SUPPORT_ADMIN, UserRole.KINDRED_HEAD)
   async getPaginatedData(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,

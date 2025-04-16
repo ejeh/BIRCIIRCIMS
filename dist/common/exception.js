@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ClientErrorException = exports.LoginCredentialsException = exports.PasswordResetTokenInvalidException = exports.ActivationTokenInvalidException = exports.UserNotFoundException = exports.EmailAlreadyUsedException = void 0;
+exports.PhoneAlreadyUsedException = exports.ClientErrorException = exports.LoginCredentialsException = exports.PasswordResetTokenInvalidException = exports.ActivationTokenInvalidException = exports.UserNotFoundException = exports.EmailAlreadyUsedException = void 0;
 const common_1 = require("@nestjs/common");
 const EmailAlreadyUsedException = () => new common_1.ConflictException('Email, Phone or NIN number is already in use.');
 exports.EmailAlreadyUsedException = EmailAlreadyUsedException;
@@ -14,4 +14,6 @@ const LoginCredentialsException = () => new common_1.UnauthorizedException('Logi
 exports.LoginCredentialsException = LoginCredentialsException;
 const ClientErrorException = () => new common_1.BadRequestException('Client Error.');
 exports.ClientErrorException = ClientErrorException;
+const PhoneAlreadyUsedException = () => new common_1.ConflictException('Phone number already in use');
+exports.PhoneAlreadyUsedException = PhoneAlreadyUsedException;
 //# sourceMappingURL=exception.js.map

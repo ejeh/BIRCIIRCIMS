@@ -19,6 +19,7 @@ const users_swagger_1 = __importDefault(require("../users/users.swagger"));
 const users_service_1 = require("../users/users.service");
 const users_mailer_service_1 = require("../users/users.mailer.service");
 const users_model_1 = require("../users/users.model");
+const kindred_model_1 = require("../kindred/kindred.model");
 let IndigeneCertificateModule = class IndigeneCertificateModule {
 };
 exports.IndigeneCertificateModule = IndigeneCertificateModule;
@@ -26,6 +27,7 @@ exports.IndigeneCertificateModule = IndigeneCertificateModule = __decorate([
     (0, common_1.Module)({
         imports: [
             users_model_1.UserModel,
+            kindred_model_1.KindredModel,
             mongoose_1.MongooseModule.forFeature([
                 { name: indigene_certicate_schema_1.Certificate.name, schema: indigene_certicate_schema_1.CertificateSchema },
             ]),

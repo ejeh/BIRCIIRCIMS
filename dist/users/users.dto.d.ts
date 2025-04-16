@@ -1,5 +1,4 @@
 export declare class UserPublicData {
-    userId: string;
     firstname: string;
     lastname: string;
     middlename: string;

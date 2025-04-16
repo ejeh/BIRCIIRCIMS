@@ -1,0 +1,29 @@
+{
+  "event": "TRANSACTION.SUCCESSFUL",
+  "data": {
+    "businessCode": "700607007630001",
+    "serviceCode": null,
+    "transRef": "p0wS00vNE609dYF572U3",
+    "businessRef": "ref_e9d687d4-011c-4f9e-8168-ca64cc3f9bbf",
+    "crn": null,
+    "debitedAmount": 50.0,
+    "transAmount": 50.0,
+    "transFeeAmount": 0.75,
+    "settlementAmount": 49.25,
+    "customerId": "ejehg@gmail.com",
+    "transactionDate": 1744708149000,
+    "currencyCode": "NGN",
+    "status": 0,
+    "paymentMethodType": "MasterCard",
+    "paymentMethod": "Card",
+    "businessId": null,
+    "narration": null,
+    "customer": {
+      "customerEmail": "ejehg@gmail.com",
+      "firstName": "Simon",
+      "lastName": "Iber",
+      "phoneNo": "08069710654"
+    },
+    "metadata": []
+  }
+}
