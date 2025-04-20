@@ -1,5 +1,4 @@
 import { TransactionService } from './transaction.service';
-import { Transaction } from './transaction.schema';
 export declare class TransactionController {
     private readonly transactionService;
     constructor(transactionService: TransactionService);
@@ -20,13 +19,13 @@ export declare class TransactionController {
     handleCredoWebhook(req: Request, res: import('express').Response): Promise<import("express").Response<any, Record<string, any>>>;
     getApprovedItems(): Promise<any[]>;
     verifyPayment(reference: string): Promise<any>;
-    getUserTransactions(userId: string): Promise<(import("mongoose").Document<unknown, {}, Transaction> & Transaction & Required<{
+    getUserTransactions(userId: string): Promise<(import("mongoose").Document<unknown, {}, import("./transaction.schema").Transaction> & import("./transaction.schema").Transaction & Required<{
         _id: unknown;
     }> & {
         __v: number;
     })[]>;
     getPaginatedData(page?: number, limit?: number): Promise<{
-        data: (import("mongoose").Document<unknown, {}, Transaction> & Transaction & Required<{
+        data: (import("mongoose").Document<unknown, {}, import("./transaction.schema").Transaction> & import("./transaction.schema").Transaction & Required<{
             _id: unknown;
         }> & {
             __v: number;

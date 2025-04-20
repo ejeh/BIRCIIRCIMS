@@ -41,10 +41,17 @@ export declare class TransactionService {
     handleCredoWebhook(payload: any): Promise<{
         status: string;
         reason: string;
+        reference?: undefined;
+        event?: undefined;
+    } | {
+        status: string;
+        reference: any;
+        reason?: undefined;
         event?: undefined;
     } | {
         status: string;
         event: any;
         reason?: undefined;
+        reference?: undefined;
     }>;
 }

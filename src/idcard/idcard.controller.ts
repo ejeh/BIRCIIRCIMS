@@ -112,7 +112,6 @@ export class IdcardController {
     @Param('id') id: string,
     @Body('rejectionReason') rejectionReason: string,
   ) {
-    console.log(rejectionReason);
     // Notify user
     const user = await this.idcardService.findCardById(id);
     if (!user) {
@@ -262,7 +261,6 @@ export class IdcardController {
   @Get(':id')
   @ApiResponse({ type: IdCard, isArray: false })
   async getProfile(@Param('id') id: string, @Body() body: any) {
-    console.log(id);
     return await this.idcardService.findOne(id);
   }
 

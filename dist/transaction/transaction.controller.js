@@ -51,37 +51,37 @@ let TransactionController = class TransactionController {
         return this.transactionService.initializePayment(data);
     }
     async handleCredoWebhook(req, res) {
-        console.log('Headers:', req.headers);
-        const sha256Signature = req.headers['credo-signature'];
-        const sha512Signature = req.headers['x-credo-signature'];
-        if (!sha256Signature && !sha512Signature) {
-            return res.status(400).send('Missing Credo signature header');
-        }
-        const secret = '123456789';
-        const signature = sha256Signature;
-        const rawBody = req.rawBody || req.body;
-        if (!Buffer.isBuffer(rawBody)) {
-            console.error('Invalid body format: Expected Buffer');
-            return res.status(400).send('Invalid body format');
-        }
         try {
-            const hash = crypto
-                .createHmac('sha256', secret)
-                .update(rawBody)
-                .digest('hex');
-            console.log('Generated Hash:', hash);
-            console.log('Received Signature:', signature);
-            if (hash !== signature) {
-                console.error('Invalid signature');
-                console.error(`Expected: ${signature}`);
-                console.error(`Received: ${hash}`);
-                return res.status(401).send('Invalid signature');
+            const rawBody = req.rawBody;
+            if (!rawBody) {
+                console.error('Raw body is missing');
+                return res.status(400).send('Raw body is missing');
+            }
+            const sha256Signature = req.headers['credo-signature'];
+            const sha512Signature = req.headers['x-credo-signature'];
+            if (!sha256Signature && !sha512Signature) {
+                return res.status(400).send('Missing Credo signature header');
             }
             const payload = JSON.parse(rawBody.toString('utf8'));
-            console.log('Received Credo webhook:', payload);
-            console.log('Processing webhook...');
+            const secret = '1234567890';
+            const businessCode = payload.data.businessCode;
+            const signedContent = `${secret}${businessCode}`;
+            const sha256Hash = crypto
+                .createHash('sha256')
+                .update(signedContent)
+                .digest('hex');
+            const sha512Hash = crypto
+                .createHash('sha512')
+                .update(signedContent)
+                .digest('hex');
+            console.log('SHA-512 Generated Hash:', sha512Hash);
+            console.log('SHA-512 Received Signature:', sha512Signature);
+            const isValidSignature = sha256Signature === sha256Hash || sha512Signature === sha512Hash;
+            if (!isValidSignature) {
+                console.error('Invalid signature');
+                return res.status(401).send('Invalid signature');
+            }
             await this.transactionService.handleCredoWebhook(payload);
-            console.log('Webhook processed successfully');
             return res.send('Webhook processed');
         }
         catch (error) {

@@ -9,14 +9,16 @@ export interface Transaction extends Document {
   email: string;
   status: string;
   currency: string;
-  verified: Boolean;
   createdAt: Date;
   paymentType: 'card' | 'certificate';
-  customer: {
-    name: string;
-    email: string;
-    phone: string;
+  customer?: {
+    firstname?: string;
+    lastname?: string;
+    email?: string;
+    phoneNo?: string;
   };
+
+  verified?: boolean;
 }
 
 export const TransactionSchema = new Schema<Transaction>(
@@ -52,7 +54,6 @@ export const TransactionSchema = new Schema<Transaction>(
       enum: ['pending', 'success', 'failed'],
       default: 'pending',
     },
-    verified: { type: Boolean, default: false },
 
     currency: { type: String, default: 'NGN' },
 
@@ -62,12 +63,15 @@ export const TransactionSchema = new Schema<Transaction>(
       enum: ['card', 'certificate'],
     }, // ✅ New field to determine payment type
 
-    createdAt: { type: Date, default: Date.now },
     customer: {
-      name: { type: String },
-      email: { type: String },
-      phone: { type: String },
+      firstname: String,
+      lastname: String,
+      email: String,
+      phoneNo: String,
     },
+    verified: { type: Boolean, default: false },
+
+    createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true },
 );

@@ -81,7 +81,6 @@ let IdcardController = class IdcardController {
         return await this.idcardService.approveIdCard(id);
     }
     async rejectCert(id, rejectionReason) {
-        console.log(rejectionReason);
         const user = await this.idcardService.findCardById(id);
         if (!user) {
             throw (0, exception_1.UserNotFoundException)();
@@ -184,7 +183,6 @@ let IdcardController = class IdcardController {
         }
     }
     async getProfile(id, body) {
-        console.log(id);
         return await this.idcardService.findOne(id);
     }
     resubmitRequest(id, updatedData) {
