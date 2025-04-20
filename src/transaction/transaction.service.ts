@@ -16,58 +16,6 @@ export class TransactionService {
   private readonly baseUrl = 'https://api.credodemo.com'; // Update if needed
   private readonly secretKey = process.env.CREDO_SECRET_KEY; // Store in .env
 
-  // async initializePayment(data: {
-  //   certificateId: string;
-  //   cardId: string;
-  //   userId: string;
-  //   amount: number;
-  //   email: string;
-  //   currency?: string;
-  //   paymentType: 'card' | 'certificate';
-  // }) {
-  //   const reference = `ref_${Date.now()}`;
-  //   const bearer = 0;
-
-  //   // Determine payment reference field based on payment type
-  //   let paymentReference: any = null;
-  //   if (data.paymentType === 'card' && data.cardId) {
-  //     paymentReference = { cardId: new mongoose.Types.ObjectId(data.cardId) };
-  //   } else if (data.paymentType === 'certificate' && data.certificateId) {
-  //     paymentReference = {
-  //       certificateId: new mongoose.Types.ObjectId(data.certificateId),
-  //     };
-  //   } else {
-  //     throw new Error('Invalid payment type or missing identifier');
-  //   }
-
-  //   // Store transaction with user ID
-  //   const newTransaction = new this.transactionModel({
-  //     // certificateId: new mongoose.Types.ObjectId(data.cardId),  // Ensure it's an ObjectId,
-  //     // cardId: new mongoose.Types.ObjectId(data.cardId), // Ensure it's an ObjectId
-  //     userId: new mongoose.Types.ObjectId(data.userId), // Ensure it's an ObjectId
-  //     reference,
-  //     amount: data.amount,
-  //     email: data.email,
-  //     status: 'pending',
-  //     currency: data.currency || 'NGN',
-  //     paymentType: data.paymentType,
-  //     ...paymentReference, // Dynamically attach the correct field
-  //   });
-  //   await newTransaction.save();
-
-  //   // Call Credo API
-  //   const url = `${this.baseUrl}/transaction/initialize`;
-  //   const payload = { ...data, bearer, reference, amount: data.amount * 100 };
-  //   const headers = {
-  //     Authorization: `${this.secretKey}`,
-  //     'Content-Type': 'application/json',
-  //   };
-
-  //   const response = await axios.post(url, payload, { headers });
-
-  //   return response.data;
-  // }
-
   async initializePayment(data: {
     certificateId: string;
     cardId: string;
@@ -93,94 +41,79 @@ export class TransactionService {
       throw new Error('Invalid payment type or missing identifier');
     }
 
-    // 🔁 Check if there's already a pending payment for this user + certificate
-    if (data.paymentType === 'certificate') {
-      const existing = await this.transactionModel.findOne({
-        userId: userObjectId,
-        certificateId: paymentReference.certificateId,
-        status: 'pending',
-      });
+    // 🔁 Check for existing pending transaction for this user and the specific item (card or certificate)
+    const existing = await this.transactionModel.findOne({
+      userId: userObjectId,
+      ...(data.paymentType === 'card' &&
+        paymentReference.cardId && { cardId: paymentReference.cardId }),
+      ...(data.paymentType === 'certificate' &&
+        paymentReference.certificateId && {
+          certificateId: paymentReference.certificateId,
+        }),
+      status: 'pending',
+    });
 
-      if (existing) {
-        return {
-          status: 200,
-          message: 'Existing transaction found',
-          data: { reference: existing.reference },
-        };
-      }
+    console.log('existing', existing);
+    if (existing) {
+      return {
+        status: 200,
+        message: 'Existing transaction found',
+        data: { reference: existing.reference },
+      };
+    }
 
-      const reference = `ref_${uuidv4()}`;
+    // ✅ Generate a fresh unique reference if not provided
+    const reference =
+      data.reference ||
+      `ref-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
-      const newTransaction = new this.transactionModel({
-        userId: userObjectId,
-        reference: data.reference,
+    // 🧾 Create new transaction entry in your DB
+    const newTransaction = new this.transactionModel({
+      userId: userObjectId,
+      reference,
+      amount: data.amount,
+      email: data.email,
+      status: 'pending',
+      currency: data.currency || 'NGN',
+      paymentType: data.paymentType,
+      ...paymentReference,
+    });
+
+    await newTransaction.save();
+
+    // 🌍 Call Credo to initialize the transaction
+    try {
+      const payload = {
         amount: data.amount,
-        email: data.email,
-        status: 'pending',
+        reference,
+        bearer: 0,
         currency: data.currency || 'NGN',
-        paymentType: data.paymentType,
-        ...paymentReference,
-      });
-
-      await newTransaction.save();
-
-      let credoResponse;
-      try {
-        const payload = {
-          amount: data.amount * 100,
-          reference: data.reference || reference,
-          bearer: 0,
-          currency: data.currency || 'NGN',
+        email: data.email,
+        customer: {
           email: data.email,
-          customer: {
-            email: data.email,
-          },
-        };
+        },
+      };
 
-        const headers = {
-          Authorization: `${this.secretKey}`,
-          'Content-Type': 'application/json',
-        };
+      const headers = {
+        Authorization: this.secretKey,
+        'Content-Type': 'application/json',
+      };
 
-        const url = `${this.baseUrl}/transaction/initialize`;
-
-        credoResponse = await axios.post(url, payload, { headers });
-
-        // if (credoResponse.data.status === 200) {
-        //   await this.transactionModel.findOneAndUpdate(
-        //     { reference: data.reference },
-        //     {
-        //       $set: {
-        //         status: 'success',
-        //         verified: 'true',
-        //       },
-        //     },
-        //   );
-        // }
-      } catch (err) {
-        console.error('Credo init error:', err?.response?.data || err.message);
-        throw new Error('Credo payment initialization failed');
-      }
-
-      // Update the transaction with the reference from Credo
-      // Optionally, you can also update the transaction with the checkout URL
-      // await this.transactionModel.findOneAndUpdate(
-      //   { reference },
-      //   {
-      //     $set: {
-      //       checkoutUrl: credoResponse.data.data.checkoutUrl,
-      //     },
-      //   },
-      // );
+      const url = `${this.baseUrl}/transaction/initialize`;
+      const credoResponse = await axios.post(url, payload, { headers });
 
       return {
         status: 200,
         message: 'Transaction initialized',
         data: {
           reference,
-          // optionally include: checkoutUrl: credoResponse.data?.data?.checkoutUrl
+          // Optional: add checkoutUrl if you need it for client redirect
+          // checkoutUrl: credoResponse.data?.data?.checkoutUrl
         },
       };
+    } catch (err) {
+      console.error('Credo init error:', err?.response?.data || err.message);
+      throw new Error('Credo payment initialization failed');
     }
   }
 
@@ -283,47 +216,26 @@ export class TransactionService {
     }
 
     if (event === 'TRANSACTION.SUCCESSFUL' && data.status === 0) {
-      const reference = data.reference;
-      const amount = data.amount / 100; // Convert from Kobo
+      const reference = data.businessRef;
+      const amount = data.transAmount; // Convert from Kobo
 
-      // Determine payment reference field based on payment type
-      let paymentReference: any = null;
-      if (data.paymentType === 'card' && data.cardId) {
-        paymentReference = { cardId: new mongoose.Types.ObjectId(data.cardId) };
-      } else if (data.paymentType === 'certificate' && data.certificateId) {
-        paymentReference = {
-          certificateId: new mongoose.Types.ObjectId(data.certificateId),
+      const transaction = await this.transactionModel.findOne({ reference });
+
+      if (!transaction.verified) {
+        transaction.status = 'success';
+        transaction.verified = true;
+        transaction.amount = amount;
+        transaction.customer = {
+          firstname: data.customer.firstName,
+          lastname: data.customer.lastName,
+          email: data.customer.customerEmail,
+          phoneNo: data.customer.phoneNo,
         };
+        await transaction.save();
+        return { status: 'verified', reference };
       } else {
-        throw new Error('Invalid payment type or missing identifier');
+        return { status: 'already verified', reference };
       }
-
-      // const transaction = await this.transactionModel.findOne({ reference });
-
-      // if (!transaction) {
-      //   // Optional: Create transaction if it wasn't created (rare)
-      //   await this.transactionModel.create({
-      //     reference,
-      //     amount: data.amount,
-      //     email: data.customer?.email,
-      //     userId: new mongoose.Types.ObjectId(data.userId),
-      //     status: 'success',
-      //     verified: true,
-      //     paymentType: data.paymentType,
-      //     ...paymentReference, // Dynamically attach the correct field
-      //   });
-      //   return { status: 'created & verified' };
-      // }
-
-      // if (!transaction.verified) {
-      //   transaction.status = 'success';
-      //   transaction.verified = true;
-      //   transaction.amount = amount;
-      //   await transaction.save();
-      //   return { status: 'verified', reference };
-      // } else {
-      //   return { status: 'already verified', reference };
-      // }
     }
 
     return { status: 'no action taken', event };

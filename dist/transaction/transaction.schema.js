@@ -31,18 +31,19 @@ exports.TransactionSchema = new mongoose_1.Schema({
         enum: ['pending', 'success', 'failed'],
         default: 'pending',
     },
-    verified: { type: Boolean, default: false },
     currency: { type: String, default: 'NGN' },
     paymentType: {
         type: String,
         required: true,
         enum: ['card', 'certificate'],
     },
-    createdAt: { type: Date, default: Date.now },
     customer: {
-        name: { type: String },
-        email: { type: String },
-        phone: { type: String },
+        firstname: String,
+        lastname: String,
+        email: String,
+        phoneNo: String,
     },
+    verified: { type: Boolean, default: false },
+    createdAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 //# sourceMappingURL=transaction.schema.js.map

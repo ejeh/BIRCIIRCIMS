@@ -8,14 +8,15 @@ export interface Transaction extends Document {
     email: string;
     status: string;
     currency: string;
-    verified: Boolean;
     createdAt: Date;
     paymentType: 'card' | 'certificate';
-    customer: {
-        name: string;
-        email: string;
-        phone: string;
+    customer?: {
+        firstname?: string;
+        lastname?: string;
+        email?: string;
+        phoneNo?: string;
     };
+    verified?: boolean;
 }
 export declare const TransactionSchema: Schema<Transaction, import("mongoose").Model<Transaction, any, any, any, Document<unknown, any, Transaction> & Transaction & Required<{
     _id: unknown;
