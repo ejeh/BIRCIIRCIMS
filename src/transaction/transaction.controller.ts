@@ -60,7 +60,7 @@ export class TransactionController {
 
       const payload = JSON.parse(rawBody.toString('utf8'));
 
-      const secret = '1234567890'; // Replace with your actual secret
+      const secret = process.env.CREDO_SECRET_HASH; // Replace with your actual secret
       const businessCode = payload.data.businessCode; // Replace with your actual business code
 
       const signedContent = `${secret}${businessCode}`;
