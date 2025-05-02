@@ -57,4 +57,5 @@ export declare class IndigeneCertificateController {
     getProfile(id: string, body: any): Promise<Certificate>;
     getUserProfile(id: string, body: any): Promise<Certificate>;
     deleteItem(item: string): Promise<any>;
+    getPdf(filename: string, res: Response, req: any): void;
 }

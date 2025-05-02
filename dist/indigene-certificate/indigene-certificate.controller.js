@@ -45,7 +45,6 @@ const swagger_1 = require("@nestjs/swagger");
 const indigene_certificate_service_1 = require("./indigene-certificate.service");
 const platform_express_1 = require("@nestjs/platform-express");
 const multer_1 = require("multer");
-const path_1 = require("path");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const roles_decorator_1 = require("../common/decorators/roles.decorator");
 const roles_guard_1 = require("../common/guards/roles.guard");
@@ -54,9 +53,10 @@ const indigene_certicate_schema_1 = require("./indigene-certicate.schema");
 const users_service_1 = require("../users/users.service");
 const uuid_1 = require("uuid");
 const fs = __importStar(require("fs"));
-const path = __importStar(require("path"));
+const path_1 = __importStar(require("path"));
 const qrcode_1 = __importDefault(require("qrcode"));
 const config_1 = __importDefault(require("../config"));
+const public_decorator_1 = require("../common/decorators/public.decorator");
 let IndigeneCertificateController = class IndigeneCertificateController {
     constructor(indigeneCertificateService, userService) {
         this.indigeneCertificateService = indigeneCertificateService;
@@ -128,7 +128,7 @@ let IndigeneCertificateController = class IndigeneCertificateController {
             res.download(pdfPath, 'certificate.pdf', async (err) => {
                 if (err) {
                     console.error('Error sending file:', err);
-                    return res.status(500).json({ message: 'Error downloading file' });
+                    return;
                 }
                 await this.markCertificateAsDownloaded(id);
             });
@@ -139,7 +139,7 @@ let IndigeneCertificateController = class IndigeneCertificateController {
         }
     }
     async loadHtmlTemplate(templateName) {
-        const templatePath = path.join(__dirname, '..', '..', 'templates', templateName);
+        const templatePath = path_1.default.join(__dirname, '..', '..', 'templates', templateName);
         return fs.promises.readFile(templatePath, 'utf8');
     }
     populateHtmlTemplate(html, data, user) {
@@ -194,7 +194,6 @@ let IndigeneCertificateController = class IndigeneCertificateController {
         return await this.indigeneCertificateService.approveCertificate(id);
     }
     async rejectCert(id, rejectionReason) {
-        console.log(rejectionReason);
         const user = await this.indigeneCertificateService.findCertificateById(id);
         if (!user) {
             throw (0, exception_1.UserNotFoundException)();
@@ -227,6 +226,20 @@ let IndigeneCertificateController = class IndigeneCertificateController {
     }
     async deleteItem(item) {
         return this.indigeneCertificateService.deleteItem(item);
+    }
+    getPdf(filename, res, req) {
+        const filePath = (0, path_1.join)('/home/spaceinovationhub/BSCR-MIS-BkND/uploads', filename);
+        if (!fs.existsSync(filePath)) {
+            throw new common_1.NotFoundException('File not found');
+        }
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+        const stream = fs.createReadStream(filePath);
+        stream.pipe(res);
+        stream.on('error', (err) => {
+            console.error('Stream error:', err);
+            res.status(500).end('Failed to serve PDF');
+        });
     }
 };
 exports.IndigeneCertificateController = IndigeneCertificateController;
@@ -427,6 +440,17 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], IndigeneCertificateController.prototype, "deleteItem", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, common_1.Get)('pdf/:filename'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Param)('filename')),
+    __param(1, (0, common_1.Res)()),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", void 0)
+], IndigeneCertificateController.prototype, "getPdf", null);
 exports.IndigeneCertificateController = IndigeneCertificateController = __decorate([
     (0, swagger_1.ApiTags)('indigene-certificate.controller'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

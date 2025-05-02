@@ -158,6 +158,22 @@ export class AuthController {
         stateOfOrigin: 'Benue',
         lga: 'Gboko',
       },
+
+      '88765432101': {
+        fullName: 'Charles Luper',
+        dob: '1990-01-01',
+        phone: '08043710658',
+        stateOfOrigin: 'Benue',
+        lga: 'Gboko',
+      },
+
+      '88765432131': {
+        fullName: 'Victor Atir',
+        dob: '1990-01-01',
+        phone: '08043710666',
+        stateOfOrigin: 'Benue',
+        lga: 'Gboko',
+      },
     };
 
     const data = fakeDB[nin];

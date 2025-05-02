@@ -68,7 +68,10 @@ let IndigeneCertificateService = class IndigeneCertificateService {
         return certificate;
     }
     async findById(id) {
-        const user = await this.certificateModel.findById(id);
+        const user = await this.certificateModel
+            .findById(id)
+            .populate('userId', 'firstname lastname email passportPhoto')
+            .exec();
         if (!user) {
             throw (0, exception_1.UserNotFoundException)();
         }

@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -18,7 +20,7 @@ import { UsersService } from 'src/users/users.service';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 
-import path, { extname } from 'path';
+import path, { extname, join } from 'path';
 import { Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -29,6 +31,7 @@ import { UserRole } from 'src/users/users.role.enum';
 import { UserNotFoundException } from 'src/common/exception';
 import * as fs from 'fs';
 import QRCode from 'qrcode';
+import { Public } from 'src/common/decorators/public.decorator';
 
 @ApiTags('idCard.controller')
 @UseGuards(JwtAuthGuard)
@@ -43,7 +46,7 @@ export class IdcardController {
   @UseInterceptors(
     FilesInterceptor('files', 2, {
       dest: './uploads',
-      limits: { fileSize: 1024 * 1024 * 5 },
+      // limits: { fileSize: 1024 * 1024 * 5 },
       storage: diskStorage({
         destination: './uploads',
         filename: (req, file, cb) => {
@@ -60,8 +63,10 @@ export class IdcardController {
     const data = {
       ...body,
       bin: await this.idcardService.generateUniqueBIN(),
-      ref_letter: files[0]?.path,
-      utilityBill: files[1]?.path,
+      // ref_letter: files[0]?.path,
+      // utilityBill: files[1]?.path,
+      ref_letter: files[0]?.filename,
+      utilityBill: files[1]?.filename,
     };
 
     // Notify admin
@@ -183,7 +188,7 @@ export class IdcardController {
       res.download(pdfPath, 'certificate.pdf', async (err) => {
         if (err) {
           console.error('Error sending file:', err);
-          return res.status(500).json({ message: 'Error downloading file' });
+          return; // return res.status(500).json({ message: 'Error downloading file' });
         }
 
         // Mark as downloaded and delete temp file after sending
@@ -274,5 +279,36 @@ export class IdcardController {
   @ApiResponse({ type: IdCard, isArray: false })
   async getCert(@Param('id') id: string, @Body() body: any) {
     return await this.idcardService.findById(id);
+  }
+
+  @Public()
+  @Get('pdf/:filename')
+  @UseGuards(JwtAuthGuard)
+  getPdf(
+    @Param('filename') filename: string,
+    @Res() res: Response,
+    @Req() req: any,
+  ) {
+    const filePath = join(
+      '/home/spaceinovationhub/BSCR-MIS-BkND/uploads',
+      filename,
+    );
+
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException('File not found');
+    }
+
+    // Set headers early before sending
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+
+    // Pipe file (streaming) instead of res.sendFile to avoid "headers sent" on disconnect
+    const stream = fs.createReadStream(filePath);
+    stream.pipe(res);
+
+    stream.on('error', (err) => {
+      console.error('Stream error:', err);
+      res.status(500).end('Failed to serve PDF');
+    });
   }
 }

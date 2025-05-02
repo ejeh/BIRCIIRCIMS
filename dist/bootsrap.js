@@ -55,6 +55,23 @@ const configureApp = (app) => {
         transform: true,
         forbidNonWhitelisted: true,
     }));
+    app.useStaticAssets((0, path_1.join)(__dirname, '..', 'uploads'), {
+        prefix: '/uploads/',
+    });
+    app.use((0, helmet_1.default)({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                frameAncestors: ["'self'", 'http://localhost:5501'],
+                scriptSrc: [
+                    "'self'",
+                    "'unsafe-inline'",
+                    'https://cdnjs.cloudflare.com',
+                ],
+                connectSrc: ["'self'", 'http://localhost:5000'],
+            },
+        },
+    }));
 };
 exports.configureApp = configureApp;
 async function bootstrap() {

@@ -27,4 +27,5 @@ export declare class IdcardController {
     getProfile(id: string, body: any): Promise<IdCard>;
     resubmitRequest(id: string, updatedData: any): Promise<IdCard>;
     getCert(id: string, body: any): Promise<IdCard>;
+    getPdf(filename: string, res: Response, req: any): void;
 }

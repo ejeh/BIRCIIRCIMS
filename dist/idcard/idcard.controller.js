@@ -54,6 +54,7 @@ const users_role_enum_1 = require("../users/users.role.enum");
 const exception_1 = require("../common/exception");
 const fs = __importStar(require("fs"));
 const qrcode_1 = __importDefault(require("qrcode"));
+const public_decorator_1 = require("../common/decorators/public.decorator");
 let IdcardController = class IdcardController {
     constructor(idcardService, userService) {
         this.idcardService = idcardService;
@@ -63,8 +64,8 @@ let IdcardController = class IdcardController {
         const data = {
             ...body,
             bin: await this.idcardService.generateUniqueBIN(),
-            ref_letter: files[0]?.path,
-            utilityBill: files[1]?.path,
+            ref_letter: files[0]?.filename,
+            utilityBill: files[1]?.filename,
         };
         const adminEmail = 'ejehgodfrey@gmail.com';
         const adminPhone = '+1234567890';
@@ -120,7 +121,7 @@ let IdcardController = class IdcardController {
             res.download(pdfPath, 'certificate.pdf', async (err) => {
                 if (err) {
                     console.error('Error sending file:', err);
-                    return res.status(500).json({ message: 'Error downloading file' });
+                    return;
                 }
                 await this.markCertificateAsDownloaded(id);
             });
@@ -191,13 +192,26 @@ let IdcardController = class IdcardController {
     async getCert(id, body) {
         return await this.idcardService.findById(id);
     }
+    getPdf(filename, res, req) {
+        const filePath = (0, path_1.join)('/home/spaceinovationhub/BSCR-MIS-BkND/uploads', filename);
+        if (!fs.existsSync(filePath)) {
+            throw new common_1.NotFoundException('File not found');
+        }
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+        const stream = fs.createReadStream(filePath);
+        stream.pipe(res);
+        stream.on('error', (err) => {
+            console.error('Stream error:', err);
+            res.status(500).end('Failed to serve PDF');
+        });
+    }
 };
 exports.IdcardController = IdcardController;
 __decorate([
     (0, common_1.Post)('create'),
     (0, common_1.UseInterceptors)((0, platform_express_1.FilesInterceptor)('files', 2, {
         dest: './uploads',
-        limits: { fileSize: 1024 * 1024 * 5 },
         storage: (0, multer_1.diskStorage)({
             destination: './uploads',
             filename: (req, file, cb) => {
@@ -298,6 +312,17 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], IdcardController.prototype, "getCert", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, common_1.Get)('pdf/:filename'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Param)('filename')),
+    __param(1, (0, common_1.Res)()),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", void 0)
+], IdcardController.prototype, "getPdf", null);
 exports.IdcardController = IdcardController = __decorate([
     (0, swagger_1.ApiTags)('idCard.controller'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
