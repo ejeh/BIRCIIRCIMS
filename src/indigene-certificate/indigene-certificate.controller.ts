@@ -14,6 +14,7 @@ import {
   UploadedFile,
   Delete,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { UserNotFoundException } from 'src/common/exception';
 
@@ -25,7 +26,6 @@ import {
   FilesInterceptor,
 } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { Response } from 'express';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -35,9 +35,10 @@ import { Certificate } from './indigene-certicate.schema';
 import { UsersService } from 'src/users/users.service';
 import { v4 as uuid } from 'uuid';
 import * as fs from 'fs';
-import * as path from 'path';
+import path, { extname, join } from 'path';
 import QRCode from 'qrcode';
 import config from 'src/config';
+import { Public } from 'src/common/decorators/public.decorator';
 
 @ApiTags('indigene-certificate.controller')
 @UseGuards(JwtAuthGuard)
@@ -243,7 +244,7 @@ export class IndigeneCertificateController {
       res.download(pdfPath, 'certificate.pdf', async (err) => {
         if (err) {
           console.error('Error sending file:', err);
-          return res.status(500).json({ message: 'Error downloading file' });
+          return; // return res.status(500).json({ message: 'Error downloading file' });
         }
 
         // Mark as downloaded and delete temp file after sending
@@ -357,7 +358,6 @@ export class IndigeneCertificateController {
     @Param('id') id: string,
     @Body('rejectionReason') rejectionReason: string,
   ) {
-    console.log(rejectionReason);
     // Notify user
     const user = await this.indigeneCertificateService.findCertificateById(id);
     if (!user) {
@@ -448,5 +448,36 @@ export class IndigeneCertificateController {
   @Delete(':item')
   async deleteItem(@Param('item') item: string): Promise<any> {
     return this.indigeneCertificateService.deleteItem(item);
+  }
+
+  @Public()
+  @Get('pdf/:filename')
+  @UseGuards(JwtAuthGuard)
+  getPdf(
+    @Param('filename') filename: string,
+    @Res() res: Response,
+    @Req() req: any,
+  ) {
+    const filePath = join(
+      '/home/spaceinovationhub/BSCR-MIS-BkND/uploads',
+      filename,
+    );
+
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException('File not found');
+    }
+
+    // Set headers early before sending
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+
+    // Pipe file (streaming) instead of res.sendFile to avoid "headers sent" on disconnect
+    const stream = fs.createReadStream(filePath);
+    stream.pipe(res);
+
+    stream.on('error', (err) => {
+      console.error('Stream error:', err);
+      res.status(500).end('Failed to serve PDF');
+    });
   }
 }

@@ -76,7 +76,10 @@ let IdcardService = class IdcardService {
         return this.idCardModel.findById(id);
     }
     async findById(id) {
-        const user = await this.idCardModel.findById(id);
+        const user = await this.idCardModel
+            .findById(id)
+            .populate('userId', 'firstname lastname email passportPhoto')
+            .exec();
         if (!user) {
             throw (0, exception_1.UserNotFoundException)();
         }
@@ -129,13 +132,10 @@ let IdcardService = class IdcardService {
         const page = await browser.newPage();
         await page.setContent(html, { waitUntil: 'networkidle0' });
         const pdfBuffer = await page.pdf({
-            width: '85.6mm',
-            height: '54mm',
             printBackground: true,
             margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' },
             preferCSSPageSize: true,
             scale: 1,
-            pageRanges: '1',
         });
         await browser.close();
         const tempDir = path_1.default.join(__dirname, '..', 'temp');

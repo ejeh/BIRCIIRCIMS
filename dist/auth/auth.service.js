@@ -78,6 +78,20 @@ let AuthService = class AuthService {
                 lga: 'Gboko',
                 status: 'verified',
             },
+            '88765432101': {
+                firstname: 'Charles',
+                lastname: 'Luper',
+                stateOfOrigin: 'Benue',
+                lga: 'Gboko',
+                status: 'verified',
+            },
+            '88765432131': {
+                firstname: 'Victor',
+                lastname: 'Atir',
+                stateOfOrigin: 'Benue',
+                lga: 'Gboko',
+                status: 'verified',
+            },
         };
     }
     async validateUser(email, password) {

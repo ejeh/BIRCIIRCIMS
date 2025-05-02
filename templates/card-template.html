@@ -10,26 +10,26 @@
         padding: 0;
         box-sizing: border-box;
       }
+
       body {
         font-family: Arial, sans-serif;
-        background-color: #f4f4f4;
         display: flex;
-        justify-content: center;
         align-items: center;
-        height: 100vh;
-        overflow: hidden; /* Prevents extra space */
+        align-items: center;
+        padding: 20px;
+        flex-direction: column;
       }
       .id-card-container {
-        width: 85.6mm; /* Standard ID card width */
-        height: 54mm; /* Standard ID card height */
-        /* background: #fff; */
+        width: 85.6mm;
+        height: 54mm;
         border: 1px solid #000;
         border-radius: 5px;
-        display: flex;
-        flex-direction: column;
+        /* display: flex; */
+        /* flex-direction: column; */
         position: relative;
         overflow: hidden; /* Prevents content overflow */
         padding: 2mm;
+        /* margin-bottom: 10mm; */
         background: url('http://localhost:5000/images/FEDERAL REPUBLIC OF NIGERIA.png')
           no-repeat center;
         background-size: 100% 100%;
@@ -91,16 +91,62 @@
       }
       .footer h1 {
         font-size: 15px;
-        bottom: 1mm;
-        width: 100%;
       }
 
       .footer h2 {
         font-size: 10px;
       }
+
+      /* Back Side */
+      .back-side {
+        background: #fff;
+        border: 1px solid #000;
+        width: 85.6mm;
+        height: 54mm;
+        border-radius: 5px;
+        position: relative;
+        padding: 2mm;
+      }
+      .back-content {
+        font-size: 9px;
+        padding: 5mm;
+      }
+      .back-content h3 {
+        text-align: center;
+        margin-bottom: 5mm;
+        font-size: 10px;
+        text-transform: uppercase;
+      }
+      .back-content ul {
+        list-style: decimal;
+        padding-left: 10px;
+      }
+      @media print {
+        .id-card-container,
+        .back-side {
+          width: 85.6mm;
+          height: 54mm;
+        }
+      }
+      .top {
+        padding: 20px;
+        text-align: center;
+        font-size: 16px;
+        line-height: 1.6;
+        max-width: 600px;
+        margin: 0 auto;
+      }
     </style>
   </head>
   <body>
+    <div class="top">
+      <p>
+        Please find your improved BIN slip <br />
+        You may cut it out of the paper, fold and laminate as desired. <br />
+        For your security & privacy, please DO NOT permit others to make
+        photocopies of this slip
+      </p>
+    </div>
     <div class="id-card-container">
       <div class="header">
         Federal Republic Of Nigeria <br />
@@ -138,6 +184,22 @@
         <h2>Benue State Identity Number (BIN)</h2>
         <h1 id="bin">{{bin}}</h1>
         <!-- Issued by Benue state Identity Management Commission -->
+      </div>
+    </div>
+
+    <!-- Back of the ID -->
+    <div class="back-side">
+      <div class="back-content">
+        <h3>Instructions</h3>
+        <ul>
+          <li>This card is the property of the Benue State Government.</li>
+          <li>Only the person whose name appears on this card may use it.</li>
+          <li>Any alteration renders this card invalid.</li>
+          <li>Lost or stolen cards should be reported immediately.</li>
+        </ul>
+        <p style="margin-top: 10mm; text-align: center">
+          For more information, visit <strong>www.benueid.ng</strong>
+        </p>
       </div>
     </div>
   </body>

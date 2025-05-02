@@ -63,7 +63,7 @@ let TransactionController = class TransactionController {
                 return res.status(400).send('Missing Credo signature header');
             }
             const payload = JSON.parse(rawBody.toString('utf8'));
-            const secret = '1234567890';
+            const secret = process.env.CREDO_SECRET_HASH;
             const businessCode = payload.data.businessCode;
             const signedContent = `${secret}${businessCode}`;
             const sha256Hash = crypto

@@ -46,14 +46,27 @@ export const configureApp = (app: any) => {
     }),
   );
 
-  // main.ts
-  // app.use(
-  //   express.json({
-  //     verify: (req: any, res, buf) => {
-  //       req.rawBody = buf; // <-- this line is essential
-  //     },
-  //   }),
-  // );
+  // Serve static files from the uploads directory
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+    prefix: '/uploads/',
+  });
+
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          frameAncestors: ["'self'", 'http://localhost:5501'], // Add your frontend origin here
+          scriptSrc: [
+            "'self'",
+            "'unsafe-inline'",
+            'https://cdnjs.cloudflare.com',
+          ], // allow PDF.js
+          connectSrc: ["'self'", 'http://localhost:5000'],
+        },
+      },
+    }),
+  );
 };
 
 export async function bootstrap() {
