@@ -10,7 +10,7 @@ export declare class IdcardService {
     findById(id: string): Promise<IdCard>;
     findOne(id: string): Promise<IdCard>;
     findCardRequestsByStatuses(page: number, limit: number, statuses: string[]): Promise<{
-        data: (import("mongoose").Document<unknown, {}, IdCard> & IdCard & Required<{
+        data: (import("mongoose").Document<unknown, {}, IdCard, {}> & IdCard & Required<{
             _id: unknown;
         }> & {
             __v: number;

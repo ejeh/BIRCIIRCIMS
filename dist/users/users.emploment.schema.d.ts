@@ -15,7 +15,7 @@ export declare const EmploymentHistorySchema: Schema<any, import("mongoose").Mod
     isCurrentEmployment: boolean;
     description?: string;
     endYear?: number;
-}>> & import("mongoose").FlatRecord<{
+}>, {}> & import("mongoose").FlatRecord<{
     address: string;
     companyName: string;
     designation: string;

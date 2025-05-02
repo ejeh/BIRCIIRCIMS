@@ -13,7 +13,7 @@ export declare class IndigeneCertificateService {
     findOne(id: string): Promise<Certificate>;
     findById(id: string): Promise<Certificate>;
     findApprovedRequest(page: number, limit: number, status: string): Promise<{
-        data: (import("mongoose").Document<unknown, {}, Certificate> & Certificate & Required<{
+        data: (import("mongoose").Document<unknown, {}, Certificate, {}> & Certificate & Required<{
             _id: unknown;
         }> & {
             __v: number;
@@ -21,7 +21,7 @@ export declare class IndigeneCertificateService {
         hasNextPage: boolean;
     }>;
     findRequestsByStatuses(page: number, limit: number, statuses: string[]): Promise<{
-        data: (import("mongoose").Document<unknown, {}, Certificate> & Certificate & Required<{
+        data: (import("mongoose").Document<unknown, {}, Certificate, {}> & Certificate & Required<{
             _id: unknown;
         }> & {
             __v: number;
@@ -32,7 +32,7 @@ export declare class IndigeneCertificateService {
     rejectCertificate(id: string, rejectionReason: string): Promise<Certificate>;
     resubmitRequest(id: string, updatedData: Partial<Certificate>): Promise<Certificate>;
     getPaginatedData(page: number, limit: number): Promise<{
-        data: (import("mongoose").Document<unknown, {}, Certificate> & Certificate & Required<{
+        data: (import("mongoose").Document<unknown, {}, Certificate, {}> & Certificate & Required<{
             _id: unknown;
         }> & {
             __v: number;
@@ -45,7 +45,7 @@ export declare class IndigeneCertificateService {
         message: string;
         url: string;
     }>;
-    uploadAttestation(id: string, file: Express.Multer.File): Promise<import("mongoose").Document<unknown, {}, Certificate> & Certificate & Required<{
+    uploadAttestation(id: string, file: Express.Multer.File): Promise<import("mongoose").Document<unknown, {}, Certificate, {}> & Certificate & Required<{
         _id: unknown;
     }> & {
         __v: number;
