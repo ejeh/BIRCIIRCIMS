@@ -11,7 +11,7 @@ export declare class IndigeneCertificateController {
         message: string;
         url: string;
     }>;
-    uploadAttestation(id: string, file: Express.Multer.File): Promise<import("mongoose").Document<unknown, {}, Certificate> & Certificate & Required<{
+    uploadAttestation(id: string, file: Express.Multer.File): Promise<import("mongoose").Document<unknown, {}, Certificate, {}> & Certificate & Required<{
         _id: unknown;
     }> & {
         __v: number;
@@ -21,7 +21,7 @@ export declare class IndigeneCertificateController {
     private populateHtmlTemplate;
     private markCertificateAsDownloaded;
     private generateQrCode;
-    getCertsRequest(req: Request): Promise<(import("mongoose").Document<unknown, {}, Certificate> & Certificate & Required<{
+    getCertsRequest(req: Request): Promise<(import("mongoose").Document<unknown, {}, Certificate, {}> & Certificate & Required<{
         _id: unknown;
     }> & {
         __v: number;
@@ -30,7 +30,7 @@ export declare class IndigeneCertificateController {
     rejectCert(id: string, rejectionReason: string): Promise<Certificate>;
     resubmitRequest(id: string, updatedData: any): Promise<Certificate>;
     getPaginatedData(page?: number, limit?: number): Promise<{
-        data: (import("mongoose").Document<unknown, {}, Certificate> & Certificate & Required<{
+        data: (import("mongoose").Document<unknown, {}, Certificate, {}> & Certificate & Required<{
             _id: unknown;
         }> & {
             __v: number;
@@ -38,7 +38,7 @@ export declare class IndigeneCertificateController {
         hasNextPage: boolean;
     }>;
     getApprovedCert(page?: number, limit?: number): Promise<{
-        data: (import("mongoose").Document<unknown, {}, Certificate> & Certificate & Required<{
+        data: (import("mongoose").Document<unknown, {}, Certificate, {}> & Certificate & Required<{
             _id: unknown;
         }> & {
             __v: number;
@@ -46,7 +46,7 @@ export declare class IndigeneCertificateController {
         hasNextPage: boolean;
     }>;
     getRequestsByStatuses(page?: number, limit?: number, statuses?: string): Promise<{
-        data: (import("mongoose").Document<unknown, {}, Certificate> & Certificate & Required<{
+        data: (import("mongoose").Document<unknown, {}, Certificate, {}> & Certificate & Required<{
             _id: unknown;
         }> & {
             __v: number;

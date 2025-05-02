@@ -8,7 +8,7 @@ export declare class IdcardController {
     constructor(idcardService: IdcardService, userService: UsersService);
     createIdCard(body: any, files: Array<Express.Multer.File>): Promise<IdCard>;
     getRequestsByStatuses(page?: number, limit?: number, statuses?: string): Promise<{
-        data: (import("mongoose").Document<unknown, {}, IdCard> & IdCard & Required<{
+        data: (import("mongoose").Document<unknown, {}, IdCard, {}> & IdCard & Required<{
             _id: unknown;
         }> & {
             __v: number;

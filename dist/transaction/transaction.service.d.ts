@@ -24,13 +24,13 @@ export declare class TransactionService {
         };
     }>;
     verifyPayment(reference: string): Promise<any>;
-    getUserTransactions(userId: string): Promise<(mongoose.Document<unknown, {}, Transaction> & Transaction & Required<{
+    getUserTransactions(userId: string): Promise<(mongoose.Document<unknown, {}, Transaction, {}> & Transaction & Required<{
         _id: unknown;
     }> & {
         __v: number;
     })[]>;
     getPaginatedData(page: number, limit: number): Promise<{
-        data: (mongoose.Document<unknown, {}, Transaction> & Transaction & Required<{
+        data: (mongoose.Document<unknown, {}, Transaction, {}> & Transaction & Required<{
             _id: unknown;
         }> & {
             __v: number;

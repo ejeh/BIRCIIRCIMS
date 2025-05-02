@@ -28,11 +28,11 @@ export declare class HealthInfo extends Document {
     genotype: Genotype;
     disabilityStatus: DisabilityStatus;
 }
-export declare const HealthInfoSchema: import("mongoose").Schema<HealthInfo, import("mongoose").Model<HealthInfo, any, any, any, Document<unknown, any, HealthInfo> & HealthInfo & Required<{
+export declare const HealthInfoSchema: import("mongoose").Schema<HealthInfo, import("mongoose").Model<HealthInfo, any, any, any, Document<unknown, any, HealthInfo, any> & HealthInfo & Required<{
     _id: unknown;
 }> & {
     __v: number;
-}, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, HealthInfo, Document<unknown, {}, import("mongoose").FlatRecord<HealthInfo>> & import("mongoose").FlatRecord<HealthInfo> & Required<{
+}, any>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, HealthInfo, Document<unknown, {}, import("mongoose").FlatRecord<HealthInfo>, {}> & import("mongoose").FlatRecord<HealthInfo> & Required<{
     _id: unknown;
 }> & {
     __v: number;

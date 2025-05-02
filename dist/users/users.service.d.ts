@@ -9,7 +9,7 @@ export declare class UsersService {
     findById(id: string): Promise<UserDocument>;
     findByEmail(email: string): Promise<UserDocument>;
     findAdminByEmail(email: string): Promise<UserDocument>;
-    activate(userId: string, activationToken: string): Promise<import("mongoose").Document<unknown, {}, UserDocument> & import("./users.schema").User & import("mongoose").Document<unknown, any, any> & import("./users.schema").UserMethods & Required<{
+    activate(userId: string, activationToken: string): Promise<import("mongoose").Document<unknown, {}, UserDocument, {}> & import("./users.schema").User & import("mongoose").Document<unknown, any, any, Record<string, any>> & import("./users.schema").UserMethods & Required<{
         _id: unknown;
     }> & {
         __v: number;
@@ -19,13 +19,13 @@ export declare class UsersService {
         message: string;
     }>;
     forgottenPassword(email: string, origin: string): Promise<void>;
-    resetPassword(email: string, passwordResetToken: string, password: string): Promise<import("mongoose").Document<unknown, {}, UserDocument> & import("./users.schema").User & import("mongoose").Document<unknown, any, any> & import("./users.schema").UserMethods & Required<{
+    resetPassword(email: string, passwordResetToken: string, password: string): Promise<import("mongoose").Document<unknown, {}, UserDocument, {}> & import("./users.schema").User & import("mongoose").Document<unknown, any, any, Record<string, any>> & import("./users.schema").UserMethods & Required<{
         _id: unknown;
     }> & {
         __v: number;
     }>;
     getPaginatedData(page: number, limit: number): Promise<{
-        data: (import("mongoose").Document<unknown, {}, UserDocument> & import("./users.schema").User & import("mongoose").Document<unknown, any, any> & import("./users.schema").UserMethods & Required<{
+        data: (import("mongoose").Document<unknown, {}, UserDocument, {}> & import("./users.schema").User & import("mongoose").Document<unknown, any, any, Record<string, any>> & import("./users.schema").UserMethods & Required<{
             _id: unknown;
         }> & {
             __v: number;

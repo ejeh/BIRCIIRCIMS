@@ -15,7 +15,7 @@ export declare class KindredService {
         email: string;
     }) => Promise<any>;
     getPaginatedData(page: number, limit: number): Promise<{
-        data: (import("mongoose").Document<unknown, {}, Kindred> & Kindred & Required<{
+        data: (import("mongoose").Document<unknown, {}, Kindred, {}> & Kindred & Required<{
             _id: unknown;
         }> & {
             __v: number;
@@ -23,7 +23,7 @@ export declare class KindredService {
         hasNextPage: boolean;
     }>;
     getkindredHeads(userId: string, page: number, limit: number): Promise<{
-        data: (import("mongoose").Document<unknown, {}, Kindred> & Kindred & Required<{
+        data: (import("mongoose").Document<unknown, {}, Kindred, {}> & Kindred & Required<{
             _id: unknown;
         }> & {
             __v: number;

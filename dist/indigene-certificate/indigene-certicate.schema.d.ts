@@ -35,11 +35,11 @@ export declare class Certificate extends Document {
     uploadedAttestationUrl: string;
     qrCodeUrl?: string;
 }
-export declare const CertificateSchema: mongoose.Schema<Certificate, mongoose.Model<Certificate, any, any, any, mongoose.Document<unknown, any, Certificate> & Certificate & Required<{
+export declare const CertificateSchema: mongoose.Schema<Certificate, mongoose.Model<Certificate, any, any, any, mongoose.Document<unknown, any, Certificate, any> & Certificate & Required<{
     _id: unknown;
 }> & {
     __v: number;
-}, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, Certificate, mongoose.Document<unknown, {}, mongoose.FlatRecord<Certificate>> & mongoose.FlatRecord<Certificate> & Required<{
+}, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, Certificate, mongoose.Document<unknown, {}, mongoose.FlatRecord<Certificate>, {}> & mongoose.FlatRecord<Certificate> & Required<{
     _id: unknown;
 }> & {
     __v: number;
