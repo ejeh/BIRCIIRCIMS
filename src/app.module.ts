@@ -45,9 +45,9 @@ const DEV_TRANSPORTER = {
   imports: [
     UsersModule,
     MorganModule,
-    MongooseModule.forRoot(dbUrl),
+    // MongooseModule.forRoot(dbUrl),
     MongooseModule.forRoot(dbUrl, {
-      ssl: true,
+      ssl: config.isProd,
       retryAttempts: 5,
       retryDelay: 3000,
     }),
