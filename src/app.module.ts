@@ -10,7 +10,7 @@ import { UsersModule } from './users/users.module';
 import { MorganModule } from 'nest-morgan';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
-import config, { dbUrl } from './config';
+// import config, { dbUrl } from './config';
 import { PassportModule } from '@nestjs/passport';
 import { MailerModule, HandlebarsAdapter } from '@nest-modules/mailer';
 import { ServeStaticMiddleware } from '@nest-middlewares/serve-static';
@@ -26,6 +26,12 @@ import { TransactionModule } from './transaction/transaction.module';
 import { KindredService } from './kindred/kindred.service';
 import { KindredModule } from './kindred/kindred.module';
 
+
+
+import config, { dbUrl } from './config';
+
+console.log(config.isProd); // boolean
+console.log(dbUrl); // string | undefined
 const DEV_TRANSPORTER = {
   host: 'smtp-relay.sendinblue.com',
   port: 587,

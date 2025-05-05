@@ -1,9 +1,13 @@
+declare const VALID_ENVIRONMENTS: readonly ["development", "production", "test"];
+type NodeEnv = typeof VALID_ENVIRONMENTS[number];
+declare const NODE_ENV: NodeEnv;
 declare const config: {
     isDev: boolean;
     isProd: boolean;
     isTest: boolean;
+    nodeEnv: "development" | "production" | "test";
     host: string;
-    port: string;
+    port: number;
     db: string;
     mail: {
         from: {
@@ -29,5 +33,6 @@ declare const config: {
         maxAge: string | number;
     };
 };
+declare const dbUrl: string;
 export default config;
-export declare const dbUrl: string;
+export { dbUrl, NODE_ENV };

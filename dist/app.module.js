@@ -47,7 +47,6 @@ const users_module_1 = require("./users/users.module");
 const nest_morgan_1 = require("nest-morgan");
 const mongoose_1 = require("@nestjs/mongoose");
 const jwt_1 = require("@nestjs/jwt");
-const config_1 = __importStar(require("./config"));
 const passport_1 = require("@nestjs/passport");
 const mailer_1 = require("@nest-modules/mailer");
 const serve_static_1 = require("@nest-middlewares/serve-static");
@@ -60,6 +59,9 @@ const serve_static_2 = require("@nestjs/serve-static");
 const path_1 = require("path");
 const transaction_module_1 = require("./transaction/transaction.module");
 const kindred_module_1 = require("./kindred/kindred.module");
+const config_1 = __importStar(require("./config"));
+console.log(config_1.default.isProd);
+console.log(config_1.dbUrl);
 const DEV_TRANSPORTER = {
     host: 'smtp-relay.sendinblue.com',
     port: 587,
