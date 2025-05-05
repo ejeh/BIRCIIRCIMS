@@ -45,7 +45,13 @@ const DEV_TRANSPORTER = {
   imports: [
     UsersModule,
     MorganModule,
-    MongooseModule.forRoot(dbUrl),
+    // MongooseModule.forRoot(dbUrl),
+    MongooseModule.forRoot(dbUrl, {
+      ssl: true,
+      retryAttempts: 5,
+      retryDelay: 3000,
+    }),
+    
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'), // Path to your static files directory
       serveRoot: '/uploads', // The base URL path
