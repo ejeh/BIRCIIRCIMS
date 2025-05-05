@@ -19,6 +19,18 @@ const isDev = NODE_ENV === 'development';
 const isProd = NODE_ENV === 'production';
 const isTest = NODE_ENV === 'test';
 console.log(`Current Environment: ${NODE_ENV}`);
+const getDatabaseUrl = () => {
+    if (isProd) {
+        if (!process.env.MONGO_CONNECTION_URL) {
+            throw new Error('MONGO_CONNECTION_URL is required in production');
+        }
+        return process.env.MONGO_CONNECTION_URL;
+    }
+    if (!process.env.MONGO_URL) {
+        throw new Error('MONGO_URL is required in development/test');
+    }
+    return process.env.MONGO_URL;
+};
 const config = {
     isDev,
     isProd,
@@ -26,7 +38,7 @@ const config = {
     nodeEnv: NODE_ENV,
     host: process.env.API_HOST,
     port: process.env.PORT ? parseInt(process.env.PORT, 10) : 3000,
-    db: process.env.MONGO_URL,
+    db: getDatabaseUrl(),
     mail: {
         from: {
             name: process.env.MAIL_FROM_NAME,
