@@ -10,7 +10,7 @@ import { UsersModule } from './users/users.module';
 import { MorganModule } from 'nest-morgan';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
-import config, { dbUrl } from './config';
+// import config, { dbUrl } from './config';
 import { PassportModule } from '@nestjs/passport';
 import { MailerModule, HandlebarsAdapter } from '@nest-modules/mailer';
 import { ServeStaticMiddleware } from '@nest-middlewares/serve-static';
@@ -26,6 +26,12 @@ import { TransactionModule } from './transaction/transaction.module';
 import { KindredService } from './kindred/kindred.service';
 import { KindredModule } from './kindred/kindred.module';
 
+
+
+import config, { dbUrl } from './config';
+
+console.log(config.isProd); // boolean
+console.log(dbUrl); // string | undefined
 const DEV_TRANSPORTER = {
   host: 'smtp-relay.sendinblue.com',
   port: 587,
@@ -40,6 +46,12 @@ const DEV_TRANSPORTER = {
     UsersModule,
     MorganModule,
     MongooseModule.forRoot(dbUrl),
+    // MongooseModule.forRoot(dbUrl, {
+    //   ssl: config.isProd,
+    //   retryAttempts: 5,
+    //   retryDelay: 3000,
+    // }),
+    
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'), // Path to your static files directory
       serveRoot: '/uploads', // The base URL path
