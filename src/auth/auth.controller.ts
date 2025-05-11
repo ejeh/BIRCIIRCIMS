@@ -32,30 +32,14 @@ import { SigUpKindredDto } from 'src/kindred/kindredDto';
 @ApiBearerAuth()
 @Controller('api/auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-    private readonly userService: UsersService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Get('activate/:userId/:activationToken')
   async activate(@Param() params: ActivateParams, @Res() res: Response) {
-    // return this.authService.activate(params);
-    // const result = await this.authService.activate(params);
-    // if (result.success) {
-    //   return res.redirect('http://127.0.0.1:5501/auth/activation-success.html');
-    //   // return res.redirect(
-    //   //   'https://bscr-mis-ui.onrender.com/auth/activation-success.html',
-    //   // );
-    // } else {
-    //   return res.redirect(`http://127.0.0.1:5501/auth/activation-failed.html`);
-    //   // return res.redirect(
-    //   //   `https://bscr-mis-ui.onrender.com/auth/activation-failed.html`,
-    //   // );
-    // }
     const getFrontendBaseUrl = () => {
       return config.isDev
         ? 'http://127.0.0.1:5501'
-        : 'https://bscr-mis-ui.onrender.com';
+        : 'https://citizenship.benuestate.gov.ng';
     };
 
     const result = await this.authService.activate(params);
