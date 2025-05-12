@@ -53,7 +53,6 @@ export class TransactionService {
       status: 'pending',
     });
 
-    console.log('existing', existing);
     if (existing) {
       return {
         status: 200,
