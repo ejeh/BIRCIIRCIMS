@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { MailerService } from '@nest-modules/mailer';
 import config from 'src/config';
-import { error } from 'console';
 
 @Injectable()
 export class UserMailerService {
@@ -13,9 +12,13 @@ export class UserMailerService {
     activationToken: string,
     origin: string,
   ) {
-    const activationUrl = `http://localhost:5000/api/auth/activate/${userId}/${activationToken}\n`;
-    // const activationUrl = `https://identity-management-af43.onrender.com/api/auth/activate/${userId}/${activationToken}\n`;
 
+    const getBaseUrl = (): string =>
+      config.isDev
+        ? process.env.BASE_URL || 'http://localhost:5000'
+        : 'api.citizenship.benuestate.gov.ng';
+    const activationUrl = `${getBaseUrl()}/api/auth/activate/${userId}/${activationToken}\n`;
+    
     if (!config.isTest) {
       this.mailerService
         .sendMail({
@@ -48,7 +51,7 @@ Please click on the following link, or paste this into your browser to complete 
 ${origin}/auth/reset-password/${passwordResetToken}\n
 If you did not request this, please ignore this email and your password will remain unchanged.\n`,
           context: {
-            link: `${origin}/auth/reset-password.html?token=${passwordResetToken}`,
+            link: `${origin}/source/auth/reset-password.html?token=${passwordResetToken}`,
           },
         })
         .catch((error) => {

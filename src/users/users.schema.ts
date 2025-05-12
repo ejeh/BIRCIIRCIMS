@@ -192,6 +192,10 @@ export class User {
 
   @ApiProperty()
   @Prop({ type: mongoose.SchemaTypes.String })
+  passwordResetExpires: string;
+
+  @ApiProperty()
+  @Prop({ type: mongoose.SchemaTypes.String })
   activationToken: string;
 
   @ApiProperty()
