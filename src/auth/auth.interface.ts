@@ -96,6 +96,7 @@ export class ResetPasswordDto {
   @ApiProperty({ type: String })
   @IsUUID()
   readonly passwordResetToken!: string;
+  
 
   @ApiProperty({ example: 'password', minLength: 8 })
   @MinLength(8)

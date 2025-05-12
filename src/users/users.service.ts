@@ -187,8 +187,8 @@ export class UsersService {
         },
         {
           password: await hashPassword(password),
-          passwordResetToken: undefined,
-          passwordResetExpires: undefined,
+          passwordResetToken: null,
+          passwordResetExpires: null,
         },
         {
           new: true,
