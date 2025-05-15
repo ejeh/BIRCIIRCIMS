@@ -12,16 +12,11 @@ import config from './config';
 import { UsersService } from './users/users.service';
 import * as bodyParser from 'body-parser';
 
-// import { seedAdmin } from './seed-adin';
-
 /**
  * Helper to be used here & in tests.
  * @param app
  */
 export const configureApp = (app: any) => {
-  // Before `app.listen(...)`
-  // app.use('/api/transaction/webhook', express.raw({ type: '*/*' }));
-
   app.use(
     bodyParser.json({
       verify: (req, res, buf) => {
@@ -72,10 +67,8 @@ export const configureApp = (app: any) => {
 export async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.useStaticAssets(join(__dirname, '..', 'public')); // Serve static files
-
-  // Retrieve the UsersService from the application context
-  const usersService = app.get(UsersService);
-  // await seedAdmin(usersService);
+  app.setBaseViewsDir(join(__dirname, '..', 'views'));
+  app.setViewEngine('hbs');
 
   configureApp(app);
 

@@ -58,7 +58,7 @@ let UsersController = class UsersController {
             const getBaseUrl = () => {
                 return config_1.default.isDev
                     ? process.env.BASE_URL || 'http://localhost:5000'
-                    : 'https://identity-management-af43.onrender.com';
+                    : 'api.citizenship.benuestate.gov.ng';
             };
             if (file) {
                 updatedData.passportPhoto = `${getBaseUrl()}/uploads/${file.filename}`;

@@ -65,6 +65,9 @@ const exception_1 = require("../common/exception");
 const fs = __importStar(require("fs"));
 const qrcode_1 = __importDefault(require("qrcode"));
 const public_decorator_1 = require("../common/decorators/public.decorator");
+const config_1 = __importDefault(require("../config"));
+const crypto = __importStar(require("crypto"));
+const throttler_1 = require("@nestjs/throttler");
 let IdcardController = class IdcardController {
     constructor(idcardService, userService) {
         this.idcardService = idcardService;
@@ -119,8 +122,14 @@ let IdcardController = class IdcardController {
                     .json({ message: 'Card has already been downloaded.' });
             }
             const date = new Date(user.DOB);
+            const dateOfIssue = new Date();
             const formattedDOB = date.toISOString().split('T')[0];
-            const qrCodeData = `Name: ${user.firstname} ${user.middlename} ${user.lastname} | BIN: ${card.bin} | DOB: ${formattedDOB} | Sex: ${user.gender}`;
+            const hash = this.generateSecureHash(card.id, user.firstname, user.lastname, dateOfIssue);
+            const getBaseUrl = () => config_1.default.isDev
+                ? process.env.BASE_URL || 'http://localhost:5000'
+                : 'http://api.citizenship.benuestate.gov.ng';
+            const verificationUrl = `${getBaseUrl()}/api/idcard/verify/${id}/${hash}`;
+            const qrCodeData = `Verification Url: ${verificationUrl} `;
             const qrCodeUrl = await this.generateQrCode(qrCodeData);
             card.qrCodeUrl = qrCodeUrl;
             const htmlTemplate = await this.loadHtmlTemplate('card-template.html');
@@ -134,6 +143,7 @@ let IdcardController = class IdcardController {
                     return;
                 }
                 await this.markCertificateAsDownloaded(id);
+                await this.idcardService.saveVerificationHash(id, hash);
             });
         }
         catch (error) {
@@ -141,12 +151,24 @@ let IdcardController = class IdcardController {
             res.status(500).json({ message: 'Internal server error' });
         }
     }
+    generateSecureHash(id, firstname, lastname, dateOfIssue) {
+        const secret = process.env.HASH_SECRET;
+        const data = `${id}:${firstname}:${lastname}:${dateOfIssue.toISOString()}`;
+        return crypto
+            .createHmac('sha256', secret)
+            .update(data)
+            .digest('hex')
+            .substring(0, 12);
+    }
     async loadHtmlTemplate(templateName) {
         const templatePath = path_1.default.join(__dirname, '..', '..', 'templates', templateName);
         return fs.promises.readFile(templatePath, 'utf8');
     }
     populateHtmlTemplate(html, data, user) {
         const dob = new Date(user.DOB);
+        const getBaseUrl = () => config_1.default.isDev
+            ? process.env.BASE_URL || 'http://localhost:5000'
+            : 'http://api.citizenship.benuestate.gov.ng';
         const formattedDOB = dob
             .toLocaleDateString('en-GB', {
             day: '2-digit',
@@ -163,6 +185,7 @@ let IdcardController = class IdcardController {
         })
             .replace(',', '');
         return html
+            .replace(/{{baseUrl}}/g, getBaseUrl())
             .replace(/{{name}}/g, user.firstname + ' ' + user.middlename)
             .replace(/{{surname}}/g, data.lastname)
             .replace(/{{dob}}/g, formattedDOB)
@@ -203,7 +226,7 @@ let IdcardController = class IdcardController {
         return await this.idcardService.findById(id);
     }
     getPdf(filename, res, req) {
-        const filePath = (0, path_1.join)('/home/spaceinovationhub/BSCR-MIS-BkND/uploads', filename);
+        const filePath = (0, path_1.join)(__dirname, '..', '..', 'uploads', filename);
         if (!fs.existsSync(filePath)) {
             throw new common_1.NotFoundException('File not found');
         }
@@ -215,6 +238,21 @@ let IdcardController = class IdcardController {
             console.error('Stream error:', err);
             res.status(500).end('Failed to serve PDF');
         });
+    }
+    async verify(id, hash, res) {
+        const result = await this.idcardService.verifyCertificate(id, hash);
+        if (result.valid) {
+            return res.render('verification', {
+                card: result.data,
+                layout: false,
+            });
+        }
+        else {
+            return res.render('invalid', {
+                message: result.message,
+                layout: false,
+            });
+        }
     }
 };
 exports.IdcardController = IdcardController;
@@ -333,6 +371,17 @@ __decorate([
     __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", void 0)
 ], IdcardController.prototype, "getPdf", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, throttler_1.Throttle)({ default: { limit: 5, ttl: 60000 } }),
+    (0, common_1.Get)('verify/:id/:hash'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Param)('hash')),
+    __param(2, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], IdcardController.prototype, "verify", null);
 exports.IdcardController = IdcardController = __decorate([
     (0, swagger_1.ApiTags)('idCard.controller'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

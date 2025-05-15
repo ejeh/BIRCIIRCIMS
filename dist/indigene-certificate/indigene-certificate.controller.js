@@ -67,6 +67,8 @@ const path_1 = __importStar(require("path"));
 const qrcode_1 = __importDefault(require("qrcode"));
 const config_1 = __importDefault(require("../config"));
 const public_decorator_1 = require("../common/decorators/public.decorator");
+const crypto = __importStar(require("crypto"));
+const throttler_1 = require("@nestjs/throttler");
 let IndigeneCertificateController = class IndigeneCertificateController {
     constructor(indigeneCertificateService, userService) {
         this.indigeneCertificateService = indigeneCertificateService;
@@ -90,7 +92,7 @@ let IndigeneCertificateController = class IndigeneCertificateController {
         }
         const getBaseUrl = () => config_1.default.isDev
             ? process.env.BASE_URL || 'http://localhost:5000'
-            : 'https://identity-management-af43.onrender.com';
+            : 'hhtp://api.citizenship.benuestate.gov.ng/';
         const fileUrl = (file) => `${getBaseUrl()}/uploads/${file.filename}`;
         const data = {
             ...body,
@@ -127,7 +129,12 @@ let IndigeneCertificateController = class IndigeneCertificateController {
                 month: 'long',
                 day: 'numeric',
             });
-            const qrCodeData = `Name: ${user.firstname} ${user.middlename} ${user.lastname} | issueDate: ${formattedDate} | Sex: ${user.gender} | issuer: Benue Digital Infrastructure Company`;
+            const hash = this.generateSecureHash(certificate.id, user.firstname, user.lastname, dateOfIssue);
+            const getBaseUrl = () => config_1.default.isDev
+                ? process.env.BASE_URL || 'http://localhost:5000'
+                : 'http://api.citizenship.benuestate.gov.ng';
+            const verificationUrl = `${getBaseUrl()}/api/indigene/certificate/verify/${id}/${hash}`;
+            const qrCodeData = `Verification Url: ${verificationUrl} `;
             const qrCodeUrl = await this.generateQrCode(qrCodeData);
             certificate.qrCodeUrl = qrCodeUrl;
             const htmlTemplate = await this.loadHtmlTemplate('certificate-template.html');
@@ -141,6 +148,7 @@ let IndigeneCertificateController = class IndigeneCertificateController {
                     return;
                 }
                 await this.markCertificateAsDownloaded(id);
+                await this.indigeneCertificateService.saveVerificationHash(id, hash);
             });
         }
         catch (error) {
@@ -148,12 +156,24 @@ let IndigeneCertificateController = class IndigeneCertificateController {
             res.status(500).json({ message: 'Internal server error' });
         }
     }
+    generateSecureHash(id, firstname, lastname, dateOfIssue) {
+        const secret = process.env.HASH_SECRET;
+        const data = `${id}:${firstname}:${lastname}:${dateOfIssue.toISOString()}`;
+        return crypto
+            .createHmac('sha256', secret)
+            .update(data)
+            .digest('hex')
+            .substring(0, 12);
+    }
     async loadHtmlTemplate(templateName) {
         const templatePath = path_1.default.join(__dirname, '..', '..', 'templates', templateName);
         return fs.promises.readFile(templatePath, 'utf8');
     }
     populateHtmlTemplate(html, data, user) {
         const date = new Date(data.DOB);
+        const getBaseUrl = () => config_1.default.isDev
+            ? process.env.BASE_URL || 'http://localhost:5000'
+            : 'http://api.citizenship.benuestate.gov.ng';
         const formattedDate = date.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
@@ -166,6 +186,7 @@ let IndigeneCertificateController = class IndigeneCertificateController {
             day: 'numeric',
         });
         return html
+            .replace(/{{baseUrl}}/g, getBaseUrl())
             .replace(/{{name}}/g, user.firstname + ' ' + user.middlename + ' ' + user.lastname)
             .replace(/{{lga}}/g, data.lgaOfOrigin)
             .replace(/{{family}}/g, data.fathersName)
@@ -238,7 +259,7 @@ let IndigeneCertificateController = class IndigeneCertificateController {
         return this.indigeneCertificateService.deleteItem(item);
     }
     getPdf(filename, res, req) {
-        const filePath = (0, path_1.join)('/home/spaceinovationhub/BSCR-MIS-BkND/uploads', filename);
+        const filePath = (0, path_1.join)(__dirname, '..', '..', 'uploads', filename);
         if (!fs.existsSync(filePath)) {
             throw new common_1.NotFoundException('File not found');
         }
@@ -250,6 +271,21 @@ let IndigeneCertificateController = class IndigeneCertificateController {
             console.error('Stream error:', err);
             res.status(500).end('Failed to serve PDF');
         });
+    }
+    async verify(id, hash, res) {
+        const result = await this.indigeneCertificateService.verifyCertificate(id, hash);
+        if (result.valid) {
+            return res.render('verification', {
+                certificate: result.data,
+                layout: false,
+            });
+        }
+        else {
+            return res.render('invalid', {
+                message: result.message,
+                layout: false,
+            });
+        }
     }
 };
 exports.IndigeneCertificateController = IndigeneCertificateController;
@@ -461,6 +497,17 @@ __decorate([
     __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", void 0)
 ], IndigeneCertificateController.prototype, "getPdf", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, throttler_1.Throttle)({ default: { limit: 5, ttl: 60000 } }),
+    (0, common_1.Get)('verify/:id/:hash'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Param)('hash')),
+    __param(2, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], IndigeneCertificateController.prototype, "verify", null);
 exports.IndigeneCertificateController = IndigeneCertificateController = __decorate([
     (0, swagger_1.ApiTags)('indigene-certificate.controller'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

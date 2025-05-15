@@ -23,12 +23,11 @@ import { IdcardModule } from './idcard/idcard.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { TransactionModule } from './transaction/transaction.module';
-import { KindredService } from './kindred/kindred.service';
 import { KindredModule } from './kindred/kindred.module';
 
-
-
 import config, { dbUrl } from './config';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { HelmetMiddleware } from '@nest-middlewares/helmet';
 
 console.log(config.isProd); // boolean
 console.log(dbUrl); // string | undefined
@@ -43,15 +42,16 @@ const DEV_TRANSPORTER = {
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 10,
+      },
+    ]),
     UsersModule,
     MorganModule,
     MongooseModule.forRoot(dbUrl),
-    // MongooseModule.forRoot(dbUrl, {
-    //   ssl: config.isProd,
-    //   retryAttempts: 5,
-    //   retryDelay: 3000,
-    // }),
-    
+
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'), // Path to your static files directory
       serveRoot: '/uploads', // The base URL path
@@ -95,6 +95,9 @@ const DEV_TRANSPORTER = {
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
+    HelmetMiddleware.configure({});
+    consumer.apply(HelmetMiddleware).forRoutes('*');
+
     ServeStaticMiddleware.configure(
       path.resolve(__dirname, '..', '..', 'public'),
       config.static,

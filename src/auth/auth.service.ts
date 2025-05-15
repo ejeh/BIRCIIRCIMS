@@ -186,8 +186,7 @@ export class AuthService {
   }
 
   async signUpKindred(userData: SigUpKindredDto, origin: string) {
-    console.log('creating new account');
-
+    console.log(userData);
     const { NIN, firstname, lastname, stateOfOrigin } = userData;
 
     if (!this.fakeDatabase[NIN]) {
@@ -212,7 +211,7 @@ export class AuthService {
       userData.password,
       userData.phone,
       userData.stateOfOrigin,
-      userData.lgaOfOrigin,
+      userData.lga,
       userData.NIN,
       'kindred_head',
       origin,
@@ -225,11 +224,11 @@ export class AuthService {
         firstname: user.firstname,
         lastname: user.lastname,
         email: user.email,
-        lga: userData.lga,
+        lga: user.lgaOfOrigin,
         stateOfOrigin: user.stateOfOrigin,
-        address: userData.address,
         phone: userData.phone,
         kindred: userData.kindred,
+        address: userData.address,
       });
     } catch (err) {
       console.error('Kindred creation failed:', err);

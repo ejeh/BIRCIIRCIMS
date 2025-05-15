@@ -7,12 +7,12 @@ export declare class KindredService {
         userId: string;
         firstname: string;
         lastname: string;
-        address: string;
         phone: number;
         kindred: string;
         lga: string;
         stateOfOrigin: string;
         email: string;
+        address: string;
     }) => Promise<any>;
     getPaginatedData(page: number, limit: number): Promise<{
         data: (import("mongoose").Document<unknown, {}, Kindred, {}> & Kindred & Required<{

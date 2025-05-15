@@ -1,5 +1,5 @@
 declare const VALID_ENVIRONMENTS: readonly ["development", "production", "test"];
-type NodeEnv = typeof VALID_ENVIRONMENTS[number];
+type NodeEnv = (typeof VALID_ENVIRONMENTS)[number];
 declare const NODE_ENV: NodeEnv;
 declare const config: {
     isDev: boolean;

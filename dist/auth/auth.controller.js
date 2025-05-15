@@ -19,22 +19,20 @@ exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const auth_service_1 = require("./auth.service");
-const users_service_1 = require("../users/users.service");
 const auth_interface_1 = require("./auth.interface");
 const auth_1 = require("./auth");
 const passport_1 = require("@nestjs/passport");
 const config_1 = __importDefault(require("../config"));
 const kindredDto_1 = require("../kindred/kindredDto");
 let AuthController = class AuthController {
-    constructor(authService, userService) {
+    constructor(authService) {
         this.authService = authService;
-        this.userService = userService;
     }
     async activate(params, res) {
         const getFrontendBaseUrl = () => {
             return config_1.default.isDev
                 ? 'http://127.0.0.1:5501'
-                : 'https://bscr-mis-ui.onrender.com';
+                : 'https://citizenship.benuestate.gov.ng';
         };
         const result = await this.authService.activate(params);
         const redirectUrl = result.success
@@ -103,7 +101,7 @@ let AuthController = class AuthController {
             '88765432105': {
                 fullName: 'Derick Gbaden',
                 dob: '1990-01-01',
-                phone: '08043710658',
+                phone: '08043710650',
                 stateOfOrigin: 'Benue',
                 lga: 'Gboko',
             },
@@ -209,7 +207,6 @@ exports.AuthController = AuthController = __decorate([
     (0, swagger_1.ApiTags)('auth'),
     (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.Controller)('api/auth'),
-    __metadata("design:paramtypes", [auth_service_1.AuthService,
-        users_service_1.UsersService])
+    __metadata("design:paramtypes", [auth_service_1.AuthService])
 ], AuthController);
 //# sourceMappingURL=auth.controller.js.map

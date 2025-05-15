@@ -8,8 +8,10 @@ exports.KindredSchema = new mongoose_1.Schema({
         ref: 'User',
         required: true,
     },
+    email: { type: String, required: true },
     firstname: { type: String, required: true },
     lastname: { type: String, required: true },
+    middlename: { type: String },
     phone: { type: String, required: true, unique: true },
     address: { type: String, required: true },
     kindred: {

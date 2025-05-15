@@ -20,6 +20,7 @@ export declare class IdcardController {
     getUserProfile(id: string, body: any): Promise<IdCard>;
     deleteItem(item: string): Promise<any>;
     downloadCertificate(id: string, res: Response): Promise<Response<any, Record<string, any>>>;
+    private generateSecureHash;
     private loadHtmlTemplate;
     private populateHtmlTemplate;
     private markCertificateAsDownloaded;
@@ -28,4 +29,5 @@ export declare class IdcardController {
     resubmitRequest(id: string, updatedData: any): Promise<IdCard>;
     getCert(id: string, body: any): Promise<IdCard>;
     getPdf(filename: string, res: Response, req: any): void;
+    verify(id: string, hash: string, res: Response): Promise<void>;
 }

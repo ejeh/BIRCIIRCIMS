@@ -151,6 +151,15 @@ export class Certificate extends Document {
 
   @Prop({ required: false, default: null })
   qrCodeUrl?: string; // URL for the QR code
+
+  @Prop({ required: true })
+  issuingAuthority: string;
+
+  @Prop({ default: true })
+  isValid: boolean;
+
+  @Prop({ type: mongoose.SchemaTypes.String })
+  verificationHash: string; // Hash for verification
 }
 
 export const CertificateSchema = SchemaFactory.createForClass(Certificate);

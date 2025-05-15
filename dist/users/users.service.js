@@ -118,8 +118,8 @@ let UsersService = class UsersService {
             passwordResetToken,
         }, {
             password: await (0, auth_1.hashPassword)(password),
-            passwordResetToken: undefined,
-            passwordResetExpires: undefined,
+            passwordResetToken: null,
+            passwordResetExpires: null,
         }, {
             new: true,
             runValidators: true,

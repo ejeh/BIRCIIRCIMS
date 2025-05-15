@@ -258,6 +258,11 @@ __decorate([
     (0, swagger_1.ApiProperty)(),
     (0, mongoose_1.Prop)({ type: mongoose.SchemaTypes.String }),
     __metadata("design:type", String)
+], User.prototype, "passwordResetExpires", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)(),
+    (0, mongoose_1.Prop)({ type: mongoose.SchemaTypes.String }),
+    __metadata("design:type", String)
 ], User.prototype, "activationToken", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)(),

@@ -18,6 +18,9 @@ export declare class IdCard extends Document {
     phone: number;
     qrCodeUrl?: string;
     bin?: string;
+    issuingAuthority: string;
+    isValid: boolean;
+    verificationHash: string;
 }
 export declare const IdCardSchema: mongoose.Schema<IdCard, mongoose.Model<IdCard, any, any, any, mongoose.Document<unknown, any, IdCard, any> & IdCard & Required<{
     _id: unknown;

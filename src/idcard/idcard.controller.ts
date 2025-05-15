@@ -32,6 +32,9 @@ import { UserNotFoundException } from 'src/common/exception';
 import * as fs from 'fs';
 import QRCode from 'qrcode';
 import { Public } from 'src/common/decorators/public.decorator';
+import config from 'src/config';
+import * as crypto from 'crypto';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('idCard.controller')
 @UseGuards(JwtAuthGuard)
@@ -63,8 +66,6 @@ export class IdcardController {
     const data = {
       ...body,
       bin: await this.idcardService.generateUniqueBIN(),
-      // ref_letter: files[0]?.path,
-      // utilityBill: files[1]?.path,
       ref_letter: files[0]?.filename,
       utilityBill: files[1]?.filename,
     };
@@ -163,9 +164,31 @@ export class IdcardController {
       }
 
       const date = new Date(user.DOB);
+      const dateOfIssue = new Date();
+
       const formattedDOB = date.toISOString().split('T')[0]; // Extracts YYYY-MM-DD
 
-      const qrCodeData = `Name: ${user.firstname} ${user.middlename} ${user.lastname} | BIN: ${card.bin} | DOB: ${formattedDOB} | Sex: ${user.gender}`;
+      // 1. Generate hash
+      const hash = this.generateSecureHash(
+        card.id,
+        user.firstname,
+        user.lastname,
+        dateOfIssue, // Or use your certificate's issue date
+      );
+
+      const getBaseUrl = (): string =>
+        config.isDev
+          ? process.env.BASE_URL || 'http://localhost:5000'
+          : 'http://api.citizenship.benuestate.gov.ng';
+
+      // 2. Create QR Code URL
+      const verificationUrl = `${getBaseUrl()}/api/idcard/verify/${id}/${hash}`;
+
+      // const qrCodeData = `Name: ${user.firstname} ${user.middlename} ${user.lastname} | issueDate: ${formattedDate} | Sex: ${user.gender} | issuer: Benue Digital Infrastructure Company | verificationUrl:${verificationUrl} `;
+
+      const qrCodeData = `Verification Url: ${verificationUrl} `;
+
+      // const qrCodeData = `Name: ${user.firstname} ${user.middlename} ${user.lastname} | BIN: ${card.bin} | DOB: ${formattedDOB} | Sex: ${user.gender}`;
 
       const qrCodeUrl = await this.generateQrCode(qrCodeData); // Generate QR code URL
       card.qrCodeUrl = qrCodeUrl; // Save the QR code URL in the card
@@ -193,12 +216,29 @@ export class IdcardController {
 
         // Mark as downloaded and delete temp file after sending
         await this.markCertificateAsDownloaded(id);
-        // this.cleanupTempFile(pdfPath);
+
+        // Save verication hash
+        await this.idcardService.saveVerificationHash(id, hash);
       });
     } catch (error) {
       console.error('Error processing request:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
+  }
+
+  private generateSecureHash(
+    id: string,
+    firstname: string,
+    lastname: string,
+    dateOfIssue: Date,
+  ): string {
+    const secret = process.env.HASH_SECRET; // Store in .env
+    const data = `${id}:${firstname}:${lastname}:${dateOfIssue.toISOString()}`;
+    return crypto
+      .createHmac('sha256', secret)
+      .update(data)
+      .digest('hex')
+      .substring(0, 12); // First 12 chars for QR code
   }
 
   private async loadHtmlTemplate(templateName: string): Promise<string> {
@@ -214,6 +254,12 @@ export class IdcardController {
 
   private populateHtmlTemplate(html: string, data: any, user: any): string {
     const dob = new Date(user.DOB);
+
+    const getBaseUrl = (): string =>
+      config.isDev
+        ? process.env.BASE_URL || 'http://localhost:5000'
+        : 'http://api.citizenship.benuestate.gov.ng';
+
     const formattedDOB = dob
       .toLocaleDateString('en-GB', {
         day: '2-digit',
@@ -232,6 +278,7 @@ export class IdcardController {
       .replace(',', '');
 
     return html
+      .replace(/{{baseUrl}}/g, getBaseUrl())
       .replace(/{{name}}/g, user.firstname + ' ' + user.middlename)
       .replace(/{{surname}}/g, data.lastname)
       .replace(/{{dob}}/g, formattedDOB)
@@ -290,7 +337,11 @@ export class IdcardController {
     @Req() req: any,
   ) {
     const filePath = join(
-      '/home/spaceinovationhub/BSCR-MIS-BkND/uploads',
+      // '/home/spaceinovationhub/BSCR-MIS-BkND/uploads',
+      __dirname,
+      '..',
+      '..',
+      'uploads',
       filename,
     );
 
@@ -310,5 +361,27 @@ export class IdcardController {
       console.error('Stream error:', err);
       res.status(500).end('Failed to serve PDF');
     });
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
+  @Get('verify/:id/:hash')
+  async verify(
+    @Param('id') id: string,
+    @Param('hash') hash: string,
+    @Res() res: Response,
+  ) {
+    const result = await this.idcardService.verifyCertificate(id, hash);
+    if (result.valid) {
+      return res.render('verification', {
+        card: result.data,
+        layout: false,
+      });
+    } else {
+      return res.render('invalid', {
+        message: result.message,
+        layout: false,
+      });
+    }
   }
 }

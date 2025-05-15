@@ -39,6 +39,8 @@ import path, { extname, join } from 'path';
 import QRCode from 'qrcode';
 import config from 'src/config';
 import { Public } from 'src/common/decorators/public.decorator';
+import * as crypto from 'crypto';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('indigene-certificate.controller')
 @UseGuards(JwtAuthGuard)
@@ -136,7 +138,7 @@ export class IndigeneCertificateController {
     const getBaseUrl = (): string =>
       config.isDev
         ? process.env.BASE_URL || 'http://localhost:5000'
-        : 'api.citizenship.benuestate.gov.ng';
+        : 'hhtp://api.citizenship.benuestate.gov.ng/';
 
     const fileUrl = (file: Express.Multer.File) =>
       `${getBaseUrl()}/uploads/${file.filename}`;
@@ -212,8 +214,25 @@ export class IndigeneCertificateController {
         month: 'long',
         day: 'numeric',
       });
+      // 1. Generate hash
+      const hash = this.generateSecureHash(
+        certificate.id,
+        user.firstname,
+        user.lastname,
+        dateOfIssue, // Or use your certificate's issue date
+      );
 
-      const qrCodeData = `Name: ${user.firstname} ${user.middlename} ${user.lastname} | issueDate: ${formattedDate} | Sex: ${user.gender} | issuer: Benue Digital Infrastructure Company`;
+      const getBaseUrl = (): string =>
+        config.isDev
+          ? process.env.BASE_URL || 'http://localhost:5000'
+          : 'http://api.citizenship.benuestate.gov.ng';
+
+      // 2. Create QR Code URL
+      const verificationUrl = `${getBaseUrl()}/api/indigene/certificate/verify/${id}/${hash}`;
+
+      // const qrCodeData = `Name: ${user.firstname} ${user.middlename} ${user.lastname} | issueDate: ${formattedDate} | Sex: ${user.gender} | issuer: Benue Digital Infrastructure Company | verificationUrl:${verificationUrl} `;
+
+      const qrCodeData = `Verification Url: ${verificationUrl} `;
 
       const qrCodeUrl = await this.generateQrCode(qrCodeData); // Generate QR code URL
       certificate.qrCodeUrl = qrCodeUrl; // Save the QR code URL in the certificate
@@ -230,7 +249,6 @@ export class IndigeneCertificateController {
       const pdfPath =
         await this.indigeneCertificateService.generateCertificatePDF(
           id,
-          // certificate,
           populatedHtml,
         );
 
@@ -249,12 +267,26 @@ export class IndigeneCertificateController {
 
         // Mark as downloaded and delete temp file after sending
         await this.markCertificateAsDownloaded(id);
-        // this.cleanupTempFile(pdfPath);
+        await this.indigeneCertificateService.saveVerificationHash(id, hash);
       });
     } catch (error) {
       console.error('Error processing request:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
+  }
+  private generateSecureHash(
+    id: string,
+    firstname: string,
+    lastname: string,
+    dateOfIssue: Date,
+  ): string {
+    const secret = process.env.HASH_SECRET; // Store in .env
+    const data = `${id}:${firstname}:${lastname}:${dateOfIssue.toISOString()}`;
+    return crypto
+      .createHmac('sha256', secret)
+      .update(data)
+      .digest('hex')
+      .substring(0, 12); // First 12 chars for QR code
   }
 
   private async loadHtmlTemplate(templateName: string): Promise<string> {
@@ -270,6 +302,10 @@ export class IndigeneCertificateController {
 
   private populateHtmlTemplate(html: string, data: any, user: any): string {
     const date = new Date(data.DOB);
+    const getBaseUrl = (): string =>
+      config.isDev
+        ? process.env.BASE_URL || 'http://localhost:5000'
+        : 'http://api.citizenship.benuestate.gov.ng';
 
     // Format as "February 20, 1991"
     const formattedDate = date.toLocaleDateString('en-US', {
@@ -288,6 +324,7 @@ export class IndigeneCertificateController {
     });
 
     return html
+      .replace(/{{baseUrl}}/g, getBaseUrl())
       .replace(
         /{{name}}/g,
         user.firstname + ' ' + user.middlename + ' ' + user.lastname,
@@ -301,17 +338,6 @@ export class IndigeneCertificateController {
       .replace(/{{passportPhoto}}/g, user.passportPhoto)
       .replace(/{{qrCodeUrl}}/g, data.qrCodeUrl);
   }
-
-  // private async cleanupTempFile(filePath: string): Promise<void> {
-  //   try {
-  //     if (fs.existsSync(filePath)) {
-  //       await fs.promises.unlink(filePath);
-  //       console.log(`Deleted temp file: ${filePath}`);
-  //     }
-  //   } catch (unlinkErr) {
-  //     console.error('Error deleting temporary file:', unlinkErr);
-  //   }
-  // }
 
   private async markCertificateAsDownloaded(id: string): Promise<void> {
     try {
@@ -458,10 +484,7 @@ export class IndigeneCertificateController {
     @Res() res: Response,
     @Req() req: any,
   ) {
-    const filePath = join(
-      '/home/spaceinovationhub/BSCR-MIS-BkND/uploads',
-      filename,
-    );
+    const filePath = join(__dirname, '..', '..', 'uploads', filename);
 
     if (!fs.existsSync(filePath)) {
       throw new NotFoundException('File not found');
@@ -479,5 +502,30 @@ export class IndigeneCertificateController {
       console.error('Stream error:', err);
       res.status(500).end('Failed to serve PDF');
     });
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
+  @Get('verify/:id/:hash')
+  async verify(
+    @Param('id') id: string,
+    @Param('hash') hash: string,
+    @Res() res: Response,
+  ) {
+    const result = await this.indigeneCertificateService.verifyCertificate(
+      id,
+      hash,
+    );
+    if (result.valid) {
+      return res.render('verification', {
+        certificate: result.data,
+        layout: false,
+      });
+    } else {
+      return res.render('invalid', {
+        message: result.message,
+        layout: false,
+      });
+    }
   }
 }
