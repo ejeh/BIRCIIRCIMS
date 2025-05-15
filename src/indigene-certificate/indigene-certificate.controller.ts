@@ -516,14 +516,20 @@ export class IndigeneCertificateController {
       id,
       hash,
     );
+    const getBaseUrl = (): string =>
+      config.isDev
+        ? process.env.BASE_URL || 'http://localhost:5000'
+        : 'http://api.citizenship.benuestate.gov.ng';
     if (result.valid) {
       return res.render('verification', {
         certificate: result.data,
+        baseeUrl: getBaseUrl(),
         layout: false,
       });
     } else {
       return res.render('invalid', {
         message: result.message,
+        baseeUrl: getBaseUrl(),
         layout: false,
       });
     }

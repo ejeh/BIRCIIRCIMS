@@ -372,14 +372,22 @@ export class IdcardController {
     @Res() res: Response,
   ) {
     const result = await this.idcardService.verifyCertificate(id, hash);
+
+    const getBaseUrl = (): string =>
+      config.isDev
+        ? process.env.BASE_URL || 'http://localhost:5000'
+        : 'http://api.citizenship.benuestate.gov.ng';
+
     if (result.valid) {
-      return res.render('verification', {
+      return res.render('id-card-verification', {
         card: result.data,
+        baseUrl: getBaseUrl(),
         layout: false,
       });
     } else {
       return res.render('invalid', {
         message: result.message,
+        baseUrl: getBaseUrl(),
         layout: false,
       });
     }

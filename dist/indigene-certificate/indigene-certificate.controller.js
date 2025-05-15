@@ -274,15 +274,20 @@ let IndigeneCertificateController = class IndigeneCertificateController {
     }
     async verify(id, hash, res) {
         const result = await this.indigeneCertificateService.verifyCertificate(id, hash);
+        const getBaseUrl = () => config_1.default.isDev
+            ? process.env.BASE_URL || 'http://localhost:5000'
+            : 'http://api.citizenship.benuestate.gov.ng';
         if (result.valid) {
             return res.render('verification', {
                 certificate: result.data,
+                baseeUrl: getBaseUrl(),
                 layout: false,
             });
         }
         else {
             return res.render('invalid', {
                 message: result.message,
+                baseeUrl: getBaseUrl(),
                 layout: false,
             });
         }
