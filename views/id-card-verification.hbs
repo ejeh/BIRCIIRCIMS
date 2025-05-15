@@ -50,44 +50,44 @@
               width='20%'
               height='15%'
             />
-            <h1 class='display-5 fw-bold'>Indigenous Status Verification</h1>
+            <h1 class='display-5 fw-bold'>Identity Status Verification</h1>
             <p class='lead'>Official Government Verification Portal</p>
           </div>
 
           <div class='card certificate-card shadow-lg mb-4'>
             <div class='card-header official-badge'>
               <i class='bi bi-shield-check'></i>
-              VERIFIED CERTIFICATE
+              VERIFIED INDENTITY CARD
             </div>
             <div class='card-body position-relative'>
               <div class='watermark'>VALID</div>
               <div class='row mb-3'>
                 <div class='col-md-6'>
-                  <h5 class='fw-bold'>Certificate ID:</h5>
-                  <p class='text-muted'>{{certificate.certificateId}}</p>
+                  <h5 class='fw-bold'>Card ID:</h5>
+                  <p class='text-muted'>{{card.bin}}</p>
                 </div>
                 <div class='col-md-6'>
                   <h5 class='fw-bold'>Issuing Authority:</h5>
-                  <p class='text-muted'>{{certificate.issuingAuthority}}</p>
+                  <p class='text-muted'>{{card.issuingAuthority}}</p>
                 </div>
               </div>
 
               <div class='row mb-3'>
                 <div class='col-md-6'>
                   <h5 class='fw-bold'>Holder's Name:</h5>
-                  <p class='text-muted'>{{certificate.firstname}}
-                    {{certificate.lastname}}</p>
+                  <p class='text-muted'>{{card.firstname}}
+                    {{card.lastname}}</p>
                 </div>
                 <div class='col-md-6'>
                   <h5 class='fw-bold'>Indigenous Group:</h5>
-                  <p class='text-muted'>{{certificate.kindred}}</p>
+                  <p class='text-muted'>{{card.bin}}</p>
                 </div>
               </div>
 
               <div class='row'>
                 <div class='col-md-6'>
                   <h5 class='fw-bold'>Date of Issuance:</h5>
-                  <p class='text-muted'>{{certificate.dateOfIssuance}}</p>
+                  <p class='text-muted'>{{card.dateOfIssuance}}</p>
                 </div>
                 <div class='col-md-6'>
                   <h5 class='fw-bold'>Verification Date:</h5>
@@ -111,7 +111,7 @@
 
           <div class='alert alert-success'>
             <i class='bi bi-check-circle-fill'></i>
-            This certificate has been successfully verified against the official
+            This crad has been successfully verified against the official
             government registry.
           </div>
 
