@@ -53,4 +53,6 @@ export declare class IndigeneCertificateService {
     generateCertificatePDF(id: string, html: string): Promise<string>;
     deleteItem: (item_id: string) => Promise<any>;
     findByIds(ids: string[]): Promise<any[]>;
+    verifyCertificate(certificateId: string, hash: string): Promise<any>;
+    saveVerificationHash(certificateId: string, hash: string): Promise<import("mongoose").UpdateWriteOpResult>;
 }

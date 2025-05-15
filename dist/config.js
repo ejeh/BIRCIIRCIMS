@@ -49,7 +49,7 @@ const config = {
         origin: process.env.CORS_ORIGIN || '*',
         methods: (process.env.CORS_METHODS || 'POST,GET,PUT,OPTIONS,DELETE,PATCH')
             .split(',')
-            .map(method => method.trim()),
+            .map((method) => method.trim()),
         allowedHeaders: [
             'Timezone-Offset',
             'Origin',
@@ -58,7 +58,9 @@ const config = {
             'Accept',
             'Authorization',
             'authorization',
-            ...(process.env.EXTRA_CORS_HEADERS ? process.env.EXTRA_CORS_HEADERS.split(',') : []),
+            ...(process.env.EXTRA_CORS_HEADERS
+                ? process.env.EXTRA_CORS_HEADERS.split(',')
+                : []),
             '*',
         ].join(','),
         preflightContinue: false,

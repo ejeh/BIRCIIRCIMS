@@ -138,7 +138,7 @@ export class AuthController {
       '88765432105': {
         fullName: 'Derick Gbaden',
         dob: '1990-01-01',
-        phone: '08043710658',
+        phone: '08043710650',
         stateOfOrigin: 'Benue',
         lga: 'Gboko',
       },

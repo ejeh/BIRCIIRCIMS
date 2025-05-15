@@ -7,6 +7,7 @@ import { UserNotFoundException } from 'src/common/exception';
 import puppeteer from 'puppeteer';
 import path from 'path';
 import * as fs from 'fs';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class IdcardService {
@@ -174,5 +175,44 @@ export class IdcardService {
       },
       { new: true },
     );
+  }
+
+  async verifyCertificate(cardId: string, hash: string): Promise<any> {
+    const card = await this.idCardModel.findOne({
+      _id: new Types.ObjectId(cardId),
+      verificationHash: hash,
+    });
+
+    if (!card) {
+      return { valid: false, message: 'Certificate not found' };
+    }
+
+    if (!card.isValid) {
+      return { valid: false, message: 'Certificate has been revoked' };
+    }
+
+    // Return limited information for privacy
+    return {
+      valid: true,
+      data: {
+        bin: card.bin,
+        firstname: card.firstname,
+        lastname: card.lastname,
+        issuingAuthority: 'Benue State citizenship/residency management system',
+      },
+    };
+  }
+
+  async saveVerificationHash(cardId: string, hash: string) {
+    try {
+      const result = await this.idCardModel.updateOne(
+        { _id: new Types.ObjectId(cardId) },
+        { $set: { verificationHash: hash } },
+      );
+      return result;
+    } catch (error) {
+      console.error('Error updating verification hash:', error);
+      throw error;
+    }
   }
 }

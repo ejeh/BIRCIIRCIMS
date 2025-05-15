@@ -57,6 +57,7 @@ const exception_1 = require("../common/exception");
 const puppeteer_1 = __importDefault(require("puppeteer"));
 const path_1 = __importDefault(require("path"));
 const fs = __importStar(require("fs"));
+const mongoose_3 = require("mongoose");
 let IdcardService = class IdcardService {
     constructor(idCardModel) {
         this.idCardModel = idCardModel;
@@ -175,6 +176,37 @@ let IdcardService = class IdcardService {
             resubmissionAllowed: false,
             $inc: { resubmissionAttempts: 1 },
         }, { new: true });
+    }
+    async verifyCertificate(cardId, hash) {
+        const card = await this.idCardModel.findOne({
+            _id: new mongoose_3.Types.ObjectId(cardId),
+            verificationHash: hash,
+        });
+        if (!card) {
+            return { valid: false, message: 'Certificate not found' };
+        }
+        if (!card.isValid) {
+            return { valid: false, message: 'Certificate has been revoked' };
+        }
+        return {
+            valid: true,
+            data: {
+                bin: card.bin,
+                firstname: card.firstname,
+                lastname: card.lastname,
+                issuingAuthority: 'Benue State citizenship/residency management system',
+            },
+        };
+    }
+    async saveVerificationHash(cardId, hash) {
+        try {
+            const result = await this.idCardModel.updateOne({ _id: new mongoose_3.Types.ObjectId(cardId) }, { $set: { verificationHash: hash } });
+            return result;
+        }
+        catch (error) {
+            console.error('Error updating verification hash:', error);
+            throw error;
+        }
     }
 };
 exports.IdcardService = IdcardService;

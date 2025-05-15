@@ -24,4 +24,6 @@ export declare class IdcardService {
     markAsDownloaded(id: string): Promise<void>;
     generateIDCardPDF(id: string, html: string): Promise<string>;
     resubmitRequest(id: string, updatedData: Partial<IdCard>): Promise<IdCard>;
+    verifyCertificate(cardId: string, hash: string): Promise<any>;
+    saveVerificationHash(cardId: string, hash: string): Promise<import("mongoose").UpdateWriteOpResult>;
 }

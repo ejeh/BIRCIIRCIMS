@@ -1,12 +1,14 @@
 import { Schema, Document, Types } from 'mongoose';
 export interface Kindred extends Document {
     userId: Types.ObjectId;
+    email: string;
     firstname: string;
     lastname: string;
     address: string;
     phone: string;
     kindred: string;
     lga: string;
+    middlename: string;
     stateOfOrigin: string;
     createdAt: Date;
 }

@@ -34,7 +34,6 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv = __importStar(require("dotenv"));
-const dns = __importStar(require("dns"));
 const path = __importStar(require("path"));
 if (process.env.NODE_ENV === 'production') {
     dotenv.config({ path: path.resolve(__dirname, '..', '.env.production') });
@@ -42,7 +41,6 @@ if (process.env.NODE_ENV === 'production') {
 else {
     dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 }
-dns.setServers(['8.8.8.8', '1.1.1.1']);
 const bootsrap_1 = require("./bootsrap");
 (0, bootsrap_1.bootstrap)();
 //# sourceMappingURL=main.js.map

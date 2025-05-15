@@ -23,10 +23,6 @@ export class SigUpKindredDto {
   @ApiProperty({})
   readonly lastname!: string;
 
-  @MaxLength(255)
-  @ApiProperty({})
-  readonly address!: string;
-
   @IsNotEmpty()
   @MaxLength(11)
   @ApiProperty({})
@@ -52,7 +48,7 @@ export class SigUpKindredDto {
   @IsNotEmpty()
   @MaxLength(255)
   @ApiProperty({})
-  readonly lgaOfOrigin!: string;
+  readonly address!: string;
 
   @ApiProperty({ example: 'email@email.com', maxLength: 255 })
   @IsEmail()
@@ -65,18 +61,6 @@ export class SigUpKindredDto {
 }
 
 export class UpdateKindredDto {
-  @IsString()
-  @IsOptional()
-  @MaxLength(255)
-  @ApiProperty({})
-  readonly firstname?: string;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(255)
-  @ApiProperty({})
-  readonly lastname?: string;
-
   @IsString()
   @IsOptional()
   @MaxLength(255)
@@ -98,10 +82,5 @@ export class UpdateKindredDto {
   @IsOptional()
   @MaxLength(255)
   @ApiProperty({})
-  readonly lga?: string;
-
-  @IsNotEmpty()
-  @MaxLength(255)
-  @ApiProperty({})
-  readonly stateOfOrigin!: string;
+  readonly middlename?: string;
 }

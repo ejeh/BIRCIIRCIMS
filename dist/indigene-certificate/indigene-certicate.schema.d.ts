@@ -34,6 +34,9 @@ export declare class Certificate extends Document {
     parentGuardianIndigeneCert: string;
     uploadedAttestationUrl: string;
     qrCodeUrl?: string;
+    issuingAuthority: string;
+    isValid: boolean;
+    verificationHash: string;
 }
 export declare const CertificateSchema: mongoose.Schema<Certificate, mongoose.Model<Certificate, any, any, any, mongoose.Document<unknown, any, Certificate, any> & Certificate & Required<{
     _id: unknown;

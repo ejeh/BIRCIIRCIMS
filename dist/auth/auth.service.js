@@ -149,7 +149,7 @@ let AuthService = class AuthService {
         };
     }
     async signUpKindred(userData, origin) {
-        console.log('creating new account');
+        console.log(userData);
         const { NIN, firstname, lastname, stateOfOrigin } = userData;
         if (!this.fakeDatabase[NIN]) {
             throw new common_1.BadRequestException('NIN not found');
@@ -161,18 +161,18 @@ let AuthService = class AuthService {
                 stateOfOrigin.toLocaleLowerCase()) {
             throw new common_1.BadRequestException('User details do not match the NIN record');
         }
-        const user = await this.usersService.create(userData.firstname, userData.lastname, userData.email, userData.password, userData.phone, userData.stateOfOrigin, userData.lgaOfOrigin, userData.NIN, 'kindred_head', origin);
+        const user = await this.usersService.create(userData.firstname, userData.lastname, userData.email, userData.password, userData.phone, userData.stateOfOrigin, userData.lga, userData.NIN, 'kindred_head', origin);
         try {
             await this.kindredService.createKindred({
                 userId: userData.userId,
                 firstname: user.firstname,
                 lastname: user.lastname,
                 email: user.email,
-                lga: userData.lga,
+                lga: user.lgaOfOrigin,
                 stateOfOrigin: user.stateOfOrigin,
-                address: userData.address,
                 phone: userData.phone,
                 kindred: userData.kindred,
+                address: userData.address,
             });
         }
         catch (err) {

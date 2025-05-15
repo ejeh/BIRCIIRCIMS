@@ -17,6 +17,7 @@ export declare class IndigeneCertificateController {
         __v: number;
     }>;
     downloadCertificate(id: string, res: Response): Promise<Response<any, Record<string, any>>>;
+    private generateSecureHash;
     private loadHtmlTemplate;
     private populateHtmlTemplate;
     private markCertificateAsDownloaded;
@@ -58,4 +59,5 @@ export declare class IndigeneCertificateController {
     getUserProfile(id: string, body: any): Promise<Certificate>;
     deleteItem(item: string): Promise<any>;
     getPdf(filename: string, res: Response, req: any): void;
+    verify(id: string, hash: string, res: Response): Promise<void>;
 }

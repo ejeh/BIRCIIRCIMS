@@ -33,11 +33,6 @@ __decorate([
     __metadata("design:type", String)
 ], SigUpKindredDto.prototype, "lastname", void 0);
 __decorate([
-    (0, class_validator_1.MaxLength)(255),
-    (0, swagger_1.ApiProperty)({}),
-    __metadata("design:type", String)
-], SigUpKindredDto.prototype, "address", void 0);
-__decorate([
     (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.MaxLength)(11),
     (0, swagger_1.ApiProperty)({}),
@@ -69,7 +64,7 @@ __decorate([
     (0, class_validator_1.MaxLength)(255),
     (0, swagger_1.ApiProperty)({}),
     __metadata("design:type", String)
-], SigUpKindredDto.prototype, "lgaOfOrigin", void 0);
+], SigUpKindredDto.prototype, "address", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ example: 'email@email.com', maxLength: 255 }),
     (0, class_validator_1.IsEmail)(),
@@ -84,20 +79,6 @@ __decorate([
 class UpdateKindredDto {
 }
 exports.UpdateKindredDto = UpdateKindredDto;
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.MaxLength)(255),
-    (0, swagger_1.ApiProperty)({}),
-    __metadata("design:type", String)
-], UpdateKindredDto.prototype, "firstname", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.MaxLength)(255),
-    (0, swagger_1.ApiProperty)({}),
-    __metadata("design:type", String)
-], UpdateKindredDto.prototype, "lastname", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
@@ -124,11 +105,5 @@ __decorate([
     (0, class_validator_1.MaxLength)(255),
     (0, swagger_1.ApiProperty)({}),
     __metadata("design:type", String)
-], UpdateKindredDto.prototype, "lga", void 0);
-__decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.MaxLength)(255),
-    (0, swagger_1.ApiProperty)({}),
-    __metadata("design:type", String)
-], UpdateKindredDto.prototype, "stateOfOrigin", void 0);
+], UpdateKindredDto.prototype, "middlename", void 0);
 //# sourceMappingURL=kindredDto.js.map

@@ -60,6 +60,8 @@ const path_1 = require("path");
 const transaction_module_1 = require("./transaction/transaction.module");
 const kindred_module_1 = require("./kindred/kindred.module");
 const config_1 = __importStar(require("./config"));
+const throttler_1 = require("@nestjs/throttler");
+const helmet_1 = require("@nest-middlewares/helmet");
 console.log(config_1.default.isProd);
 console.log(config_1.dbUrl);
 const DEV_TRANSPORTER = {
@@ -72,6 +74,8 @@ const DEV_TRANSPORTER = {
 };
 let AppModule = class AppModule {
     configure(consumer) {
+        helmet_1.HelmetMiddleware.configure({});
+        consumer.apply(helmet_1.HelmetMiddleware).forRoutes('*');
         serve_static_1.ServeStaticMiddleware.configure(path.resolve(__dirname, '..', '..', 'public'), config_1.default.static);
         consumer.apply(serve_static_1.ServeStaticMiddleware).forRoutes('public');
         if (!config_1.default.isTest) {
@@ -83,6 +87,12 @@ exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
+            throttler_1.ThrottlerModule.forRoot([
+                {
+                    ttl: 60000,
+                    limit: 10,
+                },
+            ]),
             users_module_1.UsersModule,
             nest_morgan_1.MorganModule,
             mongoose_1.MongooseModule.forRoot(config_1.dbUrl),

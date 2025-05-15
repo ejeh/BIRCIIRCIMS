@@ -233,7 +233,11 @@ let IndigeneCertificateService = class IndigeneCertificateService {
         return applicant.save();
     }
     async generateCertificatePDF(id, html) {
-        const browser = await puppeteer.launch({ headless: true });
+        const browser = await puppeteer.launch({
+            headless: true,
+            executablePath: '/usr/bin/google-chrome',
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        });
         const page = await browser.newPage();
         await page.setContent(html, { waitUntil: 'networkidle0' });
         const pdfBuffer = await page.pdf({
@@ -259,6 +263,38 @@ let IndigeneCertificateService = class IndigeneCertificateService {
     async findByIds(ids) {
         const objectIds = ids.map((id) => new mongoose_2.Types.ObjectId(id));
         return this.certificateModel.find({ _id: { $in: objectIds } }).exec();
+    }
+    async verifyCertificate(certificateId, hash) {
+        const certificate = await this.certificateModel.findOne({
+            _id: new mongoose_2.Types.ObjectId(certificateId),
+            verificationHash: hash,
+        });
+        if (!certificate) {
+            return { valid: false, message: 'Certificate not found' };
+        }
+        if (!certificate.isValid) {
+            return { valid: false, message: 'Certificate has been revoked' };
+        }
+        return {
+            valid: true,
+            data: {
+                certificateId: certificateId,
+                firstname: certificate.firstname,
+                lastname: certificate.lastname,
+                kindred: certificate.kindred,
+                issuingAuthority: 'Benue State citizenship/residency management system',
+            },
+        };
+    }
+    async saveVerificationHash(certificateId, hash) {
+        try {
+            const result = await this.certificateModel.updateOne({ _id: new mongoose_2.Types.ObjectId(certificateId) }, { $set: { verificationHash: hash } });
+            return result;
+        }
+        catch (error) {
+            console.error('Error updating verification hash:', error);
+            throw error;
+        }
     }
 };
 exports.IndigeneCertificateService = IndigeneCertificateService;

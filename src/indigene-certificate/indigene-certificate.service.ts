@@ -275,12 +275,12 @@ export class IndigeneCertificateService {
   }
 
   // Generate Certificate as PDF
-  async generateCertificatePDF(
-    id: string,
-    // certificate: any,
-    html: string,
-  ): Promise<string> {
-    const browser = await puppeteer.launch({ headless: true });
+  async generateCertificatePDF(id: string, html: string): Promise<string> {
+    const browser = await puppeteer.launch({
+      headless: true,
+      executablePath: '/usr/bin/google-chrome', // or 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' on Windows
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
 
@@ -325,5 +325,45 @@ export class IndigeneCertificateService {
   async findByIds(ids: string[]): Promise<any[]> {
     const objectIds = ids.map((id) => new Types.ObjectId(id));
     return this.certificateModel.find({ _id: { $in: objectIds } }).exec();
+  }
+
+  async verifyCertificate(certificateId: string, hash: string): Promise<any> {
+    const certificate = await this.certificateModel.findOne({
+      _id: new Types.ObjectId(certificateId),
+      verificationHash: hash,
+    });
+
+    if (!certificate) {
+      return { valid: false, message: 'Certificate not found' };
+    }
+
+    if (!certificate.isValid) {
+      return { valid: false, message: 'Certificate has been revoked' };
+    }
+
+    // Return limited information for privacy
+    return {
+      valid: true,
+      data: {
+        certificateId: certificateId,
+        firstname: certificate.firstname,
+        lastname: certificate.lastname,
+        kindred: certificate.kindred,
+        issuingAuthority: 'Benue State citizenship/residency management system',
+      },
+    };
+  }
+
+  async saveVerificationHash(certificateId: string, hash: string) {
+    try {
+      const result = await this.certificateModel.updateOne(
+        { _id: new Types.ObjectId(certificateId) },
+        { $set: { verificationHash: hash } },
+      );
+      return result;
+    } catch (error) {
+      console.error('Error updating verification hash:', error);
+      throw error;
+    }
   }
 }

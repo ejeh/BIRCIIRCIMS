@@ -21,7 +21,10 @@ let UserMailerService = class UserMailerService {
         this.mailerService = mailerService;
     }
     sendActivationMail(email, userId, activationToken, origin) {
-        const activationUrl = `http://localhost:5000/api/auth/activate/${userId}/${activationToken}\n`;
+        const getBaseUrl = () => config_1.default.isDev
+            ? process.env.BASE_URL || 'http://localhost:5000'
+            : 'http://api.citizenship.benuestate.gov.ng';
+        const activationUrl = `${getBaseUrl()}/api/auth/activate/${userId}/${activationToken}\n`;
         if (!config_1.default.isTest) {
             this.mailerService
                 .sendMail({
@@ -49,7 +52,7 @@ Please click on the following link, or paste this into your browser to complete 
 ${origin}/auth/reset-password/${passwordResetToken}\n
 If you did not request this, please ignore this email and your password will remain unchanged.\n`,
                 context: {
-                    link: `${origin}/auth/reset-password.html?token=${passwordResetToken}`,
+                    link: `${origin}/source/auth/reset-password.html?token=${passwordResetToken}`,
                 },
             })
                 .catch((error) => {

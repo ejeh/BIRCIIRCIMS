@@ -28,12 +28,12 @@ export class KindredService {
     userId: string;
     firstname: string;
     lastname: string;
-    address: string;
     phone: number;
     kindred: string;
     lga: string;
     stateOfOrigin: string;
     email: string;
+    address: string;
   }): Promise<any> => {
     // check if email already exists
     const emailExists = await this.kindredModel.findOne({

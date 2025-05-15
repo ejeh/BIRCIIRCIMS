@@ -12,13 +12,12 @@ export class UserMailerService {
     activationToken: string,
     origin: string,
   ) {
-
     const getBaseUrl = (): string =>
       config.isDev
         ? process.env.BASE_URL || 'http://localhost:5000'
-        : 'api.citizenship.benuestate.gov.ng';
+        : 'http://api.citizenship.benuestate.gov.ng';
     const activationUrl = `${getBaseUrl()}/api/auth/activate/${userId}/${activationToken}\n`;
-    
+
     if (!config.isTest) {
       this.mailerService
         .sendMail({

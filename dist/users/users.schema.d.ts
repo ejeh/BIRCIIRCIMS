@@ -52,6 +52,7 @@ export declare class User {
     password: string;
     isVerified: boolean;
     passwordResetToken: string;
+    passwordResetExpires: string;
     activationToken: string;
     activationExpires: Date;
 }
