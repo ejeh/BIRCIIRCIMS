@@ -95,7 +95,10 @@ exports.AppModule = AppModule = __decorate([
             ]),
             users_module_1.UsersModule,
             nest_morgan_1.MorganModule,
-            mongoose_1.MongooseModule.forRoot(config_1.dbUrl),
+            mongoose_1.MongooseModule.forRoot(config_1.dbUrl, {
+                ssl: true,
+                tls: true,
+            }),
             serve_static_2.ServeStaticModule.forRoot({
                 rootPath: (0, path_1.join)(__dirname, '..', 'uploads'),
                 serveRoot: '/uploads',
