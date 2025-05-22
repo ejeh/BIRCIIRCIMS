@@ -28,6 +28,7 @@ import { KindredModule } from './kindred/kindred.module';
 import config, { dbUrl } from './config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { HelmetMiddleware } from '@nest-middlewares/helmet';
+import mongoose from 'mongoose';
 
 console.log(config.isProd); // boolean
 console.log(dbUrl); // string | undefined
@@ -50,7 +51,11 @@ const DEV_TRANSPORTER = {
     ]),
     UsersModule,
     MorganModule,
-    MongooseModule.forRoot(dbUrl),
+    MongooseModule.forRoot(dbUrl, {
+      ssl: true,
+      tls: true,
+
+    }),
 
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'), // Path to your static files directory
