@@ -19,11 +19,7 @@ export declare class UsersService {
         message: string;
     }>;
     forgottenPassword(email: string, origin: string): Promise<void>;
-    resetPassword(email: string, passwordResetToken: string, password: string): Promise<import("mongoose").Document<unknown, {}, UserDocument, {}> & import("./users.schema").User & import("mongoose").Document<unknown, any, any, Record<string, any>> & import("./users.schema").UserMethods & Required<{
-        _id: unknown;
-    }> & {
-        __v: number;
-    }>;
+    resetPassword(email: string, passwordResetToken: string, newPassword: string): Promise<UserDocument>;
     getPaginatedData(page: number, limit: number): Promise<{
         data: (import("mongoose").Document<unknown, {}, UserDocument, {}> & import("./users.schema").User & import("mongoose").Document<unknown, any, any, Record<string, any>> & import("./users.schema").UserMethods & Required<{
             _id: unknown;

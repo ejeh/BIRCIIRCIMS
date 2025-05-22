@@ -6,6 +6,7 @@ import { Model } from 'mongoose';
 import { UserMailerService } from 'src/users/users.mailer.service';
 import { SigUpKindredDto } from 'src/kindred/kindredDto';
 import { KindredService } from 'src/kindred/kindred.service';
+import { UserPublicData } from 'src/users/users.dto';
 export declare class AuthService {
     readonly userModel: Model<User>;
     private readonly userMailer;
@@ -24,7 +25,7 @@ export declare class AuthService {
         success: boolean;
         message: string;
         token: string;
-        user: import("../users/users.dto").UserPublicData;
+        user: UserPublicData;
     }>;
     resendActivationEmail(email: string, origin: string): Promise<{
         success: boolean;
@@ -32,13 +33,13 @@ export declare class AuthService {
     }>;
     signUpUser(userData: SignUpDto, origin: string, role: string): Promise<{
         token: string;
-        user: import("../users/users.dto").UserPublicData;
+        user: UserPublicData;
         success: boolean;
         message: string;
     }>;
     signUpKindred(userData: SigUpKindredDto, origin: string): Promise<{
         token: string;
-        user: import("../users/users.dto").UserPublicData;
+        user: UserPublicData;
     }>;
     login(user?: any): Promise<{
         token: string;
@@ -49,8 +50,8 @@ export declare class AuthService {
         user: any;
     }>;
     forgottenPassword({ email }: ForgottenPasswordDto, origin: string): Promise<void>;
-    resetPassword({ email, passwordResetToken, password, }: ResetPasswordDto): Promise<{
+    resetPassword(resetPasswordDto: ResetPasswordDto, token: string): Promise<{
         token: string;
-        user: import("../users/users.dto").UserPublicData;
+        user: UserPublicData;
     }>;
 }

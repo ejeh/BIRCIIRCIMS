@@ -93,10 +93,9 @@ export class ResetPasswordDto {
   @MaxLength(255)
   readonly email!: string;
 
-  @ApiProperty({ type: String })
-  @IsUUID()
-  readonly passwordResetToken!: string;
-  
+  // @ApiProperty({ type: String })
+  // @IsUUID()
+  // readonly passwordResetToken!: string;
 
   @ApiProperty({ example: 'password', minLength: 8 })
   @MinLength(8)

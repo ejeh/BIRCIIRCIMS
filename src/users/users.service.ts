@@ -177,8 +177,9 @@ export class UsersService {
   async resetPassword(
     email: string,
     passwordResetToken: string,
-    password: string,
-  ) {
+    newPassword: string,
+  ): Promise<UserDocument> {
+    // Validate token and update password
     const user = await this.userModel
       .findOneAndUpdate(
         {
@@ -186,7 +187,7 @@ export class UsersService {
           passwordResetToken,
         },
         {
-          password: await hashPassword(password),
+          password: await hashPassword(newPassword),
           passwordResetToken: null,
           passwordResetExpires: null,
         },
@@ -203,6 +204,7 @@ export class UsersService {
       throw PasswordResetTokenInvalidException();
     }
 
+    // Send confirmation email
     this.userMailer.sendResetPasswordMail(user.email);
 
     return user;

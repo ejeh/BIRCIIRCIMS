@@ -22,6 +22,7 @@ import { v4 as uuid } from 'uuid';
 import config from 'src/config';
 import { SigUpKindredDto } from 'src/kindred/kindredDto';
 import { KindredService } from 'src/kindred/kindred.service';
+import { UserPublicData } from 'src/users/users.dto';
 
 @Injectable()
 export class AuthService {
@@ -287,16 +288,14 @@ export class AuthService {
     return await this.usersService.forgottenPassword(email, origin);
   }
 
-  async resetPassword({
-    email,
-    passwordResetToken,
-    password,
-  }: ResetPasswordDto) {
-    const user = await this.usersService.resetPassword(
-      email,
-      passwordResetToken,
-      password,
-    );
+  async resetPassword(
+    resetPasswordDto: ResetPasswordDto,
+    token: string,
+  ): Promise<{ token: string; user: UserPublicData }> {
+    const { email, password } = resetPasswordDto;
+
+    console.log(resetPasswordDto, token);
+    const user = await this.usersService.resetPassword(email, token, password);
 
     return {
       token: this.jwtService.sign({}, { subject: `${user.id}` }),

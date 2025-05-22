@@ -118,11 +118,6 @@ __decorate([
     __metadata("design:type", String)
 ], ResetPasswordDto.prototype, "email", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ type: String }),
-    (0, class_validator_1.IsUUID)(),
-    __metadata("design:type", String)
-], ResetPasswordDto.prototype, "passwordResetToken", void 0);
-__decorate([
     (0, swagger_1.ApiProperty)({ example: 'password', minLength: 8 }),
     (0, class_validator_1.MinLength)(8),
     __metadata("design:type", String)

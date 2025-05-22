@@ -58,8 +58,8 @@ let AuthController = class AuthController {
     forgotPassword(body, req) {
         return this.authService.forgottenPassword(body, (0, auth_1.getOriginHeader)(req));
     }
-    resetPassword(body) {
-        return this.authService.resetPassword(body);
+    async resetPassword(resetPasswordDto, token) {
+        return this.authService.resetPassword(resetPasswordDto, token);
     }
     async verifyNIN({ nin }) {
         const fakeDB = {
@@ -190,11 +190,12 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "forgotPassword", null);
 __decorate([
-    (0, common_1.Post)('reset-password'),
+    (0, common_1.Post)('reset-password/:token'),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Param)('token')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [auth_interface_1.ResetPasswordDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [auth_interface_1.ResetPasswordDto, String]),
+    __metadata("design:returntype", Promise)
 ], AuthController.prototype, "resetPassword", null);
 __decorate([
     (0, common_1.Post)('verify'),

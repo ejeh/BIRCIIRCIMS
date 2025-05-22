@@ -26,6 +26,5 @@ export declare class ForgottenPasswordDto {
 }
 export declare class ResetPasswordDto {
     readonly email: string;
-    readonly passwordResetToken: string;
     readonly password: string;
 }

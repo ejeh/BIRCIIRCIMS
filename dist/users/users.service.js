@@ -111,13 +111,13 @@ let UsersService = class UsersService {
         }
         this.userMailer.sendForgottenPasswordMail(user.email, user.passwordResetToken, origin);
     }
-    async resetPassword(email, passwordResetToken, password) {
+    async resetPassword(email, passwordResetToken, newPassword) {
         const user = await this.userModel
             .findOneAndUpdate({
             email: email.toLowerCase(),
             passwordResetToken,
         }, {
-            password: await (0, auth_1.hashPassword)(password),
+            password: await (0, auth_1.hashPassword)(newPassword),
             passwordResetToken: null,
             passwordResetExpires: null,
         }, {

@@ -30,7 +30,7 @@ export declare class AuthController {
         user: any;
     }>;
     forgotPassword(body: ForgottenPasswordDto, req: Request): Promise<void>;
-    resetPassword(body: ResetPasswordDto): Promise<{
+    resetPassword(resetPasswordDto: ResetPasswordDto, token: string): Promise<{
         token: string;
         user: import("../users/users.dto").UserPublicData;
     }>;
