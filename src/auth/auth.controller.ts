@@ -91,9 +91,13 @@ export class AuthController {
   forgotPassword(@Body() body: ForgottenPasswordDto, @Req() req: Request) {
     return this.authService.forgottenPassword(body, getOriginHeader(req));
   }
-  @Post('reset-password')
-  resetPassword(@Body() body: ResetPasswordDto) {
-    return this.authService.resetPassword(body);
+
+  @Post('reset-password/:token')
+  async resetPassword(
+    @Body() resetPasswordDto: ResetPasswordDto,
+    @Param('token') token: string,
+  ) {
+    return this.authService.resetPassword(resetPasswordDto, token);
   }
 
   @Post('verify')

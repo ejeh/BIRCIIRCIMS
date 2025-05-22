@@ -206,8 +206,10 @@ let AuthService = class AuthService {
     async forgottenPassword({ email }, origin) {
         return await this.usersService.forgottenPassword(email, origin);
     }
-    async resetPassword({ email, passwordResetToken, password, }) {
-        const user = await this.usersService.resetPassword(email, passwordResetToken, password);
+    async resetPassword(resetPasswordDto, token) {
+        const { email, password } = resetPasswordDto;
+        console.log(resetPasswordDto, token);
+        const user = await this.usersService.resetPassword(email, token, password);
         return {
             token: this.jwtService.sign({}, { subject: `${user.id}` }),
             user: user.getPublicData(),
