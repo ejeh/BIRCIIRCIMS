@@ -11,7 +11,6 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { UsersService } from 'src/users/users.service';
 import {
   ActivateParams,
   AuthenticatedUser,
@@ -24,7 +23,6 @@ import { getOriginHeader } from './auth';
 import { Request, Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { AppRequest } from 'src/generic/generic.interface';
-import { console } from 'inspector';
 import config from 'src/config';
 import { SigUpKindredDto } from 'src/kindred/kindredDto';
 
@@ -44,8 +42,8 @@ export class AuthController {
 
     const result = await this.authService.activate(params);
     const redirectUrl = result.success
-      ? `${getFrontendBaseUrl()}/auth/activation-success.html`
-      : `${getFrontendBaseUrl()}/auth/activation-failed.html`;
+      ? `${getFrontendBaseUrl()}/source/auth/activation-success.html`
+      : `${getFrontendBaseUrl()}/source/auth/activation-failed.html`;
 
     return res.redirect(redirectUrl);
   }
