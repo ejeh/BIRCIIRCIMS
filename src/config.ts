@@ -29,8 +29,6 @@ const isDev = NODE_ENV === 'development';
 const isProd = NODE_ENV === 'production';
 const isTest = NODE_ENV === 'test';
 
-console.log(`Current Environment: ${NODE_ENV}`);
-
 // Get the appropriate database URL based on environment
 const getDatabaseUrl = () => {
   if (isProd) {
