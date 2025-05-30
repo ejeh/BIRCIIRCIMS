@@ -52,10 +52,9 @@ const DEV_TRANSPORTER = {
     UsersModule,
     MorganModule,
     MongooseModule.forRoot(dbUrl, {
-      ssl: true,
-      tls: true,
-
-    }),
+      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+      socketTimeoutMS: 30000, // Close sockets after 30s of inactivity
+      }),
 
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'), // Path to your static files directory
