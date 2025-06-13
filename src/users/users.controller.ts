@@ -102,14 +102,13 @@ export class UsersController {
       const updatedData: any = { ...body };
 
       const getBaseUrl = () => {
-        // console.log(`isDev: ${config.isDev}, isProd: ${config.isProd}`); // Debugging
-
         return config.isDev
           ? process.env.BASE_URL || 'http://localhost:5000'
           : 'api.citizenship.benuestate.gov.ng';
       };
 
       if (file) {
+        console.log('File uploaded:', file);
         updatedData.passportPhoto = `${getBaseUrl()}/uploads/${file.filename}`;
       }
 

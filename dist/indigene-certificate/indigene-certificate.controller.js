@@ -83,7 +83,6 @@ let IndigeneCertificateController = class IndigeneCertificateController {
             'passportPhoto',
             'idCard',
             'birthCertificate',
-            'parentGuardianIndigeneCert',
         ];
         for (const field of requiredFields) {
             if (!fileMap[field]) {
@@ -100,7 +99,6 @@ let IndigeneCertificateController = class IndigeneCertificateController {
             passportPhoto: fileUrl(fileMap.passportPhoto),
             idCard: fileUrl(fileMap.idCard),
             birthCertificate: fileUrl(fileMap.birthCertificate),
-            parentGuardianIndigeneCert: fileUrl(fileMap.parentGuardianIndigeneCert),
         };
         await this.userService.sendRequest('ejehgodfrey@gmail.com', 'New Request', `Request for certificate of origin from ${body.email}`);
         return this.indigeneCertificateService.createCertificate(data);
@@ -194,7 +192,7 @@ let IndigeneCertificateController = class IndigeneCertificateController {
             .replace(/{{kindred}}/g, data.kindred)
             .replace(/{{dob}}/g, formattedDate)
             .replace(/{{issueDate}}/g, formattedDateOfIssue)
-            .replace(/{{passportPhoto}}/g, user.passportPhoto)
+            .replace(/{{passportPhoto}}/g, data.passportPhoto)
             .replace(/{{qrCodeUrl}}/g, data.qrCodeUrl);
     }
     async markCertificateAsDownloaded(id) {
@@ -322,11 +320,6 @@ __decorate([
                     mime: ['application/pdf'],
                     ext: ['.pdf'],
                     message: 'Birth Certificate must be a PDF file',
-                },
-                parentGuardianIndigeneCert: {
-                    mime: ['application/pdf'],
-                    ext: ['.pdf'],
-                    message: 'Parent/Guardian Certificate must be a PDF file',
                 },
             };
             const rules = fieldTypeRules[file.fieldname];

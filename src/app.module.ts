@@ -52,9 +52,8 @@ const DEV_TRANSPORTER = {
     UsersModule,
     MorganModule,
     MongooseModule.forRoot(dbUrl, {
-      ssl: true,
-      tls: true,
-
+      // ssl: true,
+      // tls: true,
     }),
 
     ServeStaticModule.forRoot({
