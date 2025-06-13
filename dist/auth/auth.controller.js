@@ -36,8 +36,8 @@ let AuthController = class AuthController {
         };
         const result = await this.authService.activate(params);
         const redirectUrl = result.success
-            ? `${getFrontendBaseUrl()}/auth/activation-success.html`
-            : `${getFrontendBaseUrl()}/auth/activation-failed.html`;
+            ? `${getFrontendBaseUrl()}/source/auth/activation-success.html`
+            : `${getFrontendBaseUrl()}/source/auth/activation-failed.html`;
         return res.redirect(redirectUrl);
     }
     async resendActivationEmail(email, req) {

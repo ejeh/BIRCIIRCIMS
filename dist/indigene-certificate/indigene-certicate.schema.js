@@ -214,7 +214,7 @@ __decorate([
 ], Certificate.prototype, "birthCertificate", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)(),
-    (0, mongoose_1.Prop)({ required: true }),
+    (0, mongoose_1.Prop)({ required: false }),
     __metadata("design:type", String)
 ], Certificate.prototype, "parentGuardianIndigeneCert", void 0);
 __decorate([
@@ -225,10 +225,6 @@ __decorate([
     (0, mongoose_1.Prop)({ required: false, default: null }),
     __metadata("design:type", String)
 ], Certificate.prototype, "qrCodeUrl", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ required: true }),
-    __metadata("design:type", String)
-], Certificate.prototype, "issuingAuthority", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ default: true }),
     __metadata("design:type", Boolean)

@@ -85,9 +85,6 @@ export class IdCard extends Document {
   @Prop({ required: false, default: null })
   bin?: string; // URL for the QR code
 
-  @Prop({ required: true })
-  issuingAuthority: string;
-
   @Prop({ default: true })
   isValid: boolean;
 

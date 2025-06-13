@@ -143,7 +143,7 @@ export class Certificate extends Document {
   birthCertificate: string; // File path or URL
 
   @ApiProperty()
-  @Prop({ required: true })
+  @Prop({ required: false })
   parentGuardianIndigeneCert: string; // File path or URL
 
   @Prop({ required: false, default: null })
@@ -152,8 +152,8 @@ export class Certificate extends Document {
   @Prop({ required: false, default: null })
   qrCodeUrl?: string; // URL for the QR code
 
-  @Prop({ required: true })
-  issuingAuthority: string;
+  // @Prop({ required: true })
+  // issuingAuthority: string;
 
   @Prop({ default: true })
   isValid: boolean;

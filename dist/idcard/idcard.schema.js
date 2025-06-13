@@ -143,10 +143,6 @@ __decorate([
     __metadata("design:type", String)
 ], IdCard.prototype, "bin", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ required: true }),
-    __metadata("design:type", String)
-], IdCard.prototype, "issuingAuthority", void 0);
-__decorate([
     (0, mongoose_1.Prop)({ default: true }),
     __metadata("design:type", Boolean)
 ], IdCard.prototype, "isValid", void 0);

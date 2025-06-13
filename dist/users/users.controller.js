@@ -61,6 +61,7 @@ let UsersController = class UsersController {
                     : 'api.citizenship.benuestate.gov.ng';
             };
             if (file) {
+                console.log('File uploaded:', file);
                 updatedData.passportPhoto = `${getBaseUrl()}/uploads/${file.filename}`;
             }
             const user = await this.userService.userModel.findByIdAndUpdate(id, updatedData, { new: true });

@@ -18,7 +18,6 @@ export declare class IdCard extends Document {
     phone: number;
     qrCodeUrl?: string;
     bin?: string;
-    issuingAuthority: string;
     isValid: boolean;
     verificationHash: string;
 }

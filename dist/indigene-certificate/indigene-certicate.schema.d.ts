@@ -34,7 +34,6 @@ export declare class Certificate extends Document {
     parentGuardianIndigeneCert: string;
     uploadedAttestationUrl: string;
     qrCodeUrl?: string;
-    issuingAuthority: string;
     isValid: boolean;
     verificationHash: string;
 }
