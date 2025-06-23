@@ -6,7 +6,7 @@
     <title>Benue State ID Card</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-    <style>
+    <!-- <style>
       :root {
         --benue-navy: #000080;
         --benue-blue: #0000cd;
@@ -256,6 +256,277 @@
           display: none;
         }
       }
+    </style> -->
+
+    <style>
+      :root {
+        --benue-navy: #000080;
+        --benue-blue: #0000cd;
+        --watermark-red: rgba(255, 0, 0, 0.25);
+      }
+
+      body {
+        margin: 0;
+        padding: 20px;
+        background-color: #f1f5f9;
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
+      .id-card-stack {
+        display: flex;
+        flex-direction: column;
+        /* gap: 15px; */
+        width: 85.6mm;
+      }
+
+      .id-card {
+        width: 85.6mm;
+        height: 54mm;
+        background: url('{{baseUrl}}/images/id-front-bg.jpeg') no-repeat center;
+        /* background: url('/public/images/empty_passport.jpeg') no-repeat center */
+        background-size: cover;
+        position: relative;
+        border-radius: 5px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .id-card-back {
+        width: 85.6mm;
+        height: 54mm;
+        background: url('{{baseUrl}}/images/id-back.jpeg') no-repeat center
+          center;
+        /* background: url('/public/images/id-back.jpeg') no-repeat center center; */
+        background-size: cover;
+        position: relative;
+        border-radius: 5px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .id-card-watermark {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-30deg);
+        font-size: 3.5rem;
+        font-weight: bold;
+        color: var(--watermark-red);
+        z-index: 1;
+        opacity: 0.9;
+      }
+
+      .card-content {
+        position: relative;
+        z-index: 2;
+        padding: 8px;
+        height: calc(100% - 16px);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .header {
+        display: flex;
+        /* justify-content: space-between; */
+        justify-content: normal;
+
+        /* margin-bottom: 5px; */
+        margin-bottom: 0px;
+        align-items: center;
+      }
+
+      .logo-placeholder {
+        width: 40px;
+        height: 40px;
+      }
+
+      .title {
+        text-align: right;
+      }
+
+      .title h1 {
+        font-weight: bold;
+        color: var(--benue-navy);
+        font-size: 14px;
+        margin: 0;
+        line-height: 1.2;
+      }
+
+      .title h2 {
+        font-weight: bold;
+        color: var(--benue-blue);
+        font-size: 12px;
+        margin: 0;
+        text-align: center;
+      }
+
+      .main-content {
+        display: flex;
+        gap: 8px;
+        margin-top: 2px;
+        flex: 1;
+      }
+      .photo {
+        width: 23mm;
+        height: 25mm;
+      }
+
+      .photo-section {
+        width: 23mm;
+        height: 30mm;
+      }
+
+      /* .photo-placeholder {
+        width: 100%;
+        height: 100%;
+        background-color: #e0e0e0;
+        border: 1px solid #d1d5db;
+      } */
+
+      .details-section {
+        flex: 1;
+        font-size: 9px;
+      }
+
+      .details-section p {
+        margin: 0px 0;
+      }
+
+      .label {
+        font-weight: bold;
+      }
+
+      .value {
+        text-transform: uppercase;
+      }
+
+      .row {
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .bin-section {
+        margin-top: auto;
+        text-align: center;
+        padding: 5px 0;
+      }
+      .qr-code {
+        width: 15mm;
+        height: 15mm;
+      }
+
+      .bin-label {
+        color: #000080;
+        font-size: 10px;
+        font-weight: bold;
+        margin: 0;
+        margin-top: -3px;
+      }
+
+      .bin-number {
+        color: var(--benue-blue);
+        font-size: 20px;
+        font-weight: bold;
+        margin: 0;
+        letter-spacing: 1px;
+        margin-top: -4px;
+      }
+
+      .footer {
+        padding: 8px;
+        border-top: 1px solid #e0e0e0;
+      }
+
+      .footer-logo {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 5px;
+      }
+
+      .footer-logo-placeholder {
+        width: 50px;
+        height: 50px;
+        /* background-color: #f0f0f0;
+        border: 1px solid #ddd; */
+      }
+
+      .footer-text {
+        text-align: center;
+        font-size: 6px;
+        line-height: 1.3;
+      }
+
+      .property {
+        font-weight: bold;
+        font-size: 8px;
+      }
+
+      .contact {
+        font-style: italic;
+      }
+
+      .powered-by {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 5px;
+        margin-top: 5px;
+      }
+
+      .bdicl {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 60px;
+        height: 40px;
+      }
+
+      .bdicl img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+
+      .print-instructions {
+        margin-top: 20px;
+        text-align: center;
+        font-size: 14px;
+        color: #555;
+        max-width: 85.6mm;
+      }
+
+      @media print {
+        body {
+          background: none;
+          padding: 0;
+        }
+        /* .print-instructions {
+          display: none;
+        } */
+      }
+      .go-back-btn {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        background-color: #ff6175;
+        border-color: #ff6175;
+        color: white;
+        padding: 8px 15px;
+        font-size: 16px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .go-back-btn:hover {
+        background-color: #e55565;
+        border-color: #e55565;
+      }
     </style>
   </head>
   <body>
@@ -333,7 +604,7 @@
       </div>
 
       <!-- Back Side -->
-      <div class="id-card">
+      <div class="id-card-back">
         <div class="footer">
           <div class="footer-logo">
             <div class="footer-logo-placeholder">

@@ -420,6 +420,19 @@ export class IndigeneCertificateController {
     return this.indigeneCertificateService.getPaginatedData(page, limit);
   }
 
+  @Get('latest')
+  @ApiResponse({ type: Certificate })
+  async getLatestCertificate() {
+    return this.indigeneCertificateService.getLatestCertificate();
+  }
+
+  @Get('latest-approved')
+  @UseGuards(RolesGuard)
+  @ApiResponse({ type: Certificate })
+  async getLatestApprovedCertificate() {
+    return this.indigeneCertificateService.getLatestApprovedCertificate();
+  }
+
   @Get('approval')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: Certificate, isArray: true })

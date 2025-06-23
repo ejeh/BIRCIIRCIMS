@@ -7,6 +7,7 @@ import { IdCard, IdCardSchema } from './idcard.schema';
 import setupSwagger from '../users/users.swagger';
 import { UsersService } from 'src/users/users.service';
 import { UserMailerService } from 'src/users/users.mailer.service';
+import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 
 @Module({
   imports: [
@@ -14,7 +15,12 @@ import { UserMailerService } from 'src/users/users.mailer.service';
     MongooseModule.forFeature([{ name: IdCard.name, schema: IdCardSchema }]),
   ],
   controllers: [IdcardController],
-  providers: [IdcardService, UsersService, UserMailerService],
+  providers: [
+    IdcardService,
+    UsersService,
+    UserMailerService,
+    NotificationsGateway,
+  ],
   exports: [IdcardService],
 })
 export class IdcardModule {}

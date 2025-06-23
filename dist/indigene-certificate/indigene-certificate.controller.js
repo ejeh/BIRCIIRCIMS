@@ -237,6 +237,12 @@ let IndigeneCertificateController = class IndigeneCertificateController {
     async getPaginatedData(page = 1, limit = 10) {
         return this.indigeneCertificateService.getPaginatedData(page, limit);
     }
+    async getLatestCertificate() {
+        return this.indigeneCertificateService.getLatestCertificate();
+    }
+    async getLatestApprovedCertificate() {
+        return this.indigeneCertificateService.getLatestApprovedCertificate();
+    }
     async getApprovedCert(page = 1, limit = 10) {
         return this.indigeneCertificateService.findApprovedRequest(page, limit, 'Approved');
     }
@@ -427,6 +433,21 @@ __decorate([
     __metadata("design:paramtypes", [Number, Number]),
     __metadata("design:returntype", Promise)
 ], IndigeneCertificateController.prototype, "getPaginatedData", null);
+__decorate([
+    (0, common_1.Get)('latest'),
+    (0, swagger_1.ApiResponse)({ type: indigene_certicate_schema_1.Certificate }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], IndigeneCertificateController.prototype, "getLatestCertificate", null);
+__decorate([
+    (0, common_1.Get)('latest-approved'),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, swagger_1.ApiResponse)({ type: indigene_certicate_schema_1.Certificate }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], IndigeneCertificateController.prototype, "getLatestApprovedCertificate", null);
 __decorate([
     (0, common_1.Get)('approval'),
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),

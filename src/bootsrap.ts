@@ -9,8 +9,8 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as express from 'express';
 import config from './config';
-import { UsersService } from './users/users.service';
 import * as bodyParser from 'body-parser';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 /**
  * Helper to be used here & in tests.
@@ -31,6 +31,8 @@ export const configureApp = (app: any) => {
   if (config.cors) {
     app.enableCors(config.cors);
   }
+
+  app.useWebSocketAdapter(new IoAdapter(app));
   app.use(helmet());
   // app.use(compression());
   app.useGlobalPipes(
