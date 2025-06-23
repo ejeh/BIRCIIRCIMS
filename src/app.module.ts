@@ -28,6 +28,7 @@ import { KindredModule } from './kindred/kindred.module';
 import config, { dbUrl } from './config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { HelmetMiddleware } from '@nest-middlewares/helmet';
+import { NotificationsModule } from './notifications/notifications.module';
 import mongoose from 'mongoose';
 
 console.log(config.isProd); // boolean
@@ -93,6 +94,7 @@ const DEV_TRANSPORTER = {
     IdcardModule,
     TransactionModule,
     KindredModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

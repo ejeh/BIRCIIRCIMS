@@ -8,12 +8,14 @@ import puppeteer from 'puppeteer';
 import path from 'path';
 import * as fs from 'fs';
 import { Types } from 'mongoose';
+import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 
 @Injectable()
 export class IdcardService {
   constructor(
     @InjectModel(IdCard.name)
     public readonly idCardModel: Model<IdCard>,
+    private readonly notificationsGateway: NotificationsGateway,
   ) {}
 
   async generateUniqueNumber(): Promise<string> {
@@ -81,24 +83,61 @@ export class IdcardService {
     };
   }
 
-  async approveIdCard(id: string): Promise<IdCard> {
+  async getLatestIdCard() {
     return this.idCardModel
-      .findByIdAndUpdate(id, { status: 'Approved' }, { new: true })
+      .findOne()
+      .sort({ createdAt: -1 }) // Sort by createdAt descending (newest first)
       .exec();
   }
 
-  async rejectCard(id: string, rejectionReason: string): Promise<IdCard> {
+  async getLatestApprovedCard() {
     return this.idCardModel
+      .findOne({ status: 'Approved' }) // Only approved requests
+      .sort({ created_at: -1 }) // Newest first
+      .exec();
+  }
+
+  async approveIdCard(id: string): Promise<IdCard> {
+    const updatedCard = await this.idCardModel
+      .findByIdAndUpdate(id, { status: 'Approved' }, { new: true })
+      .exec();
+    // Emit WebSocket notification
+    this.notificationsGateway.emitStatusUpdate(id, 'Approved', '');
+
+    if ((updatedCard && updatedCard.userId, toString())) {
+      // 2. Emit WebSocket notification with **userId** instead of card id
+      this.notificationsGateway.emitStatusUpdate(
+        updatedCard.userId.toString(),
+        'Approved',
+        '',
+      );
+    }
+    return updatedCard;
+  }
+
+  async rejectCard(id: string, reason: string): Promise<IdCard> {
+    const updatedCard = await this.idCardModel
       .findByIdAndUpdate(
         id,
         {
           status: 'Rejected',
-          rejectionReason: rejectionReason,
+          rejectionReason: reason,
           resubmissionAllowed: true,
         },
         { new: true },
       )
       .exec();
+    // Emit WebSocket notification
+    if ((updatedCard && updatedCard.userId, toString())) {
+      // 2. Emit WebSocket notification with **userId** instead of card id
+      this.notificationsGateway.emitStatusUpdate(
+        updatedCard.userId.toString(),
+        'Rejected',
+        reason,
+      );
+    }
+
+    return updatedCard;
   }
 
   // Delete Certificate

@@ -62,6 +62,7 @@ const kindred_module_1 = require("./kindred/kindred.module");
 const config_1 = __importStar(require("./config"));
 const throttler_1 = require("@nestjs/throttler");
 const helmet_1 = require("@nest-middlewares/helmet");
+const notifications_module_1 = require("./notifications/notifications.module");
 console.log(config_1.default.isProd);
 console.log(config_1.dbUrl);
 const DEV_TRANSPORTER = {
@@ -133,6 +134,7 @@ exports.AppModule = AppModule = __decorate([
             idcard_module_1.IdcardModule,
             transaction_module_1.TransactionModule,
             kindred_module_1.KindredModule,
+            notifications_module_1.NotificationsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

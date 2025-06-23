@@ -153,6 +153,20 @@ export class IndigeneCertificateService {
     };
   }
 
+  async getLatestCertificate() {
+    return this.certificateModel
+      .findOne()
+      .sort({ created_at: -1 }) // Sort by createdAt descending (newest first)
+      .exec();
+  }
+
+  async getLatestApprovedCertificate() {
+    return this.certificateModel
+      .findOne({ status: 'Approved' }) // Only approved requests
+      .sort({ created_at: -1 }) // Newest first
+      .exec();
+  }
+
   async markAsDownloaded(id: string): Promise<void> {
     await this.certificateModel.updateOne(
       { _id: id },

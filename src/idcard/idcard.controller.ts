@@ -84,6 +84,15 @@ export class IdcardController {
 
     return this.idcardService.createIdCard(data);
   }
+
+  @Get('get-all-request')
+  @UseGuards(RolesGuard)
+  @ApiResponse({ type: IdCard, isArray: true })
+  @Roles(UserRole.SUPER_ADMIN, UserRole.SUPER_ADMIN)
+  async getCertsRequest(@Req() req: Request) {
+    return await this.idcardService.idCardModel.find({});
+  }
+
   @Get('request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: IdCard, isArray: true })
@@ -100,6 +109,19 @@ export class IdcardController {
       limit,
       statusArray,
     );
+  }
+
+  @Get('latest')
+  @ApiResponse({ type: IdCard, isArray: false })
+  async getLatestCertificate() {
+    return this.idcardService.getLatestIdCard();
+  }
+
+  @Get('latest-approved')
+  @UseGuards(RolesGuard)
+  @ApiResponse({ type: IdCard, isArray: false })
+  async getLatestApprovedCertificate() {
+    return this.idcardService.getLatestApprovedCard();
   }
 
   @Patch(':id/approve')
