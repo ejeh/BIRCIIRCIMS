@@ -97,6 +97,9 @@ export class UserPublicData {
 
   @ApiProperty({})
   lgaOfOrigin: string;
+
+  @ApiProperty({})
+  created_at: string;
 }
 
 export class UpdateProfileDto {
