@@ -17,7 +17,7 @@ export class Business extends Document {
   biz_address?: string;
 
   @Prop({ required: false, default: null })
-  nature_of_bussiness?: string;
+  nature_of_business?: string;
 
   @Prop({ required: false, default: null })
   numberOfYears?: string;

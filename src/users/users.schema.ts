@@ -223,6 +223,7 @@ UserSchema.methods.getPublicData = function () {
     nationality,
     stateOfOrigin,
     middlename,
+    created_at,
   } = this;
   return {
     id,
@@ -238,5 +239,6 @@ UserSchema.methods.getPublicData = function () {
     phone,
     LGA,
     address,
+    created_at,
   };
 };
