@@ -225,7 +225,7 @@ export class IndigeneCertificateController {
       const getBaseUrl = (): string =>
         config.isDev
           ? process.env.BASE_URL || 'http://localhost:5000'
-          : 'http://api.citizenship.benuestate.gov.ng';
+          : 'https://api.citizenship.benuestate.gov.ng';
 
       // 2. Create QR Code URL
       const verificationUrl = `${getBaseUrl()}/api/indigene/certificate/verify/${id}/${hash}`;
@@ -305,7 +305,7 @@ export class IndigeneCertificateController {
     const getBaseUrl = (): string =>
       config.isDev
         ? process.env.BASE_URL || 'http://localhost:5000'
-        : 'http://api.citizenship.benuestate.gov.ng';
+        : 'https://api.citizenship.benuestate.gov.ng';
 
     // Format as "February 20, 1991"
     const formattedDate = date.toLocaleDateString('en-US', {
@@ -532,7 +532,7 @@ export class IndigeneCertificateController {
     const getBaseUrl = (): string =>
       config.isDev
         ? process.env.BASE_URL || 'http://localhost:5000'
-        : 'http://api.citizenship.benuestate.gov.ng';
+        : 'https://api.citizenship.benuestate.gov.ng';
     if (result.valid) {
       return res.render('verification', {
         certificate: result.data,
