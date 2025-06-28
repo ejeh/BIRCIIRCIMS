@@ -201,7 +201,7 @@ export class IdcardController {
       const getBaseUrl = (): string =>
         config.isDev
           ? process.env.BASE_URL || 'http://localhost:5000'
-          : 'http://api.citizenship.benuestate.gov.ng';
+          : 'https://api.citizenship.benuestate.gov.ng';
 
       // 2. Create QR Code URL
       const verificationUrl = `${getBaseUrl()}/api/idcard/verify/${id}/${hash}`;
@@ -280,7 +280,7 @@ export class IdcardController {
     const getBaseUrl = (): string =>
       config.isDev
         ? process.env.BASE_URL || 'http://localhost:5000'
-        : 'http://api.citizenship.benuestate.gov.ng';
+        : 'https://api.citizenship.benuestate.gov.ng';
 
     const formattedDOB = dob
       .toLocaleDateString('en-GB', {
@@ -398,7 +398,7 @@ export class IdcardController {
     const getBaseUrl = (): string =>
       config.isDev
         ? process.env.BASE_URL || 'http://localhost:5000'
-        : 'http://api.citizenship.benuestate.gov.ng';
+        : 'https://api.citizenship.benuestate.gov.ng';
 
     if (result.valid) {
       return res.render('id-card-verification', {
