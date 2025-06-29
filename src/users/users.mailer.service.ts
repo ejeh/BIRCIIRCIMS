@@ -15,7 +15,7 @@ export class UserMailerService {
     const getBaseUrl = (): string =>
       config.isDev
         ? process.env.BASE_URL || 'http://localhost:5000'
-        : 'http://api.citizenship.benuestate.gov.ng';
+        : 'https://api.citizenship.benuestate.gov.ng';
     const activationUrl = `${getBaseUrl()}/api/auth/activate/${userId}/${activationToken}\n`;
 
     if (!config.isTest) {
