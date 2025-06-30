@@ -230,6 +230,10 @@ __decorate([
     __metadata("design:type", Boolean)
 ], Certificate.prototype, "isValid", void 0);
 __decorate([
+    (0, mongoose_1.Prop)({ default: false }),
+    __metadata("design:type", Boolean)
+], Certificate.prototype, "isVerified", void 0);
+__decorate([
     (0, mongoose_1.Prop)({ type: mongoose.SchemaTypes.String }),
     __metadata("design:type", String)
 ], Certificate.prototype, "verificationHash", void 0);

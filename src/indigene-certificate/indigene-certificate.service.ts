@@ -91,6 +91,12 @@ export class IndigeneCertificateService {
       .exec();
   }
 
+  async verifyRequest(id: string): Promise<Certificate> {
+    return this.certificateModel
+      .findByIdAndUpdate(id, { isVerified: true }, { new: true })
+      .exec();
+  }
+
   async rejectCertificate(
     id: string,
     rejectionReason: string,

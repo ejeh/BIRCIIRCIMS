@@ -91,7 +91,7 @@ let IndigeneCertificateController = class IndigeneCertificateController {
         }
         const getBaseUrl = () => config_1.default.isDev
             ? process.env.BASE_URL || 'http://localhost:5000'
-            : 'hhtp://api.citizenship.benuestate.gov.ng/';
+            : 'https://api.citizenship.benuestate.gov.ng';
         const fileUrl = (file) => `${getBaseUrl()}/uploads/${file.filename}`;
         const data = {
             ...body,
@@ -130,7 +130,7 @@ let IndigeneCertificateController = class IndigeneCertificateController {
             const hash = this.generateSecureHash(certificate.id, user.firstname, user.lastname, dateOfIssue);
             const getBaseUrl = () => config_1.default.isDev
                 ? process.env.BASE_URL || 'http://localhost:5000'
-                : 'http://api.citizenship.benuestate.gov.ng';
+                : 'https://api.citizenship.benuestate.gov.ng';
             const verificationUrl = `${getBaseUrl()}/api/indigene/certificate/verify/${id}/${hash}`;
             const qrCodeData = `Verification Url: ${verificationUrl} `;
             const qrCodeUrl = await this.generateQrCode(qrCodeData);
@@ -171,7 +171,7 @@ let IndigeneCertificateController = class IndigeneCertificateController {
         const date = new Date(data.DOB);
         const getBaseUrl = () => config_1.default.isDev
             ? process.env.BASE_URL || 'http://localhost:5000'
-            : 'http://api.citizenship.benuestate.gov.ng';
+            : 'https://api.citizenship.benuestate.gov.ng';
         const formattedDate = date.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
@@ -221,6 +221,9 @@ let IndigeneCertificateController = class IndigeneCertificateController {
     }
     async approveCert(id, Body) {
         return await this.indigeneCertificateService.approveCertificate(id);
+    }
+    async verifyRequest(id, Body) {
+        return await this.indigeneCertificateService.verifyRequest(id);
     }
     async rejectCert(id, rejectionReason) {
         const user = await this.indigeneCertificateService.findCertificateById(id);
@@ -280,7 +283,7 @@ let IndigeneCertificateController = class IndigeneCertificateController {
         const result = await this.indigeneCertificateService.verifyCertificate(id, hash);
         const getBaseUrl = () => config_1.default.isDev
             ? process.env.BASE_URL || 'http://localhost:5000'
-            : 'http://api.citizenship.benuestate.gov.ng';
+            : 'https://api.citizenship.benuestate.gov.ng';
         if (result.valid) {
             return res.render('verification', {
                 certificate: result.data,
@@ -402,6 +405,17 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], IndigeneCertificateController.prototype, "approveCert", null);
+__decorate([
+    (0, common_1.Patch)(':id/verify'),
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(users_role_enum_1.UserRole.SUPER_ADMIN, users_role_enum_1.UserRole.KINDRED_HEAD),
+    (0, swagger_1.ApiResponse)({ type: indigene_certicate_schema_1.Certificate, isArray: false }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], IndigeneCertificateController.prototype, "verifyRequest", null);
 __decorate([
     (0, common_1.Patch)(':id/reject'),
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
