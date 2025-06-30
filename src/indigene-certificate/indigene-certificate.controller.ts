@@ -138,7 +138,7 @@ export class IndigeneCertificateController {
     const getBaseUrl = (): string =>
       config.isDev
         ? process.env.BASE_URL || 'http://localhost:5000'
-        : 'hhtp://api.citizenship.benuestate.gov.ng/';
+        : 'https://api.citizenship.benuestate.gov.ng';
 
     const fileUrl = (file: Express.Multer.File) =>
       `${getBaseUrl()}/uploads/${file.filename}`;
@@ -374,6 +374,14 @@ export class IndigeneCertificateController {
   @ApiResponse({ type: Certificate, isArray: false })
   async approveCert(@Param('id') id: string, @Body() Body: any) {
     return await this.indigeneCertificateService.approveCertificate(id);
+  }
+
+  @Patch(':id/verify')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.KINDRED_HEAD)
+  @ApiResponse({ type: Certificate, isArray: false })
+  async verifyRequest(@Param('id') id: string, @Body() Body: any) {
+    return await this.indigeneCertificateService.verifyRequest(id);
   }
 
   @Patch(':id/reject')
