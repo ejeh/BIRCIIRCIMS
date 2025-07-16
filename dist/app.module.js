@@ -48,7 +48,8 @@ const nest_morgan_1 = require("nest-morgan");
 const mongoose_1 = require("@nestjs/mongoose");
 const jwt_1 = require("@nestjs/jwt");
 const passport_1 = require("@nestjs/passport");
-const mailer_1 = require("@nest-modules/mailer");
+const mailer_1 = require("@nestjs-modules/mailer");
+const handlebars_adapter_1 = require("@nestjs-modules/mailer/dist/adapters/handlebars.adapter");
 const serve_static_1 = require("@nest-middlewares/serve-static");
 const path = __importStar(require("path"));
 const logger_1 = require("./common/middleware/logger");
@@ -68,6 +69,7 @@ const tasks_module_1 = require("./task/tasks.module");
 const DEV_TRANSPORTER = {
     host: 'smtp-relay.sendinblue.com',
     port: 587,
+    secure: false,
     auth: {
         user: 'developercircus@gmail.com',
         pass: 'CR2bIMjv3XZkrTEL',
@@ -96,7 +98,7 @@ exports.AppModule = AppModule = __decorate([
             ]),
             users_module_1.UsersModule,
             nest_morgan_1.MorganModule,
-            mongoose_1.MongooseModule.forRoot(config_1.dbUrl, {}),
+            mongoose_1.MongooseModule.forRoot(config_1.dbUrl),
             serve_static_2.ServeStaticModule.forRoot({
                 rootPath: (0, path_1.join)(__dirname, '..', 'uploads'),
                 serveRoot: '/uploads',
@@ -114,7 +116,7 @@ exports.AppModule = AppModule = __decorate([
                     },
                     template: {
                         dir: __dirname + '/../templates',
-                        adapter: new mailer_1.HandlebarsAdapter(),
+                        adapter: new handlebars_adapter_1.HandlebarsAdapter(),
                         options: {
                             strict: true,
                         },
@@ -127,6 +129,7 @@ exports.AppModule = AppModule = __decorate([
                             },
                         },
                     },
+                    debug: true,
                 }),
             }),
             auth_module_1.AuthModule,

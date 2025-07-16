@@ -6,7 +6,8 @@ import { MorganModule } from 'nest-morgan';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { MailerModule, HandlebarsAdapter } from '@nest-modules/mailer';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { ServeStaticMiddleware } from '@nest-middlewares/serve-static';
 import * as path from 'path';
 import { LoggerMiddleware } from './common/middleware/logger';
@@ -30,6 +31,7 @@ import { TasksModule } from './task/tasks.module';
 const DEV_TRANSPORTER = {
   host: 'smtp-relay.sendinblue.com',
   port: 587,
+  secure: false, // true for 465, false for other ports
   auth: {
     user: 'developercircus@gmail.com',
     pass: 'CR2bIMjv3XZkrTEL',
@@ -46,10 +48,7 @@ const DEV_TRANSPORTER = {
     ]),
     UsersModule,
     MorganModule,
-    MongooseModule.forRoot(dbUrl, {
-      // ssl: true,
-      // tls: true,
-    }),
+    MongooseModule.forRoot(dbUrl),
 
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'), // Path to your static files directory
@@ -81,6 +80,7 @@ const DEV_TRANSPORTER = {
             },
           },
         },
+        debug: true, // ✅ shows detailed logs
       }),
     }),
     AuthModule,

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { MailerService } from '@nest-modules/mailer';
+import { MailerService } from '@nestjs-modules/mailer';
 import config from 'src/config';
 
 @Injectable()
@@ -30,7 +30,7 @@ export class UserMailerService {
           },
         })
         .catch((error) => {
-          console.log(error.message);
+          console.error('❌ Activation email failed:', error); // Show full object
         });
     }
   }
