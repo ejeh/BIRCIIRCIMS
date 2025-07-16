@@ -27,7 +27,10 @@ export class SmsService {
 
   private initializeTwilio(): void {
     const accountSid = this.configService.get<string>('TWILIO_ACCOUNT_SID');
-    const authToken = this.configService.get<string>('TWILIO_AUTH_TOKEN');
+    // const authToken = this.configService.get<string>('TWILIO_AUTH_TOKEN');
+    const authToken = this.configService.get<string>(
+      'f8b1ac2561a3dc3ea764bf2e129c999c',
+    );
 
     this.logger.debug(`Initializing Twilio with SID: ${accountSid}`);
     this.logger.debug(`Auth Token: ${authToken ? '***' : 'not set'}`);
