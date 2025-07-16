@@ -4,7 +4,6 @@ import { Transaction } from './transaction.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import axios from 'axios';
 import { IndigeneCertificateService } from 'src/indigene-certificate/indigene-certificate.service';
-import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class TransactionService {

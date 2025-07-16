@@ -8,6 +8,8 @@ import setupSwagger from '../users/users.swagger';
 import { UsersService } from 'src/users/users.service';
 import { UserMailerService } from 'src/users/users.mailer.service';
 import { NotificationsGateway } from 'src/notifications/notifications.gateway';
+import { SmsService } from 'src/sms/sms.service';
+import { ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { NotificationsGateway } from 'src/notifications/notifications.gateway';
     UsersService,
     UserMailerService,
     NotificationsGateway,
+    SmsService,
+    ConfigService,
   ],
   exports: [IdcardService],
 })

@@ -1,16 +1,10 @@
-import {
-  MiddlewareConsumer,
-  Module,
-  NestModule,
-  RequestMethod,
-} from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { MorganModule } from 'nest-morgan';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
-// import config, { dbUrl } from './config';
 import { PassportModule } from '@nestjs/passport';
 import { MailerModule, HandlebarsAdapter } from '@nest-modules/mailer';
 import { ServeStaticMiddleware } from '@nest-middlewares/serve-static';
@@ -18,7 +12,6 @@ import * as path from 'path';
 import { LoggerMiddleware } from './common/middleware/logger';
 import { AuthModule } from './auth/auth.module';
 import { IndigeneCertificateModule } from './indigene-certificate/indigene-certificate.module';
-import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { IdcardModule } from './idcard/idcard.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
@@ -29,10 +22,11 @@ import config, { dbUrl } from './config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { HelmetMiddleware } from '@nest-middlewares/helmet';
 import { NotificationsModule } from './notifications/notifications.module';
-import mongoose from 'mongoose';
+import { SmsModule } from './sms/sms.module';
+import { TasksModule } from './task/tasks.module';
 
-console.log(config.isProd); // boolean
-console.log(dbUrl); // string | undefined
+// console.log(config.isProd); // boolean
+// console.log(dbUrl); // string | undefined
 const DEV_TRANSPORTER = {
   host: 'smtp-relay.sendinblue.com',
   port: 587,
@@ -95,6 +89,8 @@ const DEV_TRANSPORTER = {
     TransactionModule,
     KindredModule,
     NotificationsModule,
+    SmsModule,
+    TasksModule,
   ],
   controllers: [AppController],
   providers: [AppService],

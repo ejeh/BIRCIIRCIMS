@@ -1,4 +1,4 @@
-import { IsString, IsOptional, MaxLength, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UserPublicData {
@@ -246,4 +246,30 @@ export class UpdateUserRoleDto {
   @IsString()
   @IsOptional()
   role: string;
+}
+
+export class VerifyReferenceDto {
+  @IsBoolean()
+  knowsApplicant: boolean;
+
+  @IsOptional()
+  @IsString()
+  knownDuration?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isResident?: boolean;
+
+  @IsOptional()
+  @IsString()
+  comments?: string;
+}
+
+export class VerificationStatusDto {
+  verified: number;
+  denied: number;
+  pending: number;
+  total: number;
+  isVerified: boolean;
+  references: any[];
 }
