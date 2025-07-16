@@ -61,7 +61,7 @@ export class UsersService {
         role,
         origin,
         password: await hashPassword(password),
-        activationToken: uuid,
+        activationToken: uuid(),
         activationExpires: Date.now() + config.auth.activationExpireInMs,
       });
       this.userMailer.sendActivationMail(
@@ -159,7 +159,7 @@ export class UsersService {
         email: email.toLowerCase(),
       },
       {
-        passwordResetToken: uuid,
+        passwordResetToken: uuid(),
         passwordResetExpires: Date.now() + config.auth.passwordResetExpireInMs,
       },
       {
