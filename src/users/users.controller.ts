@@ -14,6 +14,7 @@ import {
   HttpStatus,
   NotFoundException,
   BadRequestException,
+  Post,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import {
@@ -24,7 +25,11 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { User } from './users.schema';
-import { UpdateProfileDto, UpdateUserRoleDto } from './users.dto';
+import {
+  UpdateProfileDto,
+  UpdateUserRoleDto,
+  VerifyReferenceDto,
+} from './users.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from 'src/users/users.role.enum';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -34,6 +39,7 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { ParseJSONPipe } from './parse-json.pipe'; // Create a custom pipe to handle JSON parsing.
 import config from 'src/config';
+import { Public } from 'src/common/decorators/public.decorator';
 
 @ApiTags('users-controller')
 @ApiBearerAuth()
@@ -99,7 +105,61 @@ export class UsersController {
       }
     }
     try {
+      // const updatedData: any = { ...body };
       const updatedData: any = { ...body };
+      const currentUser = await this.userService.userModel.findById(id);
+
+      if (!currentUser) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      // Preserve verification data for neighbors
+      if (updatedData.neighbor && Array.isArray(updatedData.neighbor)) {
+        updatedData.neighbor = updatedData.neighbor.map((newNeighbor) => {
+          const existingNeighbor = currentUser.neighbor.find(
+            (n) => n.phone === newNeighbor.phone,
+          );
+
+          return existingNeighbor
+            ? {
+                ...newNeighbor,
+                verificationLink: existingNeighbor.verificationLink,
+                verificationToken: existingNeighbor.verificationToken,
+                status: existingNeighbor.status,
+                isFollowUpSent: existingNeighbor.isFollowUpSent,
+                verificationExpiresAt: existingNeighbor.verificationExpiresAt,
+                isResident: existingNeighbor.isResident,
+                knownDuration: existingNeighbor.knownDuration,
+                knowsApplicant: existingNeighbor.knowsApplicant,
+                verifiedAt: existingNeighbor.verifiedAt,
+              }
+            : newNeighbor;
+        });
+      }
+
+      // Preserve verification data for family members
+      if (updatedData.family && Array.isArray(updatedData.family)) {
+        updatedData.family = updatedData.family.map((newFamily) => {
+          const existingFamily = currentUser.family.find(
+            (f) => f.phone === newFamily.phone,
+          );
+
+          return existingFamily
+            ? {
+                ...newFamily,
+                verificationLink: existingFamily.verificationLink,
+                verificationToken: existingFamily.verificationToken,
+                status: existingFamily.status,
+                isFollowUpSent: existingFamily.isFollowUpSent,
+                verificationExpiresAt: existingFamily.verificationExpiresAt,
+                isResident: existingFamily.isResident,
+                knownDuration: existingFamily.knownDuration,
+                knowsApplicant: existingFamily.knowsApplicant,
+                verifiedAt: existingFamily.verifiedAt,
+              }
+            : newFamily;
+        });
+      }
 
       const getBaseUrl = () => {
         return config.isDev
@@ -108,7 +168,6 @@ export class UsersController {
       };
 
       if (file) {
-        console.log('File uploaded:', file);
         updatedData.passportPhoto = `${getBaseUrl()}/uploads/${file.filename}`;
       }
 
@@ -120,6 +179,7 @@ export class UsersController {
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
+
       return user;
     } catch (error) {
       // throw EmailAlreadyUsedException();
@@ -128,6 +188,51 @@ export class UsersController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  @Get(':id/verification-tokens')
+  async getVerificationTokens(@Param('id') id: string) {
+    const user = await this.userService.userModel.findById(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return {
+      neighbor: user.neighbor?.map((n) => ({
+        id: n._id,
+        verificationToken: n.verificationToken,
+        verificationLink: n.verificationLink,
+        status: n.status,
+      })),
+      family: user.family?.map((f) => ({
+        id: f._id,
+        verificationToken: f.verificationToken,
+        verificationLink: f.verificationLink,
+        status: f.status,
+      })),
+    };
+  }
+  @Public()
+  @Get('verify-reference/:token')
+  @ApiResponse({ type: Object, isArray: false })
+  async getVerificationDetails(@Param('token') token: string) {
+    return this.userService.getVerificationDetails(token);
+  }
+
+  @Public()
+  @Post('verify-reference/:token')
+  @ApiResponse({ type: Object, isArray: false })
+  async verifyReference(
+    @Param('token') token: string,
+    @Body() verificationData: VerifyReferenceDto,
+  ) {
+    return this.userService.verifyReference(token, verificationData);
+  }
+
+  @Post(':id/initiate-verification')
+  @ApiResponse({ type: Object, isArray: false })
+  async initiateVerification(@Param('id') id: string) {
+    return this.userService.initiateVerification(id);
   }
 
   @Patch(':id/role')
@@ -149,6 +254,7 @@ export class UsersController {
   @ApiResponse({ type: User, isArray: false })
   async getProfile(@Param('id') id: string, @Body() body: any) {
     const user = await this.userService.findById(id);
+
     if (!user) {
       throw new NotFoundException('User not found'); // Handle missing user
     }

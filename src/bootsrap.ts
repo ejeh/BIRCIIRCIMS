@@ -16,6 +16,10 @@ import * as bcrypt from 'bcryptjs';
 import { UserSchema } from './users/users.schema';
 import mongoose from 'mongoose';
 
+import * as crypto from 'crypto';
+
+(global as any).crypto = crypto;
+
 /**
  * Helper to be used here & in tests.
  * @param app

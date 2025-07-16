@@ -1,7 +1,5 @@
 import * as dotenv from 'dotenv';
 
-import * as dns from 'dns';
-
 import * as path from 'path';
 
 // Load .env.production for production environment

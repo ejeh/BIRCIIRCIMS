@@ -30,6 +30,7 @@ const multer_1 = require("multer");
 const path_1 = require("path");
 const parse_json_pipe_1 = require("./parse-json.pipe");
 const config_1 = __importDefault(require("../config"));
+const public_decorator_1 = require("../common/decorators/public.decorator");
 let UsersController = class UsersController {
     constructor(userService) {
         this.userService = userService;
@@ -55,13 +56,54 @@ let UsersController = class UsersController {
         }
         try {
             const updatedData = { ...body };
+            const currentUser = await this.userService.userModel.findById(id);
+            if (!currentUser) {
+                throw new common_1.HttpException('User not found', common_1.HttpStatus.NOT_FOUND);
+            }
+            if (updatedData.neighbor && Array.isArray(updatedData.neighbor)) {
+                updatedData.neighbor = updatedData.neighbor.map((newNeighbor) => {
+                    const existingNeighbor = currentUser.neighbor.find((n) => n.phone === newNeighbor.phone);
+                    return existingNeighbor
+                        ? {
+                            ...newNeighbor,
+                            verificationLink: existingNeighbor.verificationLink,
+                            verificationToken: existingNeighbor.verificationToken,
+                            status: existingNeighbor.status,
+                            isFollowUpSent: existingNeighbor.isFollowUpSent,
+                            verificationExpiresAt: existingNeighbor.verificationExpiresAt,
+                            isResident: existingNeighbor.isResident,
+                            knownDuration: existingNeighbor.knownDuration,
+                            knowsApplicant: existingNeighbor.knowsApplicant,
+                            verifiedAt: existingNeighbor.verifiedAt,
+                        }
+                        : newNeighbor;
+                });
+            }
+            if (updatedData.family && Array.isArray(updatedData.family)) {
+                updatedData.family = updatedData.family.map((newFamily) => {
+                    const existingFamily = currentUser.family.find((f) => f.phone === newFamily.phone);
+                    return existingFamily
+                        ? {
+                            ...newFamily,
+                            verificationLink: existingFamily.verificationLink,
+                            verificationToken: existingFamily.verificationToken,
+                            status: existingFamily.status,
+                            isFollowUpSent: existingFamily.isFollowUpSent,
+                            verificationExpiresAt: existingFamily.verificationExpiresAt,
+                            isResident: existingFamily.isResident,
+                            knownDuration: existingFamily.knownDuration,
+                            knowsApplicant: existingFamily.knowsApplicant,
+                            verifiedAt: existingFamily.verifiedAt,
+                        }
+                        : newFamily;
+                });
+            }
             const getBaseUrl = () => {
                 return config_1.default.isDev
                     ? process.env.BASE_URL || 'http://localhost:5000'
                     : 'api.citizenship.benuestate.gov.ng';
             };
             if (file) {
-                console.log('File uploaded:', file);
                 updatedData.passportPhoto = `${getBaseUrl()}/uploads/${file.filename}`;
             }
             const user = await this.userService.userModel.findByIdAndUpdate(id, updatedData, { new: true });
@@ -73,6 +115,35 @@ let UsersController = class UsersController {
         catch (error) {
             throw new common_1.HttpException(error.message || 'An error occurred while updating the profile', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+    async getVerificationTokens(id) {
+        const user = await this.userService.userModel.findById(id);
+        if (!user) {
+            throw new common_1.NotFoundException('User not found');
+        }
+        return {
+            neighbor: user.neighbor?.map((n) => ({
+                id: n._id,
+                verificationToken: n.verificationToken,
+                verificationLink: n.verificationLink,
+                status: n.status,
+            })),
+            family: user.family?.map((f) => ({
+                id: f._id,
+                verificationToken: f.verificationToken,
+                verificationLink: f.verificationLink,
+                status: f.status,
+            })),
+        };
+    }
+    async getVerificationDetails(token) {
+        return this.userService.getVerificationDetails(token);
+    }
+    async verifyReference(token, verificationData) {
+        return this.userService.verifyReference(token, verificationData);
+    }
+    async initiateVerification(id) {
+        return this.userService.initiateVerification(id);
     }
     async updateUserRole(id, body) {
         return await this.userService.userModel.findByIdAndUpdate(id, { ...body }, { new: true });
@@ -128,6 +199,40 @@ __decorate([
     __metadata("design:paramtypes", [String, users_dto_1.UpdateProfileDto, Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "updateUserProfile", null);
+__decorate([
+    (0, common_1.Get)(':id/verification-tokens'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "getVerificationTokens", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, common_1.Get)('verify-reference/:token'),
+    (0, swagger_1.ApiResponse)({ type: Object, isArray: false }),
+    __param(0, (0, common_1.Param)('token')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "getVerificationDetails", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, common_1.Post)('verify-reference/:token'),
+    (0, swagger_1.ApiResponse)({ type: Object, isArray: false }),
+    __param(0, (0, common_1.Param)('token')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, users_dto_1.VerifyReferenceDto]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "verifyReference", null);
+__decorate([
+    (0, common_1.Post)(':id/initiate-verification'),
+    (0, swagger_1.ApiResponse)({ type: Object, isArray: false }),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "initiateVerification", null);
 __decorate([
     (0, common_1.Patch)(':id/role'),
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),

@@ -63,8 +63,8 @@ const config_1 = __importStar(require("./config"));
 const throttler_1 = require("@nestjs/throttler");
 const helmet_1 = require("@nest-middlewares/helmet");
 const notifications_module_1 = require("./notifications/notifications.module");
-console.log(config_1.default.isProd);
-console.log(config_1.dbUrl);
+const sms_module_1 = require("./sms/sms.module");
+const tasks_module_1 = require("./task/tasks.module");
 const DEV_TRANSPORTER = {
     host: 'smtp-relay.sendinblue.com',
     port: 587,
@@ -135,6 +135,8 @@ exports.AppModule = AppModule = __decorate([
             transaction_module_1.TransactionModule,
             kindred_module_1.KindredModule,
             notifications_module_1.NotificationsModule,
+            sms_module_1.SmsModule,
+            tasks_module_1.TasksModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

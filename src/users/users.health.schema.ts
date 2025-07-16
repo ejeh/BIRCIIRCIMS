@@ -23,12 +23,12 @@ export enum Genotype {
 
 // Enum for disability status
 export enum DisabilityStatus {
-  NONE = 'None',
-  PHYSICAL = 'Physical',
-  VISUAL = 'Visual',
-  HEARING = 'Hearing',
-  MENTAL = 'Mental',
-  OTHER = 'Other',
+  NONE = 'none',
+  PHYSICAL = 'physical',
+  VISUAL = 'visual',
+  HEARING = 'hearing',
+  MENTAL = 'mental',
+  OTHER = 'other',
 }
 
 @Schema({ timestamps: true })

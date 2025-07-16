@@ -8,6 +8,8 @@ import { UsersService } from 'src/users/users.service';
 import { UserMailerService } from 'src/users/users.mailer.service';
 import { UserModel } from 'src/users/users.model';
 import { KindredModel } from 'src/kindred/kindred.model';
+import { SmsService } from 'src/sms/sms.service';
+import { ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -19,7 +21,13 @@ import { KindredModel } from 'src/kindred/kindred.model';
   ],
   controllers: [IndigeneCertificateController],
 
-  providers: [IndigeneCertificateService, UsersService, UserMailerService],
+  providers: [
+    IndigeneCertificateService,
+    UsersService,
+    UserMailerService,
+    SmsService,
+    ConfigService,
+  ],
 
   exports: [IndigeneCertificateService],
 })

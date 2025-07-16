@@ -2,10 +2,10 @@
 import { Schema, Document } from 'mongoose';
 
 export const EmploymentHistorySchema = new Schema({
-  companyName: { type: String, required: true },
-  address: { type: String, required: true },
-  designation: { type: String, required: true },
-  startYear: { type: Date, required: true },
+  companyName: { type: String },
+  address: { type: String },
+  designation: { type: String },
+  startYear: { type: Date },
   endYear: { type: Date }, // Optional for current employment
   isCurrentEmployment: { type: Boolean, default: false },
   description: { type: String },
