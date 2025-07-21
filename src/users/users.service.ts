@@ -251,10 +251,105 @@ export class UsersService {
     }
   }
 
+  // async initiateVerification(userId: string) {
+  //   const user = await this.userModel.findById(userId);
+  //   if (!user) {
+  //     throw UserNotFoundException();
+  //   }
+
+  //   // Check for at least one valid reference (name and phone)
+  //   const allReferencesData = [
+  //     ...(user.neighbor || []),
+  //     ...(user.family || []),
+  //   ];
+  //   const hasValidReference = allReferencesData.every(
+  //     (ref) => ref.name && ref.phone,
+  //   );
+
+  //   if (!hasValidReference) {
+  //     throw new HttpException(
+  //       'Cannot initiate verification: No valid references with both name and phone provided.',
+  //       HttpStatus.BAD_REQUEST,
+  //     );
+  //   }
+
+  //   const now = new Date();
+
+  //   // Mark expired verifications
+  //   user.neighbor.forEach((ref) => {
+  //     if (
+  //       ref.status === 'pending' &&
+  //       new Date(ref.verificationExpiresAt) < now
+  //     ) {
+  //       ref.status = VerificationStatus.EXPIRED;
+  //     }
+  //   });
+
+  //   user.family.forEach((ref) => {
+  //     if (
+  //       ref.status === 'pending' &&
+  //       new Date(ref.verificationExpiresAt) < now
+  //     ) {
+  //       ref.status = VerificationStatus.EXPIRED;
+  //     }
+  //   });
+
+  //   await user.save();
+
+  //   // Prevent re-initiation if verification is already pending
+  //   // Check for pending verifications
+  //   const allReferences = [...(user.neighbor || []), ...(user.family || [])];
+
+  //   const hasPending = allReferences.some(
+  //     (ref) =>
+  //       ref.status === 'pending' &&
+  //       new Date(ref.verificationExpiresAt) > new Date(),
+  //   );
+
+  //   if (hasPending) {
+  //     throw new HttpException(
+  //       'Verification already in progress. Cannot re-initiate.',
+  //       HttpStatus.BAD_REQUEST,
+  //     );
+  //   }
+
+  //   // Process neighbors
+  //   for (const neighbor of user.neighbor || []) {
+  //     if (!neighbor.verificationToken) {
+  //       await this.setupReferenceVerification(user, neighbor, 'neighbor');
+  //     }
+  //   }
+
+  //   // Process family members
+  //   for (const familyMember of user.family || []) {
+  //     if (!familyMember.verificationToken) {
+  //       await this.setupReferenceVerification(user, familyMember, 'family');
+  //     }
+  //   }
+
+  //   return this.userModel.findById(userId);
+  // }
+
   async initiateVerification(userId: string) {
     const user = await this.userModel.findById(userId);
     if (!user) {
       throw UserNotFoundException();
+    }
+
+    //   // Check for at least one valid reference (name and phone)
+    const allReferencesData = [
+      ...(user.neighbor || []),
+      ...(user.family || []),
+    ];
+    const hasValidReference = allReferencesData.every(
+      (ref) => ref.name && ref.phone,
+    );
+
+    if (!hasValidReference) {
+      throw new HttpException(
+        'Cannot initiate verification: No valid references with both name and phone provided.',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const now = new Date();
@@ -280,7 +375,7 @@ export class UsersService {
 
     await user.save();
 
-    // Prevent re-initiation if verification is already pending
+    //  Prevent re-initiation if verification is already pending
     // Check for pending verifications
     const allReferences = [...(user.neighbor || []), ...(user.family || [])];
 
@@ -297,15 +392,30 @@ export class UsersService {
       );
     }
 
-    // Process neighbors
-    for (const neighbor of user.neighbor || []) {
+    // Get references with pending status and unexpired
+    const pendingNeighbors = (user.neighbor || []).filter(
+      (ref) => ref.name && ref.phone && ref.status === 'pending',
+    );
+
+    const pendingFamily = (user.family || []).filter(
+      (ref) => ref.name && ref.phone && ref.status === 'pending',
+    );
+
+    if (pendingNeighbors.length === 0 && pendingFamily.length === 0) {
+      throw new HttpException(
+        'No pending references available for verification.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Send verification only to pending references
+    for (const neighbor of pendingNeighbors) {
       if (!neighbor.verificationToken) {
         await this.setupReferenceVerification(user, neighbor, 'neighbor');
       }
     }
 
-    // Process family members
-    for (const familyMember of user.family || []) {
+    for (const familyMember of pendingFamily) {
       if (!familyMember.verificationToken) {
         await this.setupReferenceVerification(user, familyMember, 'family');
       }
@@ -321,7 +431,7 @@ export class UsersService {
     type: 'neighbor' | 'family',
   ) {
     const verificationToken = uuid();
-    const verificationLink = `${process.env.FRONTEND_URL}/source/verify-reference.html?token=${verificationToken}&ref=${type}`;
+    const verificationLink = `${process.env.FRONTEND_URL}/source/src/bdic/app/verify-reference.html?token=${verificationToken}&ref=${type}`;
 
     // Alternative short link option (recommended for SMS)
     const shortLink = await this.generateShortLink(verificationLink);
@@ -338,7 +448,7 @@ export class UsersService {
     // SMS message template
     const message = `Hello ${reference.firstname},\n\nYou've been listed as a ${type} reference for ${user.firstname} ${user.lastname} (Benue Resident ID).\n\nPlease verify this relationship:\n${shortLink || verificationLink}\n\nThank you!`;
 
-    await this.smsService.sendSms(reference.phone, message);
+    // await this.smsService.sendSms(reference.phone, message);
 
     // Save the updated user document
     await user.save();
@@ -476,8 +586,8 @@ export class UsersService {
   }
 
   async checkPendingVerifications() {
-    const threeDaysAgo = new Date(Date.now() - 5 * 1000); // For testing
-    //   // const threeDaysAgo = new Date(Date.now() - 72 * 60 * 60 * 1000);
+    // const threeDaysAgo = new Date(Date.now() - 5 * 1000); // For testing
+    const threeDaysAgo = new Date(Date.now() - 72 * 60 * 60 * 1000);
 
     const usersWithPending = await this.userModel.find({
       $or: [
@@ -543,8 +653,8 @@ export class UsersService {
     const message = `Reminder: Please verify your reference for ${user.firstname} ${user.lastname} by clicking this link: ${reference.verificationLink}`;
 
     // Replace this with actual SMS sending
-    // const smsSent = true; // or await this.smsService.sendSms(reference.phone, message);
-    const smsSent = await this.smsService.sendSms(reference.phone, message);
+    const smsSent = true; // or await this.smsService.sendSms(reference.phone, message);
+    // const smsSent = await this.smsService.sendSms(reference.phone, message);
 
     if (smsSent) {
       const arrayFilterKey = type === 'neighbor' ? 'n' : 'f';

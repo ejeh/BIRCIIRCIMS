@@ -88,15 +88,15 @@ export class IdcardController {
   @Get('get-all-request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: IdCard, isArray: true })
-  @Roles(UserRole.SUPER_ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN)
   async getCertsRequest(@Req() req: Request) {
     return await this.idcardService.idCardModel.find({});
   }
 
-  @Get('request')
+  @Get('card-request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: IdCard, isArray: true })
-  @Roles(UserRole.SUPPORT_ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.SUPPORT_ADMIN, UserRole.SUPER_ADMIN, UserRole.KINDRED_HEAD)
   async getRequestsByStatuses(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,

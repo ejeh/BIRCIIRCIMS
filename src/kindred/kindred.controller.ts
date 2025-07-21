@@ -3,8 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  HttpException,
-  HttpStatus,
   Param,
   Post,
   Put,
@@ -13,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { KindredService } from './kindred.service';
-import { SigUpKindredDto, UpdateKindredDto } from './kindredDto';
+import { UpdateKindredDto } from './kindredDto';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { UserRole } from 'src/users/users.role.enum';
@@ -23,13 +21,6 @@ import { ApiResponse } from '@nestjs/swagger';
 @UseGuards(JwtAuthGuard)
 export class KindredController {
   constructor(private readonly kindredService: KindredService) {}
-
-  // @Post('create')
-  // @UseGuards(RolesGuard)
-  // @Roles(UserRole.SUPER_ADMIN, UserRole.SUPPORT_ADMIN)
-  // async createKindred(@Body() body: SigUpKindredDto) {
-  //   return this.kindredService.createKindred(body);
-  // }
 
   @Get()
   @ApiResponse({ type: 'Kindred', isArray: true })
@@ -41,7 +32,7 @@ export class KindredController {
   }
 
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPPORT_ADMIN)
+  @Roles(UserRole.SUPPORT_ADMIN, UserRole.SUPER_ADMIN)
   @Get(':userId')
   async getkindredHeads(
     @Param('userId') userId: string,
