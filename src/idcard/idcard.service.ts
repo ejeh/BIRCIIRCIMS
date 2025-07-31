@@ -49,7 +49,10 @@ export class IdcardService {
   async findById(id: string): Promise<IdCard> {
     const user = await this.idCardModel
       .findById(id)
-      .populate('userId', 'firstname lastname email passportPhoto')
+      .populate(
+        'userId',
+        'firstname lastname email passportPhoto isProfileCompleted stateOfOrigin lgaOfOrigin',
+      )
       .exec();
     if (!user) {
       throw UserNotFoundException();

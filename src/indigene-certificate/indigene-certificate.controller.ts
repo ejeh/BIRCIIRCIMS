@@ -41,6 +41,9 @@ import config from 'src/config';
 import { Public } from 'src/common/decorators/public.decorator';
 import * as crypto from 'crypto';
 import { Throttle } from '@nestjs/throttler';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { HttpService } from '@nestjs/axios';
+import { lastValueFrom } from 'rxjs';
 
 @ApiTags('indigene-certificate.controller')
 @UseGuards(JwtAuthGuard)
@@ -49,21 +52,118 @@ export class IndigeneCertificateController {
   constructor(
     private readonly indigeneCertificateService: IndigeneCertificateService,
     private readonly userService: UsersService,
+    private readonly cloudinaryService: CloudinaryService,
+    private readonly httpService: HttpService,
   ) {}
+
+  // @Post('create')
+  // @UseInterceptors(
+  //   AnyFilesInterceptor({
+  //     limits: { fileSize: 5 * 1024 * 1024 },
+  //     storage: diskStorage({
+  //       destination: './uploads',
+  //       filename: (req, file, cb) => {
+  //         const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+  //         const ext = extname(file.originalname);
+  //         cb(null, `${uniqueSuffix}${ext}`);
+  //       },
+  //     }),
+
+  //     fileFilter: (req, file, cb) => {
+  //       const fieldTypeRules = {
+  //         passportPhoto: {
+  //           mime: ['image/jpeg', 'image/png', 'image/jpg'],
+  //           ext: ['.jpeg', '.jpg', '.png'],
+  //           message: 'Passport Photo must be an image (.jpg, .jpeg, .png)',
+  //         },
+  //         idCard: {
+  //           mime: ['application/pdf'],
+  //           ext: ['.pdf'],
+  //           message: 'ID Card must be a PDF file',
+  //         },
+  //         birthCertificate: {
+  //           mime: ['application/pdf'],
+  //           ext: ['.pdf'],
+  //           message: 'Birth Certificate must be a PDF file',
+  //         },
+
+  //       };
+
+  //       const rules = fieldTypeRules[file.fieldname];
+  //       const ext = extname(file.originalname).toLowerCase();
+
+  //       if (!rules) {
+  //         return cb(
+  //           new BadRequestException(`Unexpected file field: ${file.fieldname}`),
+  //           false,
+  //         );
+  //       }
+
+  //       const isValidMime = rules.mime.includes(file.mimetype);
+  //       const isValidExt = rules.ext.includes(ext);
+
+  //       if (!isValidMime || !isValidExt) {
+  //         return cb(new BadRequestException(rules.message), false);
+  //       }
+
+  //       cb(null, true);
+  //     },
+  //   }),
+  // )
+  // async createCertificate(
+  //   @Body() body: any,
+  //   @UploadedFiles() files: Array<Express.Multer.File>,
+  // ) {
+  //   // Convert array to map for easier access
+  //   const fileMap = files.reduce(
+  //     (acc, file) => {
+  //       acc[file.fieldname] = file;
+  //       return acc;
+  //     },
+  //     {} as Record<string, Express.Multer.File>,
+  //   );
+
+  //   const requiredFields = [
+  //     'passportPhoto',
+  //     'idCard',
+  //     'birthCertificate',
+  //   ];
+
+  //   for (const field of requiredFields) {
+  //     if (!fileMap[field]) {
+  //       throw new BadRequestException(`${field} file is required.`);
+  //     }
+  //   }
+
+  //   const getBaseUrl = (): string =>
+  //     config.isDev
+  //       ? process.env.BASE_URL || 'http://localhost:5000'
+  //       : 'https://api.citizenship.benuestate.gov.ng';
+
+  //   const fileUrl = (file: Express.Multer.File) =>
+  //     `${getBaseUrl()}/uploads/${file.filename}`;
+
+  //   const data = {
+  //     ...body,
+  //     refNumber: uuid(),
+  //     passportPhoto: fileUrl(fileMap.passportPhoto),
+  //     idCard: fileUrl(fileMap.idCard),
+  //     birthCertificate: fileUrl(fileMap.birthCertificate),
+  //   };
+
+  //   await this.userService.sendRequest(
+  //     'ejehgodfrey@gmail.com',
+  //     'New Request',
+  //     `Request for certificate of origin from ${body.email}`,
+  //   );
+
+  //   return this.indigeneCertificateService.createCertificate(data);
+  // }
 
   @Post('create')
   @UseInterceptors(
     AnyFilesInterceptor({
       limits: { fileSize: 5 * 1024 * 1024 },
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (req, file, cb) => {
-          const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-          const ext = extname(file.originalname);
-          cb(null, `${uniqueSuffix}${ext}`);
-        },
-      }),
-
       fileFilter: (req, file, cb) => {
         const fieldTypeRules = {
           passportPhoto: {
@@ -81,11 +181,6 @@ export class IndigeneCertificateController {
             ext: ['.pdf'],
             message: 'Birth Certificate must be a PDF file',
           },
-          // parentGuardianIndigeneCert: {
-          //   mime: ['application/pdf'],
-          //   ext: ['.pdf'],
-          //   message: 'Parent/Guardian Certificate must be a PDF file',
-          // },
         };
 
         const rules = fieldTypeRules[file.fieldname];
@@ -113,7 +208,7 @@ export class IndigeneCertificateController {
     @Body() body: any,
     @UploadedFiles() files: Array<Express.Multer.File>,
   ) {
-    // Convert array to map for easier access
+    // ✅ Map uploaded files by field name
     const fileMap = files.reduce(
       (acc, file) => {
         acc[file.fieldname] = file;
@@ -122,34 +217,36 @@ export class IndigeneCertificateController {
       {} as Record<string, Express.Multer.File>,
     );
 
-    const requiredFields = [
-      'passportPhoto',
-      'idCard',
-      'birthCertificate',
-      // 'parentGuardianIndigeneCert',
-    ];
-
+    const requiredFields = ['passportPhoto', 'idCard', 'birthCertificate'];
     for (const field of requiredFields) {
       if (!fileMap[field]) {
         throw new BadRequestException(`${field} file is required.`);
       }
     }
 
-    const getBaseUrl = (): string =>
-      config.isDev
-        ? process.env.BASE_URL || 'http://localhost:5000'
-        : 'https://api.citizenship.benuestate.gov.ng';
-
-    const fileUrl = (file: Express.Multer.File) =>
-      `${getBaseUrl()}/uploads/${file.filename}`;
+    // ✅ Upload files to Cloudinary
+    const [passportPhotoUrl, idCardUrl, birthCertificateUrl] =
+      await Promise.all([
+        this.cloudinaryService.uploadFile(
+          fileMap.passportPhoto,
+          'certificates/passport',
+        ),
+        this.cloudinaryService.uploadFile(
+          fileMap.idCard,
+          'certificates/idcard',
+        ),
+        this.cloudinaryService.uploadFile(
+          fileMap.birthCertificate,
+          'certificates/birthcert',
+        ),
+      ]);
 
     const data = {
       ...body,
       refNumber: uuid(),
-      passportPhoto: fileUrl(fileMap.passportPhoto),
-      idCard: fileUrl(fileMap.idCard),
-      birthCertificate: fileUrl(fileMap.birthCertificate),
-      // parentGuardianIndigeneCert: fileUrl(fileMap.parentGuardianIndigeneCert),
+      passportPhoto: passportPhotoUrl,
+      idCard: idCardUrl,
+      birthCertificate: birthCertificateUrl,
     };
 
     await this.userService.sendRequest(
@@ -497,32 +594,50 @@ export class IndigeneCertificateController {
     return this.indigeneCertificateService.deleteItem(item);
   }
 
-  @Public()
-  @Get('pdf/:filename')
-  @UseGuards(JwtAuthGuard)
-  getPdf(
-    @Param('filename') filename: string,
-    @Res() res: Response,
-    @Req() req: any,
-  ) {
-    const filePath = join(__dirname, '..', '..', 'uploads', filename);
+  // @Public()
+  // @Get('pdf/:filename')
+  // @UseGuards(JwtAuthGuard)
+  // getPdf(
+  //   @Param('filename') filename: string,
+  //   @Res() res: Response,
+  //   @Req() req: any,
+  // ) {
+  //   const filePath = join(__dirname, '..', '..', 'uploads', filename);
 
-    if (!fs.existsSync(filePath)) {
-      throw new NotFoundException('File not found');
-    }
+  //   if (!fs.existsSync(filePath)) {
+  //     throw new NotFoundException('File not found');
+  //   }
+
+  //   // Set headers early before sending
+  //   res.setHeader('Content-Type', 'application/pdf');
+  //   res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+
+  //   // Pipe file (streaming) instead of res.sendFile to avoid "headers sent" on disconnect
+  //   const stream = fs.createReadStream(filePath);
+  //   stream.pipe(res);
+
+  //   stream.on('error', (err) => {
+  //     console.error('Stream error:', err);
+  //     res.status(500).end('Failed to serve PDF');
+  //   });
+  // }
+
+  @Public()
+  @Get('pdf/:encodedUrl')
+  @UseGuards(JwtAuthGuard)
+  async getPdf(@Param('encodedUrl') encodedUrl: string, @Res() res: Response) {
+    const decodedUrl = decodeURIComponent(encodedUrl);
+
+    const response = await lastValueFrom(
+      this.httpService.get(decodedUrl, {
+        responseType: 'stream',
+      }),
+    );
 
     // Set headers early before sending
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-
-    // Pipe file (streaming) instead of res.sendFile to avoid "headers sent" on disconnect
-    const stream = fs.createReadStream(filePath);
-    stream.pipe(res);
-
-    stream.on('error', (err) => {
-      console.error('Stream error:', err);
-      res.status(500).end('Failed to serve PDF');
-    });
+    res.setHeader('Content-Disposition', `inline; filename="document.pdf"`);
+    response.data.pipe(res);
   }
 
   @Public()

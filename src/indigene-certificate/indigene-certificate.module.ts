@@ -10,9 +10,13 @@ import { UserModel } from 'src/users/users.model';
 import { KindredModel } from 'src/kindred/kindred.model';
 import { SmsService } from 'src/sms/sms.service';
 import { ConfigService } from '@nestjs/config';
+import { MailService } from 'src/mail/mail.service';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
+    HttpModule,
     UserModel,
     KindredModel,
     MongooseModule.forFeature([
@@ -27,6 +31,8 @@ import { ConfigService } from '@nestjs/config';
     UserMailerService,
     SmsService,
     ConfigService,
+    MailService,
+    CloudinaryService,
   ],
 
   exports: [IndigeneCertificateService],

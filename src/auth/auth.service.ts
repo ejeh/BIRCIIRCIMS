@@ -294,7 +294,6 @@ export class AuthService {
   ): Promise<{ token: string; user: UserPublicData }> {
     const { email, password } = resetPasswordDto;
 
-    console.log(resetPasswordDto, token);
     const user = await this.usersService.resetPassword(email, token, password);
 
     return {

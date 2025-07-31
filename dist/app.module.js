@@ -66,6 +66,9 @@ const helmet_1 = require("@nest-middlewares/helmet");
 const notifications_module_1 = require("./notifications/notifications.module");
 const sms_module_1 = require("./sms/sms.module");
 const tasks_module_1 = require("./task/tasks.module");
+const biometrics_module_1 = require("./biometrics/biometrics.module");
+const mail_module_1 = require("./mail/mail.module");
+const cloudinary_service_1 = require("./cloudinary/cloudinary.service");
 const DEV_TRANSPORTER = {
     host: 'smtp-relay.sendinblue.com',
     port: 587,
@@ -140,9 +143,11 @@ exports.AppModule = AppModule = __decorate([
             notifications_module_1.NotificationsModule,
             sms_module_1.SmsModule,
             tasks_module_1.TasksModule,
+            biometrics_module_1.BiometricsModule,
+            mail_module_1.MailModule,
         ],
         controllers: [app_controller_1.AppController],
-        providers: [app_service_1.AppService],
+        providers: [app_service_1.AppService, cloudinary_service_1.CloudinaryService],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

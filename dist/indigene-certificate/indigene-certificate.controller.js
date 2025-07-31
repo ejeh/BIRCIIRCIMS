@@ -69,36 +69,38 @@ const config_1 = __importDefault(require("../config"));
 const public_decorator_1 = require("../common/decorators/public.decorator");
 const crypto = __importStar(require("crypto"));
 const throttler_1 = require("@nestjs/throttler");
+const cloudinary_service_1 = require("../cloudinary/cloudinary.service");
+const axios_1 = require("@nestjs/axios");
+const rxjs_1 = require("rxjs");
 let IndigeneCertificateController = class IndigeneCertificateController {
-    constructor(indigeneCertificateService, userService) {
+    constructor(indigeneCertificateService, userService, cloudinaryService, httpService) {
         this.indigeneCertificateService = indigeneCertificateService;
         this.userService = userService;
+        this.cloudinaryService = cloudinaryService;
+        this.httpService = httpService;
     }
     async createCertificate(body, files) {
         const fileMap = files.reduce((acc, file) => {
             acc[file.fieldname] = file;
             return acc;
         }, {});
-        const requiredFields = [
-            'passportPhoto',
-            'idCard',
-            'birthCertificate',
-        ];
+        const requiredFields = ['passportPhoto', 'idCard', 'birthCertificate'];
         for (const field of requiredFields) {
             if (!fileMap[field]) {
                 throw new common_1.BadRequestException(`${field} file is required.`);
             }
         }
-        const getBaseUrl = () => config_1.default.isDev
-            ? process.env.BASE_URL || 'http://localhost:5000'
-            : 'https://api.citizenship.benuestate.gov.ng';
-        const fileUrl = (file) => `${getBaseUrl()}/uploads/${file.filename}`;
+        const [passportPhotoUrl, idCardUrl, birthCertificateUrl] = await Promise.all([
+            this.cloudinaryService.uploadFile(fileMap.passportPhoto, 'certificates/passport'),
+            this.cloudinaryService.uploadFile(fileMap.idCard, 'certificates/idcard'),
+            this.cloudinaryService.uploadFile(fileMap.birthCertificate, 'certificates/birthcert'),
+        ]);
         const data = {
             ...body,
             refNumber: (0, uuid_1.v4)(),
-            passportPhoto: fileUrl(fileMap.passportPhoto),
-            idCard: fileUrl(fileMap.idCard),
-            birthCertificate: fileUrl(fileMap.birthCertificate),
+            passportPhoto: passportPhotoUrl,
+            idCard: idCardUrl,
+            birthCertificate: birthCertificateUrl,
         };
         await this.userService.sendRequest('ejehgodfrey@gmail.com', 'New Request', `Request for certificate of origin from ${body.email}`);
         return this.indigeneCertificateService.createCertificate(data);
@@ -265,19 +267,14 @@ let IndigeneCertificateController = class IndigeneCertificateController {
     async deleteItem(item) {
         return this.indigeneCertificateService.deleteItem(item);
     }
-    getPdf(filename, res, req) {
-        const filePath = (0, path_1.join)(__dirname, '..', '..', 'uploads', filename);
-        if (!fs.existsSync(filePath)) {
-            throw new common_1.NotFoundException('File not found');
-        }
+    async getPdf(encodedUrl, res) {
+        const decodedUrl = decodeURIComponent(encodedUrl);
+        const response = await (0, rxjs_1.lastValueFrom)(this.httpService.get(decodedUrl, {
+            responseType: 'stream',
+        }));
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-        const stream = fs.createReadStream(filePath);
-        stream.pipe(res);
-        stream.on('error', (err) => {
-            console.error('Stream error:', err);
-            res.status(500).end('Failed to serve PDF');
-        });
+        res.setHeader('Content-Disposition', `inline; filename="document.pdf"`);
+        response.data.pipe(res);
     }
     async verify(id, hash, res) {
         const result = await this.indigeneCertificateService.verifyCertificate(id, hash);
@@ -305,14 +302,6 @@ __decorate([
     (0, common_1.Post)('create'),
     (0, common_1.UseInterceptors)((0, platform_express_1.AnyFilesInterceptor)({
         limits: { fileSize: 5 * 1024 * 1024 },
-        storage: (0, multer_1.diskStorage)({
-            destination: './uploads',
-            filename: (req, file, cb) => {
-                const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-                const ext = (0, path_1.extname)(file.originalname);
-                cb(null, `${uniqueSuffix}${ext}`);
-            },
-        }),
         fileFilter: (req, file, cb) => {
             const fieldTypeRules = {
                 passportPhoto: {
@@ -521,14 +510,13 @@ __decorate([
 ], IndigeneCertificateController.prototype, "deleteItem", null);
 __decorate([
     (0, public_decorator_1.Public)(),
-    (0, common_1.Get)('pdf/:filename'),
+    (0, common_1.Get)('pdf/:encodedUrl'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    __param(0, (0, common_1.Param)('filename')),
+    __param(0, (0, common_1.Param)('encodedUrl')),
     __param(1, (0, common_1.Res)()),
-    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object, Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
 ], IndigeneCertificateController.prototype, "getPdf", null);
 __decorate([
     (0, public_decorator_1.Public)(),
@@ -546,6 +534,8 @@ exports.IndigeneCertificateController = IndigeneCertificateController = __decora
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Controller)('api/indigene/certificate'),
     __metadata("design:paramtypes", [indigene_certificate_service_1.IndigeneCertificateService,
-        users_service_1.UsersService])
+        users_service_1.UsersService,
+        cloudinary_service_1.CloudinaryService,
+        axios_1.HttpService])
 ], IndigeneCertificateController);
 //# sourceMappingURL=indigene-certificate.controller.js.map

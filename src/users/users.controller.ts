@@ -40,36 +40,300 @@ import { extname } from 'path';
 import { ParseJSONPipe } from './parse-json.pipe'; // Create a custom pipe to handle JSON parsing.
 import config from 'src/config';
 import { Public } from 'src/common/decorators/public.decorator';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @ApiTags('users-controller')
 @ApiBearerAuth()
 @Controller('api/users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
-  constructor(private readonly userService: UsersService) {}
+  constructor(
+    private readonly userService: UsersService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
+
+  // @Put(':id')
+  // @ApiResponse({ type: User, isArray: false })
+  // @UseInterceptors(
+  //   FileInterceptor('passportPhoto', {
+  //     dest: './uploads',
+  //     limits: { fileSize: 1024 * 1024 * 5 },
+  //     storage: diskStorage({
+  //       destination: './uploads',
+  //       filename: (req, file, cb) => {
+  //         const randomName = Date.now() + '-' + Math.round(Math.random() * 1e9);
+  //         const fileExt = extname(file.originalname);
+  //         cb(null, `${randomName}${extname(file.originalname)}`);
+  //       },
+  //     }),
+  //     fileFilter: (req, file, cb) => {
+  //       const allowedMimeTypes = [
+  //         'image/jpeg',
+  //         'image/png',
+  //         'image/gif',
+  //         'image/jpg',
+  //       ];
+  //       if (allowedMimeTypes.includes(file.mimetype)) {
+  //         cb(null, true);
+  //       } else {
+  //         cb(
+  //           new HttpException('Invalid file type', HttpStatus.BAD_REQUEST),
+  //           false,
+  //         );
+  //       }
+  //     },
+  //   }),
+  // )
+  // async updateUserProfile(
+  //   @Param('id') id: string,
+  //   @Body(new ParseJSONPipe()) body: UpdateProfileDto,
+  //   @UploadedFile() file: Express.Multer.File,
+  // ) {
+  //   function isEducationalHistoryComplete(edu: any): boolean {
+  //     if (!edu) return false;
+
+  //     const checkSchool = (school) =>
+  //       school &&
+  //       school.name?.trim() &&
+  //       school.address?.trim() &&
+  //       school.yearOfAttendance?.trim();
+
+  //     const primary = checkSchool(edu.primarySchool);
+  //     const secondary = checkSchool(edu.secondarySchool);
+
+  //     const tertiaryComplete =
+  //       Array.isArray(edu.tertiaryInstitutions) &&
+  //       edu.tertiaryInstitutions.length > 0;
+
+  //     return primary && secondary && tertiaryComplete;
+  //   }
+
+  //   function isEmploymentHistoryComplete(history: any[]): boolean {
+  //     if (!Array.isArray(history) || history.length === 0) return false;
+
+  //     return history.every(
+  //       (job) =>
+  //         job.companyName?.trim() &&
+  //         job.address?.trim() &&
+  //         job.designation?.trim() &&
+  //         job.startYear !== null &&
+  //         job.startYear !== undefined &&
+  //         job.endYear !== null &&
+  //         job.endYear !== undefined,
+  //     );
+  //   }
+
+  //   function isFamilyComplete(family: any[]): boolean {
+  //     if (!Array.isArray(family)) return false;
+
+  //     const verifiedFamily = family.filter(
+  //       (f) =>
+  //         f.name?.trim() &&
+  //         f.relationship?.trim() &&
+  //         f.phone?.trim() &&
+  //         f.address?.trim() &&
+  //         f.status === 'verified',
+  //     );
+
+  //     return verifiedFamily.length >= 3; // Require at least 3 verified entries
+  //   }
+
+  //   function isNeighborComplete(neighbors: any[]): boolean {
+  //     if (!Array.isArray(neighbors)) return false;
+
+  //     const verifiedNeighbors = neighbors.filter(
+  //       (n) =>
+  //         n.name?.trim() &&
+  //         n.address?.trim() &&
+  //         n.phone?.trim() &&
+  //         n.status === 'verified',
+  //     );
+
+  //     return verifiedNeighbors.length >= 3; // Require at least 3 verified entries
+  //   }
+  //   /**
+  //    * Calculate the profile completion percentage based on the provided user data.
+  //    * Essential fields contribute 60%, background checks contribute 30%, and optional fields contribute 10%.
+  //    * @param user - Partial user object containing profile data.
+  //    * @returns {number} - The calculated profile completion percentage.
+  //    */
+  //   function calculateProfileCompletion(user: Partial<User>): number {
+  //     let score = 0;
+  //     let totalWeight = 0;
+
+  //     // --- ESSENTIAL (60%) ---
+  //     const essentialFields = [
+  //       user.firstname,
+  //       user.lastname,
+  //       user.phone,
+  //       user.NIN,
+  //       user.DOB,
+  //       user.gender,
+  //       user.passportPhoto,
+  //       user.stateOfOrigin,
+  //       user.lgaOfOrigin,
+  //       user.nationality,
+  //     ];
+  //     const essentialFilled = essentialFields.filter(
+  //       (val) => val !== undefined && val !== null && String(val).trim() !== '',
+  //     ).length;
+
+  //     score += (essentialFilled / essentialFields.length) * 60;
+  //     totalWeight += 60;
+
+  //     // --- BACKGROUND INFO (30%) ---
+  //     const backgroundChecks = [
+  //       isEducationalHistoryComplete(user.educationalHistory) ? 1 : 0,
+  //       isEmploymentHistoryComplete(user.employmentHistory) ? 1 : 0,
+  //       isFamilyComplete(user.family) ? 1 : 0,
+  //       isNeighborComplete(user.neighbor) ? 1 : 0,
+  //     ];
+  //     const backgroundScore =
+  //       (backgroundChecks.reduce((a, b) => a + b, 0) /
+  //         backgroundChecks.length) *
+  //       30;
+  //     score += backgroundScore;
+  //     totalWeight += 30;
+
+  //     // --- OPTIONAL INFO (10%) ---
+  //     const optionalFields = [
+  //       user.religion,
+  //       user.community,
+  //       user.business?.length ? 'filled' : '',
+  //       user.healthInfo?.length ? 'filled' : '',
+  //     ];
+  //     const optionalFilled = optionalFields.filter(
+  //       (val) => val !== undefined && val !== null && String(val).trim() !== '',
+  //     ).length;
+
+  //     score += (optionalFilled / optionalFields.length) * 10;
+  //     totalWeight += 10;
+
+  //     // Final percentage
+  //     return Math.round(score);
+  //   }
+
+  //   // Parse educationalHistory if it's a string
+  //   if (typeof body.educationalHistory === 'string') {
+  //     try {
+  //       const parsedEducationalHistory = JSON.parse(body.educationalHistory);
+  //       body = { ...body, educationalHistory: parsedEducationalHistory };
+  //     } catch (error) {
+  //       throw new BadRequestException('Invalid educationalHistory format.');
+  //     }
+  //   }
+
+  //   // Parse educationalHistory if it's a string
+  //   if (typeof body.employmentHistory === 'string') {
+  //     try {
+  //       const parsedEmploymentHistory = JSON.parse(body.employmentHistory);
+  //       body = { ...body, employmentHistory: parsedEmploymentHistory };
+  //     } catch (error) {
+  //       throw new BadRequestException('Invalid employmentHistory format.');
+  //     }
+  //   }
+  //   try {
+  //     // const updatedData: any = { ...body };
+  //     const updatedData: any = { ...body };
+  //     const currentUser = await this.userService.userModel.findById(id);
+
+  //     if (!currentUser) {
+  //       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+  //     }
+
+  //     // Preserve verification data for neighbors
+  //     if (updatedData.neighbor && Array.isArray(updatedData.neighbor)) {
+  //       updatedData.neighbor = updatedData.neighbor.map((newNeighbor) => {
+  //         const existingNeighbor = currentUser.neighbor.find(
+  //           (n) => n.phone === newNeighbor.phone,
+  //         );
+
+  //         return existingNeighbor
+  //           ? {
+  //               ...newNeighbor,
+  //               verificationLink: existingNeighbor.verificationLink,
+  //               verificationToken: existingNeighbor.verificationToken,
+  //               status: existingNeighbor.status,
+  //               isFollowUpSent: existingNeighbor.isFollowUpSent,
+  //               verificationExpiresAt: existingNeighbor.verificationExpiresAt,
+  //               isResident: existingNeighbor.isResident,
+  //               knownDuration: existingNeighbor.knownDuration,
+  //               knowsApplicant: existingNeighbor.knowsApplicant,
+  //               verifiedAt: existingNeighbor.verifiedAt,
+  //             }
+  //           : newNeighbor;
+  //       });
+  //     }
+
+  //     // Preserve verification data for family members
+  //     if (updatedData.family && Array.isArray(updatedData.family)) {
+  //       updatedData.family = updatedData.family.map((newFamily) => {
+  //         const existingFamily = currentUser.family.find(
+  //           (f) => f.phone === newFamily.phone,
+  //         );
+
+  //         return existingFamily
+  //           ? {
+  //               ...newFamily,
+  //               verificationLink: existingFamily.verificationLink,
+  //               verificationToken: existingFamily.verificationToken,
+  //               status: existingFamily.status,
+  //               isFollowUpSent: existingFamily.isFollowUpSent,
+  //               verificationExpiresAt: existingFamily.verificationExpiresAt,
+  //               isResident: existingFamily.isResident,
+  //               knownDuration: existingFamily.knownDuration,
+  //               knowsApplicant: existingFamily.knowsApplicant,
+  //               verifiedAt: existingFamily.verifiedAt,
+  //             }
+  //           : newFamily;
+  //       });
+  //     }
+
+  //     const getBaseUrl = () => {
+  //       return config.isDev
+  //         ? process.env.BASE_URL || 'http://localhost:5000'
+  //         : 'api.citizenship.benuestate.gov.ng';
+  //     };
+
+  //     if (file) {
+  //       updatedData.passportPhoto = `${getBaseUrl()}/uploads/${file.filename}`;
+  //     }
+
+  //     // const mergedData = { ...currentUser.toObject(), ...updatedData };
+  //     // updatedData.isProfileCompleted = isProfileComplete(mergedData);
+
+  //     const merged = { ...currentUser.toObject(), ...updatedData };
+  //     const completion = calculateProfileCompletion(merged);
+
+  //     updatedData.isProfileCompleted = completion >= 90;
+  //     updatedData.profileCompletionPercentage = completion;
+
+  //     const user = await this.userService.userModel.findByIdAndUpdate(
+  //       id,
+  //       updatedData,
+  //       { new: true },
+  //     );
+  //     if (!user) {
+  //       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+  //     }
+
+  //     return user;
+  //   } catch (error) {
+  //     // throw EmailAlreadyUsedException();
+  //     throw new HttpException(
+  //       error.message || 'An error occurred while updating the profile',
+  //       HttpStatus.INTERNAL_SERVER_ERROR,
+  //     );
+  //   }
+  // }
 
   @Put(':id')
-  @ApiResponse({ type: User, isArray: false })
   @UseInterceptors(
     FileInterceptor('passportPhoto', {
-      dest: './uploads',
-      limits: { fileSize: 1024 * 1024 * 5 },
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (req, file, cb) => {
-          const randomName = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const fileExt = extname(file.originalname);
-          cb(null, `${randomName}${extname(file.originalname)}`);
-        },
-      }),
+      limits: { fileSize: 1024 * 1024 * 5 }, // 5MB
       fileFilter: (req, file, cb) => {
-        const allowedMimeTypes = [
-          'image/jpeg',
-          'image/png',
-          'image/gif',
-          'image/jpg',
-        ];
-        if (allowedMimeTypes.includes(file.mimetype)) {
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        if (allowedTypes.includes(file.mimetype)) {
           cb(null, true);
         } else {
           cb(
@@ -85,6 +349,130 @@ export class UsersController {
     @Body(new ParseJSONPipe()) body: UpdateProfileDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    function isEducationalHistoryComplete(edu: any): boolean {
+      if (!edu) return false;
+
+      const checkSchool = (school) =>
+        school &&
+        school.name?.trim() &&
+        school.address?.trim() &&
+        school.yearOfAttendance?.trim();
+
+      const primary = checkSchool(edu.primarySchool);
+      const secondary = checkSchool(edu.secondarySchool);
+
+      const tertiaryComplete =
+        Array.isArray(edu.tertiaryInstitutions) &&
+        edu.tertiaryInstitutions.length > 0;
+
+      return primary && secondary && tertiaryComplete;
+    }
+
+    function isEmploymentHistoryComplete(history: any[]): boolean {
+      if (!Array.isArray(history) || history.length === 0) return false;
+
+      return history.every(
+        (job) =>
+          job.companyName?.trim() &&
+          job.address?.trim() &&
+          job.designation?.trim() &&
+          job.startYear !== null &&
+          job.startYear !== undefined &&
+          job.endYear !== null &&
+          job.endYear !== undefined,
+      );
+    }
+
+    function isFamilyComplete(family: any[]): boolean {
+      if (!Array.isArray(family)) return false;
+
+      const verifiedFamily = family.filter(
+        (f) =>
+          f.name?.trim() &&
+          f.relationship?.trim() &&
+          f.phone?.trim() &&
+          f.address?.trim() &&
+          f.status === 'verified',
+      );
+
+      return verifiedFamily.length >= 3; // Require at least 3 verified entries
+    }
+
+    function isNeighborComplete(neighbors: any[]): boolean {
+      if (!Array.isArray(neighbors)) return false;
+
+      const verifiedNeighbors = neighbors.filter(
+        (n) =>
+          n.name?.trim() &&
+          n.address?.trim() &&
+          n.phone?.trim() &&
+          n.status === 'verified',
+      );
+
+      return verifiedNeighbors.length >= 3; // Require at least 3 verified entries
+    }
+    /**
+     * Calculate the profile completion percentage based on the provided user data.
+     * Essential fields contribute 60%, background checks contribute 30%, and optional fields contribute 10%.
+     * @param user - Partial user object containing profile data.
+     * @returns {number} - The calculated profile completion percentage.
+     */
+    function calculateProfileCompletion(user: Partial<User>): number {
+      let score = 0;
+      let totalWeight = 0;
+
+      // --- ESSENTIAL (60%) ---
+      const essentialFields = [
+        user.firstname,
+        user.lastname,
+        user.phone,
+        user.NIN,
+        user.DOB,
+        user.gender,
+        user.passportPhoto,
+        user.stateOfOrigin,
+        user.lgaOfOrigin,
+        user.nationality,
+      ];
+      const essentialFilled = essentialFields.filter(
+        (val) => val !== undefined && val !== null && String(val).trim() !== '',
+      ).length;
+
+      score += (essentialFilled / essentialFields.length) * 60;
+      totalWeight += 60;
+
+      // --- BACKGROUND INFO (30%) ---
+      const backgroundChecks = [
+        isEducationalHistoryComplete(user.educationalHistory) ? 1 : 0,
+        isEmploymentHistoryComplete(user.employmentHistory) ? 1 : 0,
+        isFamilyComplete(user.family) ? 1 : 0,
+        isNeighborComplete(user.neighbor) ? 1 : 0,
+      ];
+      const backgroundScore =
+        (backgroundChecks.reduce((a, b) => a + b, 0) /
+          backgroundChecks.length) *
+        30;
+      score += backgroundScore;
+      totalWeight += 30;
+
+      // --- OPTIONAL INFO (10%) ---
+      const optionalFields = [
+        user.religion,
+        user.community,
+        user.business?.length ? 'filled' : '',
+        user.healthInfo?.length ? 'filled' : '',
+      ];
+      const optionalFilled = optionalFields.filter(
+        (val) => val !== undefined && val !== null && String(val).trim() !== '',
+      ).length;
+
+      score += (optionalFilled / optionalFields.length) * 10;
+      totalWeight += 10;
+
+      // Final percentage
+      return Math.round(score);
+    }
+
     // Parse educationalHistory if it's a string
     if (typeof body.educationalHistory === 'string') {
       try {
@@ -105,7 +493,6 @@ export class UsersController {
       }
     }
     try {
-      // const updatedData: any = { ...body };
       const updatedData: any = { ...body };
       const currentUser = await this.userService.userModel.findById(id);
 
@@ -161,15 +548,42 @@ export class UsersController {
         });
       }
 
-      const getBaseUrl = () => {
-        return config.isDev
-          ? process.env.BASE_URL || 'http://localhost:5000'
-          : 'api.citizenship.benuestate.gov.ng';
-      };
+      const userDoc = await this.userService.findById(id); // get current user
+      const oldPassportUrl = userDoc.passportPhoto;
 
       if (file) {
-        updatedData.passportPhoto = `${getBaseUrl()}/uploads/${file.filename}`;
+        if (oldPassportUrl) {
+          const publicId =
+            this.cloudinaryService.getFullPublicIdFromUrl(oldPassportUrl);
+          if (publicId) {
+            try {
+              await this.cloudinaryService.deleteFile(publicId);
+            } catch (err) {
+              console.warn(`Failed to delete old passport: ${err.message}`);
+            }
+          }
+        }
+        try {
+          const passportUrl = await this.cloudinaryService.uploadFile(
+            file,
+            'users/passports',
+            ['image/jpeg', 'image/png', 'image/jpg'],
+            5,
+          );
+          updatedData.passportPhoto = passportUrl;
+        } catch (error) {
+          throw new HttpException(
+            `Passport upload failed: ${error.message}`,
+            HttpStatus.BAD_REQUEST,
+          );
+        }
       }
+
+      const merged = { ...currentUser.toObject(), ...updatedData };
+      const completion = calculateProfileCompletion(merged);
+
+      updatedData.isProfileCompleted = completion >= 90;
+      updatedData.profileCompletionPercentage = completion;
 
       const user = await this.userService.userModel.findByIdAndUpdate(
         id,

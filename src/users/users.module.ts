@@ -7,6 +7,8 @@ import { JwtModule } from '@nestjs/jwt';
 import setupSwagger from './users.swagger';
 import { SmsService } from 'src/sms/sms.service';
 import { ConfigService } from '@nestjs/config';
+import { MailService } from 'src/mail/mail.service';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Module({
   imports: [
@@ -18,7 +20,14 @@ import { ConfigService } from '@nestjs/config';
   ],
   controllers: [UsersController],
 
-  providers: [UserMailerService, UsersService, SmsService, ConfigService],
+  providers: [
+    UserMailerService,
+    UsersService,
+    SmsService,
+    ConfigService,
+    MailService,
+    CloudinaryService,
+  ],
 
   exports: [UsersService],
 })

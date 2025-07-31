@@ -3,8 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  Header,
-  NotFoundException,
   Param,
   Patch,
   Post,
@@ -29,12 +27,15 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { IdCard } from './idcard.schema';
 import { UserRole } from 'src/users/users.role.enum';
 import { UserNotFoundException } from 'src/common/exception';
+import { Public } from 'src/common/decorators/public.decorator';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { Throttle } from '@nestjs/throttler';
+import { HttpService } from '@nestjs/axios';
+import { lastValueFrom } from 'rxjs';
 import * as fs from 'fs';
 import QRCode from 'qrcode';
-import { Public } from 'src/common/decorators/public.decorator';
 import config from 'src/config';
 import * as crypto from 'crypto';
-import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('idCard.controller')
 @UseGuards(JwtAuthGuard)
@@ -43,43 +44,76 @@ export class IdcardController {
   constructor(
     private readonly idcardService: IdcardService,
     private readonly userService: UsersService,
+    private readonly cloudinaryService: CloudinaryService,
+    private readonly httpService: HttpService,
   ) {}
 
+  // @Post('create')
+  // @UseInterceptors(
+  //   FilesInterceptor(
+  //     'files',
+  //     2,
+  //        {
+  //       dest: './uploads',
+  //       // limits: { fileSize: 1024 * 1024 * 5 },
+  //       storage: diskStorage({
+  //         destination: './uploads',
+  //         filename: (req, file, cb) => {
+  //           const randomName = Date.now() + '-' + Math.round(Math.random() * 1e9);
+  //           cb(null, `${randomName}${extname(file.originalname)}`);
+  //         },
+  //       }),
+  //     }
+  //   ),
+  // )
+  // async createIdCard(
+  //   @Body() body: any,
+  //   @UploadedFiles() files: Array<Express.Multer.File>,
+  // ) {
+  //   const data = {
+  //     ...body,
+  //     bin: await this.idcardService.generateUniqueBIN(),
+  //     ref_letter: files[0]?.filename,
+  //     utilityBill: files[1]?.filename,
+  //   };
+
+  //   // Notify admin
+  //   const adminEmail = 'ejehgodfrey@gmail.com';
+  //   const adminPhone = '+1234567890';
+
+  //   await this.userService.sendRequest(
+  //     adminEmail,
+  //     'New Request',
+  //     `Request for identity card
+  //         from ${body.lastname}
+  //         `,
+  //   );
+
+  //   return this.idcardService.createIdCard(data);
+  // }
+
   @Post('create')
-  @UseInterceptors(
-    FilesInterceptor('files', 2, {
-      dest: './uploads',
-      // limits: { fileSize: 1024 * 1024 * 5 },
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (req, file, cb) => {
-          const randomName = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, `${randomName}${extname(file.originalname)}`);
-        },
-      }),
-    }),
-  )
+  @UseInterceptors(FilesInterceptor('files', 2))
   async createIdCard(
     @Body() body: any,
     @UploadedFiles() files: Array<Express.Multer.File>,
   ) {
+    const [refLetterUrl, utilityBillUrl] = await Promise.all([
+      this.cloudinaryService.uploadFile(files[0], 'idcards/ref_letters'),
+      this.cloudinaryService.uploadFile(files[1], 'idcards/utility_bills'),
+    ]);
+
     const data = {
       ...body,
       bin: await this.idcardService.generateUniqueBIN(),
-      ref_letter: files[0]?.filename,
-      utilityBill: files[1]?.filename,
+      ref_letter: refLetterUrl,
+      utilityBill: utilityBillUrl,
     };
 
-    // Notify admin
-    const adminEmail = 'ejehgodfrey@gmail.com';
-    const adminPhone = '+1234567890';
-
     await this.userService.sendRequest(
-      adminEmail,
+      'ejehgodfrey@gmail.com',
       'New Request',
-      `Request for identity card 
-          from ${body.lastname}
-          `,
+      `Request for identity card from ${body.lastname}`,
     );
 
     return this.idcardService.createIdCard(data);
@@ -334,7 +368,7 @@ export class IdcardController {
 
   @Get(':id')
   @ApiResponse({ type: IdCard, isArray: false })
-  async getProfile(@Param('id') id: string, @Body() body: any) {
+  async getProfile(@Param('id') id: string) {
     return await this.idcardService.findOne(id);
   }
 
@@ -350,39 +384,49 @@ export class IdcardController {
     return await this.idcardService.findById(id);
   }
 
-  @Public()
-  @Get('pdf/:filename')
-  @UseGuards(JwtAuthGuard)
-  getPdf(
-    @Param('filename') filename: string,
-    @Res() res: Response,
-    @Req() req: any,
-  ) {
-    const filePath = join(
-      // '/home/spaceinovationhub/BSCR-MIS-BkND/uploads',
-      __dirname,
-      '..',
-      '..',
-      'uploads',
-      filename,
-    );
+  //  @Public()
+  // @Get('pdf/:filename')
+  // @UseGuards(JwtAuthGuard)
+  // getPdf(
+  //   @Param('filename') filename: string,
+  //   @Res() res: Response,
+  // ) {
+  //   const filePath = join(__dirname, '..', '..', 'uploads', filename);
 
-    if (!fs.existsSync(filePath)) {
-      throw new NotFoundException('File not found');
-    }
+  //   if (!fs.existsSync(filePath)) {
+  //     throw new NotFoundException('File not found');
+  //   }
+
+  //   // Set headers early before sending
+  //   res.setHeader('Content-Type', 'application/pdf');
+  //   res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+
+  //   // Pipe file (streaming) instead of res.sendFile to avoid "headers sent" on disconnect
+  //   const stream = fs.createReadStream(filePath);
+  //   stream.pipe(res);
+
+  //   stream.on('error', (err) => {
+  //     console.error('Stream error:', err);
+  //     res.status(500).end('Failed to serve PDF');
+  //   });
+  // }
+
+  @Public()
+  @Get('pdf/:encodedUrl')
+  @UseGuards(JwtAuthGuard)
+  async getPdf(@Param('encodedUrl') encodedUrl: string, @Res() res: Response) {
+    const decodedUrl = decodeURIComponent(encodedUrl);
+
+    const response = await lastValueFrom(
+      this.httpService.get(decodedUrl, {
+        responseType: 'stream',
+      }),
+    );
 
     // Set headers early before sending
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-
-    // Pipe file (streaming) instead of res.sendFile to avoid "headers sent" on disconnect
-    const stream = fs.createReadStream(filePath);
-    stream.pipe(res);
-
-    stream.on('error', (err) => {
-      console.error('Stream error:', err);
-      res.status(500).end('Failed to serve PDF');
-    });
+    res.setHeader('Content-Disposition', `inline; filename="document.pdf"`);
+    response.data.pipe(res);
   }
 
   @Public()

@@ -25,7 +25,6 @@ export class UserMailerService {
           subject: 'Activate your account',
           template: 'activate-account', // The `.pug`, `.ejs` or `.hbs` extension is appended automatically.
           context: {
-            // link: `${origin}/api/auth/activate/${userId}/${activationToken}\n`,
             link: activationUrl,
           },
         })

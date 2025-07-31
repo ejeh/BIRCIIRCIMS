@@ -21,6 +21,7 @@ import {
 import { SmsService } from 'src/sms/sms.service';
 import { VerificationStatus } from './users.neigbour.schema';
 import axios from 'axios';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class UsersService {
@@ -29,7 +30,8 @@ export class UsersService {
   constructor(
     @InjectModel('User') public readonly userModel: Model<UserDocument>,
     private readonly userMailer: UserMailerService,
-    private readonly smsService: SmsService, // Assuming you have a SmsService for sending SMS
+    private readonly smsService: SmsService,
+    private readonly mailService: MailService,
   ) {}
 
   /**
@@ -64,11 +66,12 @@ export class UsersService {
         activationToken: uuid(),
         activationExpires: Date.now() + config.auth.activationExpireInMs,
       });
-      this.userMailer.sendActivationMail(
+
+      this.mailService.sendActivationMail(
         user.email,
         user.id,
         user.activationToken,
-        origin,
+        'activate-account',
       );
 
       return user;
@@ -76,6 +79,7 @@ export class UsersService {
       throw EmailAlreadyUsedException();
     }
   }
+
   async findById(id: string): Promise<UserDocument> {
     const user = await this.userModel.findById(id);
     if (!user) {
@@ -142,12 +146,13 @@ export class UsersService {
     user.activationToken = activationToken;
     await user.save();
 
-    this.userMailer.sendActivationMail(
+    this.mailService.sendActivationMail(
       user.email,
       user.id,
       user.activationToken,
-      origin,
+      'activate-account',
     );
+
     return { success: true, message: 'Activation email sent successfully' };
 
     // return user;
@@ -172,7 +177,13 @@ export class UsersService {
       throw UserNotFoundException();
     }
 
-    this.userMailer.sendForgottenPasswordMail(
+    // this.userMailer.sendForgottenPasswordMail(
+    //   user.email,
+    //   user.passwordResetToken,
+    //   origin,
+    // );
+
+    this.mailService.sendForgottenPasswordMail(
       user.email,
       user.passwordResetToken,
       origin,
@@ -250,85 +261,6 @@ export class UsersService {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
   }
-
-  // async initiateVerification(userId: string) {
-  //   const user = await this.userModel.findById(userId);
-  //   if (!user) {
-  //     throw UserNotFoundException();
-  //   }
-
-  //   // Check for at least one valid reference (name and phone)
-  //   const allReferencesData = [
-  //     ...(user.neighbor || []),
-  //     ...(user.family || []),
-  //   ];
-  //   const hasValidReference = allReferencesData.every(
-  //     (ref) => ref.name && ref.phone,
-  //   );
-
-  //   if (!hasValidReference) {
-  //     throw new HttpException(
-  //       'Cannot initiate verification: No valid references with both name and phone provided.',
-  //       HttpStatus.BAD_REQUEST,
-  //     );
-  //   }
-
-  //   const now = new Date();
-
-  //   // Mark expired verifications
-  //   user.neighbor.forEach((ref) => {
-  //     if (
-  //       ref.status === 'pending' &&
-  //       new Date(ref.verificationExpiresAt) < now
-  //     ) {
-  //       ref.status = VerificationStatus.EXPIRED;
-  //     }
-  //   });
-
-  //   user.family.forEach((ref) => {
-  //     if (
-  //       ref.status === 'pending' &&
-  //       new Date(ref.verificationExpiresAt) < now
-  //     ) {
-  //       ref.status = VerificationStatus.EXPIRED;
-  //     }
-  //   });
-
-  //   await user.save();
-
-  //   // Prevent re-initiation if verification is already pending
-  //   // Check for pending verifications
-  //   const allReferences = [...(user.neighbor || []), ...(user.family || [])];
-
-  //   const hasPending = allReferences.some(
-  //     (ref) =>
-  //       ref.status === 'pending' &&
-  //       new Date(ref.verificationExpiresAt) > new Date(),
-  //   );
-
-  //   if (hasPending) {
-  //     throw new HttpException(
-  //       'Verification already in progress. Cannot re-initiate.',
-  //       HttpStatus.BAD_REQUEST,
-  //     );
-  //   }
-
-  //   // Process neighbors
-  //   for (const neighbor of user.neighbor || []) {
-  //     if (!neighbor.verificationToken) {
-  //       await this.setupReferenceVerification(user, neighbor, 'neighbor');
-  //     }
-  //   }
-
-  //   // Process family members
-  //   for (const familyMember of user.family || []) {
-  //     if (!familyMember.verificationToken) {
-  //       await this.setupReferenceVerification(user, familyMember, 'family');
-  //     }
-  //   }
-
-  //   return this.userModel.findById(userId);
-  // }
 
   async initiateVerification(userId: string) {
     const user = await this.userModel.findById(userId);

@@ -36,7 +36,12 @@ export class IndigeneCertificateService {
   }
 
   async findOne(id: string): Promise<Certificate> {
-    const certificate = await this.certificateModel.findOne({ userId: id });
+    const certificate = await this.certificateModel
+      .findOne({ userId: id })
+      .populate(
+        'userId',
+        'firstname lastname email passportPhoto isProfileCompleted',
+      );
 
     return certificate;
   }
@@ -44,7 +49,10 @@ export class IndigeneCertificateService {
   async findById(id: string): Promise<Certificate> {
     const user = await this.certificateModel
       .findById(id)
-      .populate('userId', 'firstname lastname email passportPhoto')
+      .populate(
+        'userId',
+        'firstname lastname email passportPhoto isProfileCompleted',
+      )
       .exec();
     if (!user) {
       throw UserNotFoundException();

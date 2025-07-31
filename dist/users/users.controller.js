@@ -11,9 +11,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersController = void 0;
 const common_1 = require("@nestjs/common");
@@ -26,16 +23,98 @@ const roles_decorator_1 = require("../common/decorators/roles.decorator");
 const users_role_enum_1 = require("./users.role.enum");
 const roles_guard_1 = require("../common/guards/roles.guard");
 const platform_express_1 = require("@nestjs/platform-express");
-const multer_1 = require("multer");
-const path_1 = require("path");
 const parse_json_pipe_1 = require("./parse-json.pipe");
-const config_1 = __importDefault(require("../config"));
 const public_decorator_1 = require("../common/decorators/public.decorator");
+const cloudinary_service_1 = require("../cloudinary/cloudinary.service");
 let UsersController = class UsersController {
-    constructor(userService) {
+    constructor(userService, cloudinaryService) {
         this.userService = userService;
+        this.cloudinaryService = cloudinaryService;
     }
     async updateUserProfile(id, body, file) {
+        function isEducationalHistoryComplete(edu) {
+            if (!edu)
+                return false;
+            const checkSchool = (school) => school &&
+                school.name?.trim() &&
+                school.address?.trim() &&
+                school.yearOfAttendance?.trim();
+            const primary = checkSchool(edu.primarySchool);
+            const secondary = checkSchool(edu.secondarySchool);
+            const tertiaryComplete = Array.isArray(edu.tertiaryInstitutions) &&
+                edu.tertiaryInstitutions.length > 0;
+            return primary && secondary && tertiaryComplete;
+        }
+        function isEmploymentHistoryComplete(history) {
+            if (!Array.isArray(history) || history.length === 0)
+                return false;
+            return history.every((job) => job.companyName?.trim() &&
+                job.address?.trim() &&
+                job.designation?.trim() &&
+                job.startYear !== null &&
+                job.startYear !== undefined &&
+                job.endYear !== null &&
+                job.endYear !== undefined);
+        }
+        function isFamilyComplete(family) {
+            if (!Array.isArray(family))
+                return false;
+            const verifiedFamily = family.filter((f) => f.name?.trim() &&
+                f.relationship?.trim() &&
+                f.phone?.trim() &&
+                f.address?.trim() &&
+                f.status === 'verified');
+            return verifiedFamily.length >= 3;
+        }
+        function isNeighborComplete(neighbors) {
+            if (!Array.isArray(neighbors))
+                return false;
+            const verifiedNeighbors = neighbors.filter((n) => n.name?.trim() &&
+                n.address?.trim() &&
+                n.phone?.trim() &&
+                n.status === 'verified');
+            return verifiedNeighbors.length >= 3;
+        }
+        function calculateProfileCompletion(user) {
+            let score = 0;
+            let totalWeight = 0;
+            const essentialFields = [
+                user.firstname,
+                user.lastname,
+                user.phone,
+                user.NIN,
+                user.DOB,
+                user.gender,
+                user.passportPhoto,
+                user.stateOfOrigin,
+                user.lgaOfOrigin,
+                user.nationality,
+            ];
+            const essentialFilled = essentialFields.filter((val) => val !== undefined && val !== null && String(val).trim() !== '').length;
+            score += (essentialFilled / essentialFields.length) * 60;
+            totalWeight += 60;
+            const backgroundChecks = [
+                isEducationalHistoryComplete(user.educationalHistory) ? 1 : 0,
+                isEmploymentHistoryComplete(user.employmentHistory) ? 1 : 0,
+                isFamilyComplete(user.family) ? 1 : 0,
+                isNeighborComplete(user.neighbor) ? 1 : 0,
+            ];
+            const backgroundScore = (backgroundChecks.reduce((a, b) => a + b, 0) /
+                backgroundChecks.length) *
+                30;
+            score += backgroundScore;
+            totalWeight += 30;
+            const optionalFields = [
+                user.religion,
+                user.community,
+                user.business?.length ? 'filled' : '',
+                user.healthInfo?.length ? 'filled' : '',
+            ];
+            const optionalFilled = optionalFields.filter((val) => val !== undefined && val !== null && String(val).trim() !== '').length;
+            score += (optionalFilled / optionalFields.length) * 10;
+            totalWeight += 10;
+            return Math.round(score);
+        }
         if (typeof body.educationalHistory === 'string') {
             try {
                 const parsedEducationalHistory = JSON.parse(body.educationalHistory);
@@ -98,14 +177,32 @@ let UsersController = class UsersController {
                         : newFamily;
                 });
             }
-            const getBaseUrl = () => {
-                return config_1.default.isDev
-                    ? process.env.BASE_URL || 'http://localhost:5000'
-                    : 'api.citizenship.benuestate.gov.ng';
-            };
+            const userDoc = await this.userService.findById(id);
+            const oldPassportUrl = userDoc.passportPhoto;
             if (file) {
-                updatedData.passportPhoto = `${getBaseUrl()}/uploads/${file.filename}`;
+                if (oldPassportUrl) {
+                    const publicId = this.cloudinaryService.getFullPublicIdFromUrl(oldPassportUrl);
+                    if (publicId) {
+                        try {
+                            await this.cloudinaryService.deleteFile(publicId);
+                        }
+                        catch (err) {
+                            console.warn(`Failed to delete old passport: ${err.message}`);
+                        }
+                    }
+                }
+                try {
+                    const passportUrl = await this.cloudinaryService.uploadFile(file, 'users/passports', ['image/jpeg', 'image/png', 'image/jpg'], 5);
+                    updatedData.passportPhoto = passportUrl;
+                }
+                catch (error) {
+                    throw new common_1.HttpException(`Passport upload failed: ${error.message}`, common_1.HttpStatus.BAD_REQUEST);
+                }
             }
+            const merged = { ...currentUser.toObject(), ...updatedData };
+            const completion = calculateProfileCompletion(merged);
+            updatedData.isProfileCompleted = completion >= 90;
+            updatedData.profileCompletionPercentage = completion;
             const user = await this.userService.userModel.findByIdAndUpdate(id, updatedData, { new: true });
             if (!user) {
                 throw new common_1.HttpException('User not found', common_1.HttpStatus.NOT_FOUND);
@@ -165,26 +262,11 @@ let UsersController = class UsersController {
 exports.UsersController = UsersController;
 __decorate([
     (0, common_1.Put)(':id'),
-    (0, swagger_1.ApiResponse)({ type: users_schema_1.User, isArray: false }),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('passportPhoto', {
-        dest: './uploads',
         limits: { fileSize: 1024 * 1024 * 5 },
-        storage: (0, multer_1.diskStorage)({
-            destination: './uploads',
-            filename: (req, file, cb) => {
-                const randomName = Date.now() + '-' + Math.round(Math.random() * 1e9);
-                const fileExt = (0, path_1.extname)(file.originalname);
-                cb(null, `${randomName}${(0, path_1.extname)(file.originalname)}`);
-            },
-        }),
         fileFilter: (req, file, cb) => {
-            const allowedMimeTypes = [
-                'image/jpeg',
-                'image/png',
-                'image/gif',
-                'image/jpg',
-            ];
-            if (allowedMimeTypes.includes(file.mimetype)) {
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+            if (allowedTypes.includes(file.mimetype)) {
                 cb(null, true);
             }
             else {
@@ -269,6 +351,7 @@ exports.UsersController = UsersController = __decorate([
     (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.Controller)('api/users'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    __metadata("design:paramtypes", [users_service_1.UsersService])
+    __metadata("design:paramtypes", [users_service_1.UsersService,
+        cloudinary_service_1.CloudinaryService])
 ], UsersController);
 //# sourceMappingURL=users.controller.js.map

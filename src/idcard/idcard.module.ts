@@ -10,9 +10,13 @@ import { UserMailerService } from 'src/users/users.mailer.service';
 import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 import { SmsService } from 'src/sms/sms.service';
 import { ConfigService } from '@nestjs/config';
+import { MailService } from 'src/mail/mail.service';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
+    HttpModule,
     UserModel,
     MongooseModule.forFeature([{ name: IdCard.name, schema: IdCardSchema }]),
   ],
@@ -24,6 +28,8 @@ import { ConfigService } from '@nestjs/config';
     NotificationsGateway,
     SmsService,
     ConfigService,
+    MailService,
+    CloudinaryService,
   ],
   exports: [IdcardService],
 })

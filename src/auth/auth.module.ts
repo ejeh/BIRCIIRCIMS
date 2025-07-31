@@ -15,6 +15,7 @@ import { KindredService } from 'src/kindred/kindred.service';
 import { KindredModel } from 'src/kindred/kindred.model';
 import { SmsService } from 'src/sms/sms.service';
 import { ConfigService } from '@nestjs/config';
+import { MailService } from 'src/mail/mail.service';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { ConfigService } from '@nestjs/config';
     KindredService,
     SmsService,
     ConfigService,
+    MailService,
   ],
   exports: [AuthService, JwtAuthGuard],
 })

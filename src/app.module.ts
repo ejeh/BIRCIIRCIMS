@@ -25,6 +25,9 @@ import { HelmetMiddleware } from '@nest-middlewares/helmet';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SmsModule } from './sms/sms.module';
 import { TasksModule } from './task/tasks.module';
+import { BiometricsModule } from './biometrics/biometrics.module';
+import { MailModule } from './mail/mail.module';
+import { CloudinaryService } from './cloudinary/cloudinary.service';
 
 // console.log(config.isProd); // boolean
 // console.log(dbUrl); // string | undefined
@@ -91,9 +94,11 @@ const DEV_TRANSPORTER = {
     NotificationsModule,
     SmsModule,
     TasksModule,
+    BiometricsModule,
+    MailModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, CloudinaryService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

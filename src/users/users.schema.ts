@@ -201,6 +201,12 @@ export class User {
   @ApiProperty()
   @Prop({ type: mongoose.SchemaTypes.String })
   activationExpires: Date;
+
+  @Prop({ type: Boolean, default: false })
+  isProfileCompleted: boolean;
+
+  @Prop({ type: Number, default: 0 })
+  profileCompletionPercentage: number;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
