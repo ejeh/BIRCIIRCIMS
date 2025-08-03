@@ -28,7 +28,21 @@ export class IndigeneCertificateService {
   ) {}
 
   async createCertificate(data: Partial<Certificate>): Promise<Certificate> {
-    return await this.certificateModel.create(data);
+    try {
+      return await this.certificateModel.create(data);
+    } catch (error: any) {
+      if (error.code === 11000) {
+        // Duplicate key error (MongoDB)
+        throw new HttpException(
+          'Certificate request already exists.',
+          HttpStatus.CONFLICT,
+        );
+      }
+      throw new HttpException(
+        error.message || 'Failed to create certificate.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 
   async findCertificateById(id: string): Promise<Certificate> {
