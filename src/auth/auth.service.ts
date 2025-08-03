@@ -187,7 +187,6 @@ export class AuthService {
   }
 
   async signUpKindred(userData: SigUpKindredDto, origin: string) {
-    console.log(userData);
     const { NIN, firstname, lastname, stateOfOrigin } = userData;
 
     if (!this.fakeDatabase[NIN]) {
@@ -232,7 +231,6 @@ export class AuthService {
         address: userData.address,
       });
     } catch (err) {
-      console.error('Kindred creation failed:', err);
       await this.usersService.deleteUserById(user.id);
       throw new InternalServerErrorException(
         'Failed to create kindred: ' + err.message,

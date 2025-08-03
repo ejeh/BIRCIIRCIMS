@@ -380,7 +380,7 @@ export class UsersService {
     // SMS message template
     const message = `Hello ${reference.firstname},\n\nYou've been listed as a ${type} reference for ${user.firstname} ${user.lastname} (Benue Resident ID).\n\nPlease verify this relationship:\n${shortLink || verificationLink}\n\nThank you!`;
 
-    // await this.smsService.sendSms(reference.phone, message);
+    await this.smsService.sendSms(reference.phone, message);
 
     // Save the updated user document
     await user.save();
@@ -585,8 +585,8 @@ export class UsersService {
     const message = `Reminder: Please verify your reference for ${user.firstname} ${user.lastname} by clicking this link: ${reference.verificationLink}`;
 
     // Replace this with actual SMS sending
-    const smsSent = true; // or await this.smsService.sendSms(reference.phone, message);
-    // const smsSent = await this.smsService.sendSms(reference.phone, message);
+    // const smsSent = true; // or await this.smsService.sendSms(reference.phone, message);
+    const smsSent = await this.smsService.sendSms(reference.phone, message);
 
     if (smsSent) {
       const arrayFilterKey = type === 'neighbor' ? 'n' : 'f';

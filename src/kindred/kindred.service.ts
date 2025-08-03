@@ -15,15 +15,6 @@ export class KindredService {
     private readonly kindredModel: Model<Kindred>,
   ) {}
 
-  // async createKindred(data: SigUpKindredDto) {
-  //   try {
-  //     const kindred = await this.kindredModel.create(data);
-  //     return kindred;
-  //   } catch (error) {
-  //     throw PhoneAlreadyUsedException();
-  //   }
-  // }
-
   createKindred = async (payload: {
     userId: string;
     firstname: string;
