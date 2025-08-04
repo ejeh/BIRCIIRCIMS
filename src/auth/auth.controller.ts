@@ -42,8 +42,8 @@ export class AuthController {
 console.log(getFrontendBaseUrl)
     const result = await this.authService.activate(params);
     const redirectUrl = result.success
-      ? `${getFrontendBaseUrl()}/source/auth/activation-success.html`
-      : `${getFrontendBaseUrl()}/source/auth/activation-failed.html`;
+      ? `${getFrontendBaseUrl()}/auth/activation-success.html`
+      : `${getFrontendBaseUrl()}/auth/activation-failed.html`;
 
     return res.redirect(redirectUrl);
   }
