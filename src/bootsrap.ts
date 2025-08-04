@@ -16,9 +16,15 @@ import * as bcrypt from 'bcryptjs';
 import { UserSchema } from './users/users.schema';
 import mongoose from 'mongoose';
 
-import * as crypto from 'crypto';
+// import * as crypto from 'crypto';
 
-(global as any).crypto = crypto;
+// (global as any).crypto = crypto;
+import { webcrypto as crypto } from 'crypto';
+
+if (!globalThis.crypto) {
+  (globalThis as any).crypto = crypto;
+}
+
 
 /**
  * Helper to be used here & in tests.

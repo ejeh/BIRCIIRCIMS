@@ -36,10 +36,10 @@ export class AuthController {
   async activate(@Param() params: ActivateParams, @Res() res: Response) {
     const getFrontendBaseUrl = () => {
       return config.isDev
-        ? 'http://127.0.0.1:5501'
+        ? process.env.FRONTEND_URL || 'http://127.0.0.1:5501'
         : 'https://citizenship.benuestate.gov.ng';
     };
-
+console.log(getFrontendBaseUrl)
     const result = await this.authService.activate(params);
     const redirectUrl = result.success
       ? `${getFrontendBaseUrl()}/source/auth/activation-success.html`
