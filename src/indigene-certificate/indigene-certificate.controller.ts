@@ -15,6 +15,7 @@ import {
   Delete,
   BadRequestException,
   NotFoundException,
+  Options,
 } from '@nestjs/common';
 import { UserNotFoundException } from 'src/common/exception';
 
@@ -55,6 +56,19 @@ export class IndigeneCertificateController {
     private readonly cloudinaryService: CloudinaryService,
     private readonly httpService: HttpService,
   ) {}
+   // ✅ Handle OPTIONS preflight for CORS
+  @Options('pdf/:encodedUrl')
+  @Public()
+  handlePreflight(@Res() res: Response) {
+    res.setHeader('Access-Control-Allow-Origin', 'https://citizenship.benuestate.gov.ng');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Origin, X-Requested-With, Content-Type, Accept, Authorization',
+    );
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    return res.status(200).send();
+  }
 
   // @Post('create')
   // @UseInterceptors(

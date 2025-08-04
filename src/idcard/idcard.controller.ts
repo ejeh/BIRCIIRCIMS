@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Options,
   Param,
   Patch,
   Post,
@@ -47,6 +48,20 @@ export class IdcardController {
     private readonly cloudinaryService: CloudinaryService,
     private readonly httpService: HttpService,
   ) {}
+
+   // ✅ Handle OPTIONS preflight for CORS
+  @Options('pdf/:encodedUrl')
+  @Public()
+  handlePreflight(@Res() res: Response) {
+    res.setHeader('Access-Control-Allow-Origin', 'https://citizenship.benuestate.gov.ng');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Origin, X-Requested-With, Content-Type, Accept, Authorization',
+    );
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    return res.status(200).send();
+  }
 
   // @Post('create')
   // @UseInterceptors(
@@ -384,33 +399,7 @@ export class IdcardController {
     return await this.idcardService.findById(id);
   }
 
-  //  @Public()
-  // @Get('pdf/:filename')
-  // @UseGuards(JwtAuthGuard)
-  // getPdf(
-  //   @Param('filename') filename: string,
-  //   @Res() res: Response,
-  // ) {
-  //   const filePath = join(__dirname, '..', '..', 'uploads', filename);
-
-  //   if (!fs.existsSync(filePath)) {
-  //     throw new NotFoundException('File not found');
-  //   }
-
-  //   // Set headers early before sending
-  //   res.setHeader('Content-Type', 'application/pdf');
-  //   res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-
-  //   // Pipe file (streaming) instead of res.sendFile to avoid "headers sent" on disconnect
-  //   const stream = fs.createReadStream(filePath);
-  //   stream.pipe(res);
-
-  //   stream.on('error', (err) => {
-  //     console.error('Stream error:', err);
-  //     res.status(500).end('Failed to serve PDF');
-  //   });
-  // }
-
+ 
   @Public()
   @Get('pdf/:encodedUrl')
   @UseGuards(JwtAuthGuard)
