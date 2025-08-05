@@ -53,7 +53,7 @@ export class IdcardController {
   @Options('pdf/:encodedUrl')
   @Public()
   handlePreflight(@Res() res: Response) {
-    res.setHeader('Access-Control-Allow-Origin', 'https://citizenship.benuestate.gov.ng');
+    res.setHeader('Access-Control-Allow-Origin', config.cors.origin );
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
     res.setHeader(
       'Access-Control-Allow-Headers',
@@ -63,49 +63,7 @@ export class IdcardController {
     return res.status(200).send();
   }
 
-  // @Post('create')
-  // @UseInterceptors(
-  //   FilesInterceptor(
-  //     'files',
-  //     2,
-  //        {
-  //       dest: './uploads',
-  //       // limits: { fileSize: 1024 * 1024 * 5 },
-  //       storage: diskStorage({
-  //         destination: './uploads',
-  //         filename: (req, file, cb) => {
-  //           const randomName = Date.now() + '-' + Math.round(Math.random() * 1e9);
-  //           cb(null, `${randomName}${extname(file.originalname)}`);
-  //         },
-  //       }),
-  //     }
-  //   ),
-  // )
-  // async createIdCard(
-  //   @Body() body: any,
-  //   @UploadedFiles() files: Array<Express.Multer.File>,
-  // ) {
-  //   const data = {
-  //     ...body,
-  //     bin: await this.idcardService.generateUniqueBIN(),
-  //     ref_letter: files[0]?.filename,
-  //     utilityBill: files[1]?.filename,
-  //   };
-
-  //   // Notify admin
-  //   const adminEmail = 'ejehgodfrey@gmail.com';
-  //   const adminPhone = '+1234567890';
-
-  //   await this.userService.sendRequest(
-  //     adminEmail,
-  //     'New Request',
-  //     `Request for identity card
-  //         from ${body.lastname}
-  //         `,
-  //   );
-
-  //   return this.idcardService.createIdCard(data);
-  // }
+  
 
   @Post('create')
   @UseInterceptors(FilesInterceptor('files', 2))
@@ -413,6 +371,8 @@ export class IdcardController {
     );
 
     // Set headers early before sending
+    res.setHeader('Access-Control-Allow-Origin', config.cors.origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="document.pdf"`);
     response.data.pipe(res);

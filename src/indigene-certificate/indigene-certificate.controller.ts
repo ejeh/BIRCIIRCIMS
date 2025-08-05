@@ -60,7 +60,7 @@ export class IndigeneCertificateController {
   @Options('pdf/:encodedUrl')
   @Public()
   handlePreflight(@Res() res: Response) {
-    res.setHeader('Access-Control-Allow-Origin', 'https://citizenship.benuestate.gov.ng');
+    res.setHeader('Access-Control-Allow-Origin', config.cors.origin);
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
     res.setHeader(
       'Access-Control-Allow-Headers',
@@ -70,109 +70,6 @@ export class IndigeneCertificateController {
     return res.status(200).send();
   }
 
-  // @Post('create')
-  // @UseInterceptors(
-  //   AnyFilesInterceptor({
-  //     limits: { fileSize: 5 * 1024 * 1024 },
-  //     storage: diskStorage({
-  //       destination: './uploads',
-  //       filename: (req, file, cb) => {
-  //         const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-  //         const ext = extname(file.originalname);
-  //         cb(null, `${uniqueSuffix}${ext}`);
-  //       },
-  //     }),
-
-  //     fileFilter: (req, file, cb) => {
-  //       const fieldTypeRules = {
-  //         passportPhoto: {
-  //           mime: ['image/jpeg', 'image/png', 'image/jpg'],
-  //           ext: ['.jpeg', '.jpg', '.png'],
-  //           message: 'Passport Photo must be an image (.jpg, .jpeg, .png)',
-  //         },
-  //         idCard: {
-  //           mime: ['application/pdf'],
-  //           ext: ['.pdf'],
-  //           message: 'ID Card must be a PDF file',
-  //         },
-  //         birthCertificate: {
-  //           mime: ['application/pdf'],
-  //           ext: ['.pdf'],
-  //           message: 'Birth Certificate must be a PDF file',
-  //         },
-
-  //       };
-
-  //       const rules = fieldTypeRules[file.fieldname];
-  //       const ext = extname(file.originalname).toLowerCase();
-
-  //       if (!rules) {
-  //         return cb(
-  //           new BadRequestException(`Unexpected file field: ${file.fieldname}`),
-  //           false,
-  //         );
-  //       }
-
-  //       const isValidMime = rules.mime.includes(file.mimetype);
-  //       const isValidExt = rules.ext.includes(ext);
-
-  //       if (!isValidMime || !isValidExt) {
-  //         return cb(new BadRequestException(rules.message), false);
-  //       }
-
-  //       cb(null, true);
-  //     },
-  //   }),
-  // )
-  // async createCertificate(
-  //   @Body() body: any,
-  //   @UploadedFiles() files: Array<Express.Multer.File>,
-  // ) {
-  //   // Convert array to map for easier access
-  //   const fileMap = files.reduce(
-  //     (acc, file) => {
-  //       acc[file.fieldname] = file;
-  //       return acc;
-  //     },
-  //     {} as Record<string, Express.Multer.File>,
-  //   );
-
-  //   const requiredFields = [
-  //     'passportPhoto',
-  //     'idCard',
-  //     'birthCertificate',
-  //   ];
-
-  //   for (const field of requiredFields) {
-  //     if (!fileMap[field]) {
-  //       throw new BadRequestException(`${field} file is required.`);
-  //     }
-  //   }
-
-  //   const getBaseUrl = (): string =>
-  //     config.isDev
-  //       ? process.env.BASE_URL || 'http://localhost:5000'
-  //       : 'https://api.citizenship.benuestate.gov.ng';
-
-  //   const fileUrl = (file: Express.Multer.File) =>
-  //     `${getBaseUrl()}/uploads/${file.filename}`;
-
-  //   const data = {
-  //     ...body,
-  //     refNumber: uuid(),
-  //     passportPhoto: fileUrl(fileMap.passportPhoto),
-  //     idCard: fileUrl(fileMap.idCard),
-  //     birthCertificate: fileUrl(fileMap.birthCertificate),
-  //   };
-
-  //   await this.userService.sendRequest(
-  //     'ejehgodfrey@gmail.com',
-  //     'New Request',
-  //     `Request for certificate of origin from ${body.email}`,
-  //   );
-
-  //   return this.indigeneCertificateService.createCertificate(data);
-  // }
 
   @Post('create')
   @UseInterceptors(
@@ -608,33 +505,6 @@ export class IndigeneCertificateController {
     return this.indigeneCertificateService.deleteItem(item);
   }
 
-  // @Public()
-  // @Get('pdf/:filename')
-  // @UseGuards(JwtAuthGuard)
-  // getPdf(
-  //   @Param('filename') filename: string,
-  //   @Res() res: Response,
-  //   @Req() req: any,
-  // ) {
-  //   const filePath = join(__dirname, '..', '..', 'uploads', filename);
-
-  //   if (!fs.existsSync(filePath)) {
-  //     throw new NotFoundException('File not found');
-  //   }
-
-  //   // Set headers early before sending
-  //   res.setHeader('Content-Type', 'application/pdf');
-  //   res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-
-  //   // Pipe file (streaming) instead of res.sendFile to avoid "headers sent" on disconnect
-  //   const stream = fs.createReadStream(filePath);
-  //   stream.pipe(res);
-
-  //   stream.on('error', (err) => {
-  //     console.error('Stream error:', err);
-  //     res.status(500).end('Failed to serve PDF');
-  //   });
-  // }
 
   @Public()
   @Get('pdf/:encodedUrl')
@@ -649,6 +519,8 @@ export class IndigeneCertificateController {
     );
 
     // Set headers early before sending
+    res.setHeader('Access-Control-Allow-Origin', config.cors.origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="document.pdf"`);
     response.data.pipe(res);
