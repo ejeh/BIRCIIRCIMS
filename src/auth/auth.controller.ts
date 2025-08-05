@@ -39,7 +39,6 @@ export class AuthController {
         ? process.env.FRONTEND_URL || 'http://127.0.0.1:5501'
         : 'https://citizenship.benuestate.gov.ng';
     };
-console.log(getFrontendBaseUrl)
     const result = await this.authService.activate(params);
     const redirectUrl = result.success
       ? `${getFrontendBaseUrl()}/auth/activation-success.html`
