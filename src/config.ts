@@ -52,7 +52,7 @@ const getCorsOrigins = () => {
     return process.env.CORS_ORIGIN || 'https://citizenship.benuestate.gov.ng';
   }
   // In development, allow localhost and any other origins
-  return process.env.FRONTEND_URL || 'http://127.0.0.1:5501';
+  return process.env.CORS_ORIGIN || process.env.FRONTEND_URL;
 };
 
 
@@ -81,7 +81,7 @@ const config = {
 
   // CORS configuration
   cors: {
-    origin: getCorsOrigins(),
+    origin: process.env.CORS_ORIGIN ||'https://citizenship.benuestate.gov.ng',
     methods: (process.env.CORS_METHODS || 'POST,GET,PUT,OPTIONS,DELETE,PATCH')
       .split(',')
       .map((method) => method.trim()),
@@ -100,7 +100,7 @@ const config = {
     ].join(','),
     credentials: true,
     preflightContinue: false,
-    optionsSuccessStatus: 204,
+    optionsSuccessStatus: 200,
   },
 
   // Authentication configuration
