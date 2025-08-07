@@ -14,7 +14,7 @@ import {
   UploadedFile,
   Delete,
   BadRequestException,
-  Options,
+  NotFoundException,
 } from '@nestjs/common';
 import { UserNotFoundException } from 'src/common/exception';
 
@@ -44,6 +44,7 @@ import { Throttle } from '@nestjs/throttler';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
+import axios, { AxiosResponse } from 'axios';
 
 @ApiTags('indigene-certificate.controller')
 @UseGuards(JwtAuthGuard)
@@ -490,7 +491,6 @@ export class IndigeneCertificateController {
     return this.indigeneCertificateService.deleteItem(item);
   }
 
-
   @Public()
   @Get('pdf/:encodedUrl')
   @UseGuards(JwtAuthGuard)
@@ -507,6 +507,42 @@ export class IndigeneCertificateController {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="document.pdf"`);
     response.data.pipe(res);
+  }
+
+  @Public()
+  @Get(':requestId/document/:docType')
+  async streamDocument(
+    @Param('requestId') requestId: string,
+    @Param('docType') docType: 'idCard' | 'birthCertificate',
+    @Res() res: Response,
+  ) {
+    const request = await this.indigeneCertificateService.findById(requestId);
+
+    if (!request || !request[docType]) {
+      throw new NotFoundException(`Document '${docType}' not found`);
+    }
+
+    const originalUrl = request[docType];
+    const inlineUrl = originalUrl.includes('?')
+      ? `${originalUrl}&fl_attachment=false`
+      : `${originalUrl}?fl_attachment=false`;
+
+    try {
+      const cloudinaryRes: AxiosResponse<any> = await axios.get(inlineUrl, {
+        responseType: 'stream',
+      });
+
+      res.set({
+        'Content-Type':
+          cloudinaryRes.headers['content-type'] || 'application/pdf',
+        'Content-Disposition': `inline; filename="${docType}.pdf"`,
+      });
+
+      return cloudinaryRes.data.pipe(res);
+    } catch (error) {
+      console.error('Error streaming document:', error.message);
+      res.status(500).send('Failed to stream document');
+    }
   }
 
   @Public()

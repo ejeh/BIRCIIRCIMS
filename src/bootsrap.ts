@@ -25,7 +25,6 @@ if (!globalThis.crypto) {
   (globalThis as any).crypto = crypto;
 }
 
-
 /**
  * Helper to be used here & in tests.
  * @param app

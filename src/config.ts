@@ -45,17 +45,6 @@ const getDatabaseUrl = () => {
   return process.env.MONGO_URL;
 };
 
-// Get CORS origins based on environment
-const getCorsOrigins = () => {
-  if (isProd) {
-    // In production, explicitly set your frontend domain
-    return process.env.CORS_ORIGIN || 'https://citizenship.benuestate.gov.ng';
-  }
-  // In development, allow localhost and any other origins
-  return process.env.CORS_ORIGIN || process.env.FRONTEND_URL;
-};
-
-
 // Main configuration object
 const config = {
   // Environment flags
@@ -81,7 +70,7 @@ const config = {
 
   // CORS configuration
   cors: {
-    origin: process.env.CORS_ORIGIN ||'https://citizenship.benuestate.gov.ng',
+    origin: process.env.CORS_ORIGIN || '*',
     methods: (process.env.CORS_METHODS || 'POST,GET,PUT,OPTIONS,DELETE,PATCH')
       .split(',')
       .map((method) => method.trim()),
@@ -98,7 +87,6 @@ const config = {
         : []),
       '*',
     ].join(','),
-    credentials: true,
     preflightContinue: false,
     optionsSuccessStatus: 200,
   },

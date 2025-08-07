@@ -14,6 +14,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { IdcardService } from './idcard.service';
 import { UsersService } from 'src/users/users.service';
 import { FilesInterceptor } from '@nestjs/platform-express';
@@ -37,6 +38,7 @@ import * as fs from 'fs';
 import QRCode from 'qrcode';
 import config from 'src/config';
 import * as crypto from 'crypto';
+import axios, { AxiosResponse } from 'axios';
 
 @ApiTags('idCard.controller')
 @UseGuards(JwtAuthGuard)
@@ -48,7 +50,6 @@ export class IdcardController {
     private readonly cloudinaryService: CloudinaryService,
     private readonly httpService: HttpService,
   ) {}
-  
 
   @Post('create')
   @UseInterceptors(FilesInterceptor('files', 2))
@@ -342,8 +343,6 @@ export class IdcardController {
     return await this.idcardService.findById(id);
   }
 
- 
-
   @Get('pdf/:encodedUrl')
   @UseGuards(JwtAuthGuard)
   async getPdf(@Param('encodedUrl') encodedUrl: string, @Res() res: Response) {
@@ -359,6 +358,42 @@ export class IdcardController {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="document.pdf"`);
     response.data.pipe(res);
+  }
+
+  @Public()
+  @Get(':requestId/document/:docType')
+  async streamDocument(
+    @Param('requestId') requestId: string,
+    @Param('docType') docType: 'utilityBill' | 'ref_letter',
+    @Res() res: Response,
+  ) {
+    const request = await this.idcardService.findById(requestId);
+
+    if (!request || !request[docType]) {
+      throw new NotFoundException(`Document '${docType}' not found`);
+    }
+
+    const originalUrl = request[docType];
+    const inlineUrl = originalUrl.includes('?')
+      ? `${originalUrl}&fl_attachment=false`
+      : `${originalUrl}?fl_attachment=false`;
+
+    try {
+      const cloudinaryRes: AxiosResponse<any> = await axios.get(inlineUrl, {
+        responseType: 'stream',
+      });
+
+      res.set({
+        'Content-Type':
+          cloudinaryRes.headers['content-type'] || 'application/pdf',
+        'Content-Disposition': `inline; filename="${docType}.pdf"`,
+      });
+
+      return cloudinaryRes.data.pipe(res);
+    } catch (error) {
+      console.error('Error streaming document:', error.message);
+      res.status(500).send('Failed to stream document');
+    }
   }
 
   @Public()
