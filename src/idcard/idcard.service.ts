@@ -7,6 +7,7 @@ import { UserNotFoundException } from 'src/common/exception';
 import puppeteer from 'puppeteer';
 import path from 'path';
 import * as fs from 'fs';
+import * as os from 'os';
 import { Types } from 'mongoose';
 import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 
@@ -160,9 +161,24 @@ export class IdcardService {
   }
 
   async generateIDCardPDF(id: string, html: string): Promise<string> {
+    // Determine the executable path based on the OS
+    const platform = os.platform();
+    let executablePath: string;
+
+    if (platform === 'win32') {
+      executablePath =
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+    } else if (platform === 'linux') {
+      executablePath = '/usr/bin/google-chrome';
+    } else if (platform === 'darwin') {
+      executablePath =
+        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+    } else {
+      throw new Error(`Unsupported platform: ${platform}`);
+    }
     const browser = await puppeteer.launch({
       headless: true,
-      executablePath: '/usr/bin/google-chrome', // or 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' on Windows
+      executablePath,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
     const page = await browser.newPage();
