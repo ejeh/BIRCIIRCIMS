@@ -320,7 +320,6 @@ export class IndigeneCertificateService {
   async generateCertificatePDF(id: string, html: string): Promise<string> {
     const browser = await puppeteer.launch({
       headless: true,
-      executablePath: '/usr/bin/google-chrome', // or 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' on Windows
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
     const page = await browser.newPage();
