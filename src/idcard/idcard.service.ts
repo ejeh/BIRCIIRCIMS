@@ -163,14 +163,29 @@ export class IdcardService {
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
+
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    // Debugging
+    page.on('requestfailed', (request) => {
+      console.error('❌ Request failed:', request.url(), request.failure());
+    });
+
+    page.on('console', (msg) => {
+      console.log('📄 PAGE LOG:', msg.text());
+    });
+
+    // More lenient wait
+    await page.setContent(html, {
+      waitUntil: 'networkidle0',
+      timeout: 60000,
+    });
 
     const pdfBuffer = await page.pdf({
       printBackground: true,
       margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' },
-      preferCSSPageSize: true, // Uses CSS width and height
-      scale: 1, // Prevents automatic scaling
+      preferCSSPageSize: true,
+      scale: 1,
     });
 
     await browser.close();

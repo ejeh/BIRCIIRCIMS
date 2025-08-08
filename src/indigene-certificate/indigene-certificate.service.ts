@@ -322,39 +322,42 @@ export class IndigeneCertificateService {
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
 
-    // Generate PDF with specific options to fit on one page
+    const page = await browser.newPage();
+
+    // Debugging
+    page.on('requestfailed', (request) => {
+      console.error('❌ Request failed:', request.url(), request.failure());
+    });
+
+    page.on('console', (msg) => {
+      console.log('📄 PAGE LOG:', msg.text());
+    });
+
+    // More lenient wait
+    await page.setContent(html, {
+      waitUntil: 'networkidle0',
+      timeout: 60000,
+    });
+
     const pdfBuffer = await page.pdf({
-      format: 'A5', // Use A4 size (or 'letter' for US letter size)
-      printBackground: true, // Include background graphics
-      margin: {
-        top: '0px',
-        right: '0px',
-        bottom: '0px',
-        left: '0px',
-      },
-      preferCSSPageSize: true, // Use CSS @page rules for sizing
+      printBackground: true,
+      margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' },
+      preferCSSPageSize: true,
+      scale: 1,
     });
 
     await browser.close();
 
-    // Define the temp directory
     const tempDir = path.join(__dirname, '..', 'temp');
-
-    // Ensure the directory exists
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true });
     }
 
-    // Define the file path
-    const tempFilePath = path.join(tempDir, `certificate_${id}.pdf`);
-
-    // Write the PDF buffer to the file
+    const tempFilePath = path.join(tempDir, `id_card_${id}.pdf`);
     await fs.promises.writeFile(tempFilePath, pdfBuffer);
 
-    return tempFilePath; // Return the file path
+    return tempFilePath;
   }
 
   // Delete Certificate
