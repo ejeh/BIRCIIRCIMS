@@ -224,10 +224,10 @@ export class TransactionService {
         transaction.verified = true;
         transaction.amount = amount;
         transaction.customer = {
-          firstname: data.customer.firstName,
-          lastname: data.customer.lastName,
-          email: data.customer.customerEmail,
-          phoneNo: data.customer.phoneNo,
+          firstname: data.customer?.firstName,
+          lastname: data.customer?.lastName,
+          email: data.customer?.customerEmail,
+          phoneNo: data.customer?.phoneNo,
         };
         await transaction.save();
         return { status: 'verified', reference };
