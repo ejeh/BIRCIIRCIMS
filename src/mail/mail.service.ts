@@ -78,7 +78,7 @@ export class MailService {
   ) {
     const context = {
       baseUrl: origin,
-      link: `${origin}/source/auth/reset-password.html?token=${passwordResetToken}`,
+      link: `${origin}/app/auth/reset-password.html?token=${passwordResetToken}`,
     };
     if (!config.isTest) {
       try {

@@ -363,7 +363,7 @@ export class UsersService {
     type: 'neighbor' | 'family',
   ) {
     const verificationToken = uuid();
-    const verificationLink = `${process.env.FRONTEND_URL}/source/src/bdic/app/verify-reference.html?token=${verificationToken}&ref=${type}`;
+    const verificationLink = `${process.env.FRONTEND_URL}/app/verify-reference.html?token=${verificationToken}&ref=${type}`;
 
     // Alternative short link option (recommended for SMS)
     const shortLink = await this.generateShortLink(verificationLink);
