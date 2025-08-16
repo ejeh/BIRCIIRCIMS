@@ -49,7 +49,7 @@ Please click on the following link, or paste this into your browser to complete 
 ${origin}/auth/reset-password/${passwordResetToken}\n
 If you did not request this, please ignore this email and your password will remain unchanged.\n`,
           context: {
-            link: `${origin}/source/auth/reset-password.html?token=${passwordResetToken}`,
+            link: `${origin}/app/auth/reset-password.html?token=${passwordResetToken}`,
           },
         })
         .catch((error) => {

@@ -177,12 +177,6 @@ export class UsersService {
       throw UserNotFoundException();
     }
 
-    // this.userMailer.sendForgottenPasswordMail(
-    //   user.email,
-    //   user.passwordResetToken,
-    //   origin,
-    // );
-
     this.mailService.sendForgottenPasswordMail(
       user.email,
       user.passwordResetToken,
@@ -221,7 +215,7 @@ export class UsersService {
     }
 
     // Send confirmation email
-    this.userMailer.sendResetPasswordMail(user.email);
+    this.mailService.sendResetPasswordMail(user.email);
 
     return user;
   }
