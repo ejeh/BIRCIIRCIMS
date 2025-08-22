@@ -9,8 +9,6 @@ import { Model, Types } from 'mongoose';
 import { Response } from 'express';
 import { Certificate } from './indigene-certicate.schema';
 import { UserNotFoundException } from 'src/common/exception';
-import { KindredModel } from 'src/kindred/kindred.model';
-// import * as PDFDocument from 'pdfkit';
 import PDFDocument from 'pdfkit';
 import * as puppeteer from 'puppeteer';
 import * as fs from 'fs';
@@ -23,7 +21,6 @@ export class IndigeneCertificateService {
   constructor(
     @InjectModel(Certificate.name)
     public readonly certificateModel: Model<Certificate>,
-    @InjectModel('Kindred') private readonly kindredModel: Model<Kindred>,
     @InjectModel('User') public readonly userModel: Model<UserDocument>,
   ) {}
 

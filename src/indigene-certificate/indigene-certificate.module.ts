@@ -13,12 +13,14 @@ import { ConfigService } from '@nestjs/config';
 import { MailService } from 'src/mail/mail.service';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { HttpModule } from '@nestjs/axios';
+import { LgaModel } from 'src/lga/lga.model';
 
 @Module({
   imports: [
     HttpModule,
     UserModel,
     KindredModel,
+    LgaModel,
     MongooseModule.forFeature([
       { name: Certificate.name, schema: CertificateSchema },
     ]),

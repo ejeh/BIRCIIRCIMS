@@ -16,12 +16,14 @@ import { KindredModel } from 'src/kindred/kindred.model';
 import { SmsService } from 'src/sms/sms.service';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from 'src/mail/mail.service';
+import { LgaModel } from 'src/lga/lga.model';
 
 @Module({
   imports: [
     UsersModule,
     UserModel,
     KindredModel,
+    LgaModel,
     JwtModule.register({
       secret: config.auth.secret,
       signOptions: {},

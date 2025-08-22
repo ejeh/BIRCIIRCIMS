@@ -207,6 +207,9 @@ export class User {
 
   @Prop({ type: Number, default: 0 })
   profileCompletionPercentage: number;
+
+  @Prop({ type: mongoose.Types.ObjectId, ref: 'Lga', required: false })
+  lga?: string; // which LGA this admin/manager is assigned to
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
@@ -230,6 +233,7 @@ UserSchema.methods.getPublicData = function () {
     stateOfOrigin,
     middlename,
     created_at,
+    lga,
   } = this;
   return {
     id,
@@ -246,5 +250,6 @@ UserSchema.methods.getPublicData = function () {
     LGA,
     address,
     created_at,
+    lga,
   };
 };

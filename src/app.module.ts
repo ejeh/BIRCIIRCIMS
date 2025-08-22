@@ -28,6 +28,7 @@ import { TasksModule } from './task/tasks.module';
 import { BiometricsModule } from './biometrics/biometrics.module';
 import { MailModule } from './mail/mail.module';
 import { CloudinaryService } from './cloudinary/cloudinary.service';
+import { LgaModule } from './lga/lga.module';
 
 // console.log(config.isProd); // boolean
 // console.log(dbUrl); // string | undefined
@@ -96,6 +97,7 @@ const DEV_TRANSPORTER = {
     TasksModule,
     BiometricsModule,
     MailModule,
+    LgaModule,
   ],
   controllers: [AppController],
   providers: [AppService, CloudinaryService],

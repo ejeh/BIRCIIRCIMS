@@ -17,12 +17,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import {
-  ApiBasicAuth,
-  ApiBearerAuth,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { User } from './users.schema';
 import {
@@ -33,12 +28,8 @@ import {
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from 'src/users/users.role.enum';
 import { RolesGuard } from '../common/guards/roles.guard';
-import { EmailAlreadyUsedException } from 'src/common/exception';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { ParseJSONPipe } from './parse-json.pipe'; // Create a custom pipe to handle JSON parsing.
-import config from 'src/config';
 import { Public } from 'src/common/decorators/public.decorator';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
@@ -382,11 +373,14 @@ export class UsersController {
     @Param('id') id: string,
     @Body() body: UpdateUserRoleDto,
   ) {
-    return await this.userService.userModel.findByIdAndUpdate(
-      id,
-      { ...body },
-      { new: true },
-    );
+    if (body.role === 'support_admin' && !body.lgaId) {
+      throw new BadRequestException('Support Admin must be assigned to an LGA');
+    }
+    // return await this.userService.userModel
+    //   .findByIdAndUpdate(id, { ...body }, { new: true })
+    //   .populate('lgaId', 'name headquaters');
+
+    return this.userService.updateUserRole(id, body);
   }
 
   @Get(':id')

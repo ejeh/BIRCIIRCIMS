@@ -2,11 +2,6 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Kindred } from './kindred.schema';
 import { Model } from 'mongoose';
-import { SigUpKindredDto } from './kindredDto';
-import {
-  EmailAlreadyUsedException,
-  PhoneAlreadyUsedException,
-} from 'src/common/exception';
 
 @Injectable()
 export class KindredService {

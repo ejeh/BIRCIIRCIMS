@@ -22,6 +22,8 @@ import { SmsService } from 'src/sms/sms.service';
 import { VerificationStatus } from './users.neigbour.schema';
 import axios from 'axios';
 import { MailService } from '../mail/mail.service';
+import { UpdateUserRoleDto } from './users.dto';
+import { Lga } from 'src/lga/lga.schema';
 
 @Injectable()
 export class UsersService {
@@ -29,6 +31,8 @@ export class UsersService {
 
   constructor(
     @InjectModel('User') public readonly userModel: Model<UserDocument>,
+    @InjectModel('Lga') private readonly lgaModel: Model<Lga>,
+
     private readonly userMailer: UserMailerService,
     private readonly smsService: SmsService,
     private readonly mailService: MailService,
@@ -81,7 +85,10 @@ export class UsersService {
   }
 
   async findById(id: string): Promise<UserDocument> {
-    const user = await this.userModel.findById(id);
+    const user = await this.userModel
+      .findById(id)
+      .populate('lga', 'name headquaters')
+      .exec();
     if (!user) {
       throw UserNotFoundException();
     }
@@ -222,12 +229,37 @@ export class UsersService {
 
   async getPaginatedData(page: number, limit: number) {
     const skip = (page - 1) * limit;
-    const data = await this.userModel.find().skip(skip).limit(limit).exec();
+    const data = await this.userModel
+      .find()
+      .skip(skip)
+      .limit(limit)
+      .populate('lga', 'name headquaters')
+      .exec();
     const totalCount = await this.userModel.countDocuments().exec();
     return {
       data,
       hasNextPage: skip + limit < totalCount,
     };
+  }
+
+  // user.service.ts
+  async updateUserRole(id: string, body: UpdateUserRoleDto) {
+    const update: any = { role: body.role };
+
+    if (body.role === 'support_admin') {
+      // Verify the LGA exists
+      const lga = await this.lgaModel.findById(body.lgaId);
+      if (!lga) {
+        throw new NotFoundException('LGA not found');
+      }
+
+      update.lga = body.lgaId;
+    } else {
+      // If changing role away from support_admin, remove LGA binding
+      update.lga = null;
+    }
+
+    return this.userModel.findByIdAndUpdate(id, update, { new: true });
   }
 
   async sendRequest(

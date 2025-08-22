@@ -9,10 +9,12 @@ import { SmsService } from 'src/sms/sms.service';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from 'src/mail/mail.service';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { LgaModel } from 'src/lga/lga.model';
 
 @Module({
   imports: [
     UserModel,
+    LgaModel,
     JwtModule.register({
       secret: process.env.SECRET_KEY,
       signOptions: { expiresIn: '1h' },

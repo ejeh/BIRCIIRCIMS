@@ -13,11 +13,13 @@ import { ConfigService } from '@nestjs/config';
 import { MailService } from 'src/mail/mail.service';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { HttpModule } from '@nestjs/axios';
+import { LgaModel } from 'src/lga/lga.model';
 
 @Module({
   imports: [
     HttpModule,
     UserModel,
+    LgaModel,
     MongooseModule.forFeature([{ name: IdCard.name, schema: IdCardSchema }]),
   ],
   controllers: [IdcardController],

@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsMongoId } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UserPublicData {
@@ -246,6 +246,14 @@ export class UpdateUserRoleDto {
   @IsString()
   @IsOptional()
   role: string;
+
+  @ApiProperty({
+    example: '64d2c3a1f2e8b9a7c0b1d123',
+    description: 'Assign to LGA ID',
+  })
+  @IsMongoId()
+  @IsOptional()
+  lgaId?: string;
 }
 
 export class VerifyReferenceDto {
