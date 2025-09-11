@@ -1,6 +1,8 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -8,10 +10,14 @@ import { Model, Types } from 'mongoose';
 import { Lga } from './lga.schema';
 import { CreateLgaDto } from './dto/create-lga.dto';
 import { UpdateLgaDto } from './dto/update-lga.dto';
+import { UserDocument } from 'src/users/users.schema';
 
 @Injectable()
 export class LgaService {
-  constructor(@InjectModel('Lga') private readonly lgaModel: Model<Lga>) {}
+  constructor(
+    @InjectModel('Lga') private readonly lgaModel: Model<Lga>,
+    @InjectModel('User') public readonly userModel: Model<UserDocument>,
+  ) {}
 
   // ✅ CREATE
   async create(createLgaDto: CreateLgaDto, userId: string): Promise<Lga> {
@@ -69,14 +75,57 @@ export class LgaService {
   }
 
   // ✅ DELETE
+  // async remove(id: string, userId: string): Promise<{ message: string }> {
+  //   const lga = await this.lgaModel.findByIdAndDelete(id);
+
+  //   if (!lga) {
+  //     throw new NotFoundException(`LGA with ID ${id} not found`);
+  //   }
+
+  //   return { message: `LGA '${lga.name}' deleted by user ${userId}` };
+  // }
+
+  // ✅ DELETE (with conflict checking)
   async remove(id: string, userId: string): Promise<{ message: string }> {
-    const lga = await this.lgaModel.findByIdAndDelete(id);
+    try {
+      // First get the LGA to check its name
+      const lga = await this.lgaModel.findById(id);
+      if (!lga) {
+        throw new NotFoundException(`LGA with ID ${id} not found`);
+      }
 
-    if (!lga) {
-      throw new NotFoundException(`LGA with ID ${id} not found`);
+      // Check if any users have this LGA as their lgaOfOrigin (string match)
+      // Since lgaOfOrigin is stored as a string, we need to match by name
+      const usersWithThisLga = await this.userModel.findOne({
+        lgaOfOrigin: lga.name, // Match by LGA name string
+      });
+
+      if (usersWithThisLga) {
+        throw new ConflictException(
+          `Cannot delete LGA '${lga.name}' because it is associated with existing users. ` +
+            'Please reassign or remove all users linked to this LGA before deletion.',
+        );
+      }
+
+      // If no associations found, proceed with deletion
+      const deletedLga = await this.lgaModel.findByIdAndDelete(id);
+
+      if (!deletedLga) {
+        throw new NotFoundException(`LGA with ID ${id} not found`);
+      }
+
+      return { message: `LGA '${deletedLga.name}' deleted by user ${userId}` };
+    } catch (error) {
+      // Re-throw the specific exceptions we created
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ConflictException
+      ) {
+        throw error;
+      }
+      // Handle any other unexpected errors
+      throw new InternalServerErrorException('Failed to delete LGA');
     }
-
-    return { message: `LGA '${lga.name}' deleted by user ${userId}` };
   }
 
   // ✅ GET ALL

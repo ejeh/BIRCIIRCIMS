@@ -56,10 +56,6 @@ export class LgaController {
   }
 
   // ✅ GET ALL
-  // @Get()
-  // async findAll(): Promise<Lga[]> {
-  //   return this.lgaService.findAll();
-  // }
   @Get()
   @UseGuards(RolesGuard)
   async getPaginatedData(
