@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEmail,
   IsNotEmpty,
+  IsOptional,
   IsString,
   IsUUID,
   MaxLength,
@@ -51,7 +52,7 @@ export class SignUpDto {
   @ApiProperty({})
   readonly lgaOfOrigin!: string;
 
-  @MaxLength(255)
+  @IsOptional()
   @ApiProperty({})
   readonly kindred;
 }
