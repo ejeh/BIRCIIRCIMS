@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -15,6 +16,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Kindred } from 'src/kindred/kindred.schema';
 import { UserDocument } from 'src/users/users.schema';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class IndigeneCertificateService {
@@ -22,11 +24,51 @@ export class IndigeneCertificateService {
     @InjectModel(Certificate.name)
     public readonly certificateModel: Model<Certificate>,
     @InjectModel('User') public readonly userModel: Model<UserDocument>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
-  async createCertificate(data: Partial<Certificate>): Promise<Certificate> {
+  async createCertificate(
+    data: Partial<Certificate>,
+    id: any,
+  ): Promise<Certificate> {
+    const existingRequest = await this.certificateModel
+      .findOne({ userId: id })
+      .exec();
+    if (existingRequest && existingRequest.status === 'Pending') {
+      // Duplicate key error (MongoDB)
+      throw new HttpException(
+        'A pending Certificate request already exists for this user.',
+
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    // 1. Fetch the user to check their state of origin
+    const user = await this.userModel.findById(id).exec();
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    // 2. Enforce the business rule
+    if (user.stateOfOrigin?.toLowerCase() !== 'benue') {
+      throw new ForbiddenException(
+        'Access Denied: You are not eligible to create a Certificate of Origin request as you are not an indigene of Benue State.',
+      );
+    }
+
+    let newRequest;
     try {
-      return await this.certificateModel.create(data);
+      // const user = await this.userModel.find()
+      newRequest = await this.certificateModel.create(data);
+      // 🔔 Send notification
+      await this.notificationsService.createSystemNotification(
+        data.userId,
+        'Certificate Request Submitted',
+        'Your certificate request has been submitted for processing.',
+        'certificate',
+        '/dashboard/certificate-requests',
+        data.lgaOfOrigin,
+      );
     } catch (error: any) {
       if (error.code === 11000) {
         // Duplicate key error (MongoDB)
@@ -40,6 +82,7 @@ export class IndigeneCertificateService {
         HttpStatus.BAD_REQUEST,
       );
     }
+    return newRequest;
   }
 
   async findCertificateById(id: string): Promise<Certificate> {
@@ -104,10 +147,33 @@ export class IndigeneCertificateService {
     };
   }
 
-  async approveCertificate(id: string): Promise<Certificate> {
-    return this.certificateModel
-      .findByIdAndUpdate(id, { status: 'Approved' }, { new: true })
+  async approveCertificate(
+    id: string,
+    approvedBy: string,
+  ): Promise<Certificate> {
+    const request = await this.certificateModel
+      .findByIdAndUpdate(
+        id,
+        {
+          status: 'Approved',
+          approvalDate: new Date(),
+          approvedBy: new Types.ObjectId(approvedBy),
+        },
+        { new: true },
+      )
       .exec();
+
+    if (request) {
+      await this.notificationsService.createSystemNotification(
+        request.userId,
+        'Certificate Approved',
+        'Congratulations! Your Certificate request has been approved.',
+        'idcard',
+        '/dashboard/idcard-requests',
+      );
+    }
+
+    return request;
   }
 
   async verifyRequest(id: string): Promise<Certificate> {
@@ -119,18 +185,32 @@ export class IndigeneCertificateService {
   async rejectCertificate(
     id: string,
     rejectionReason: string,
+    rejectedBy: string,
   ): Promise<Certificate> {
-    return this.certificateModel
+    const request = await this.certificateModel
       .findByIdAndUpdate(
         id,
         {
           status: 'Rejected',
           rejectionReason: rejectionReason,
           resubmissionAllowed: true,
+          approvalDate: new Date(),
+          approvedBy: new Types.ObjectId(rejectedBy),
         },
         { new: true },
       )
       .exec();
+
+    if (request) {
+      await this.notificationsService.createSystemNotification(
+        request.userId,
+        'Certificate Request Rejected',
+        `Your Certificate request was rejected. Reason: ${rejectionReason}`,
+        'idcard',
+        '/dashboard/idcard-requests',
+      );
+    }
+    return request;
   }
 
   async resubmitRequest(
@@ -176,6 +256,19 @@ export class IndigeneCertificateService {
       data,
       hasNextPage: skip + limit < totalCount,
     };
+  }
+
+  async findByLga(lgaOfOrigin: string) {
+    const query = lgaOfOrigin ? { lgaOfOrigin } : {};
+    const certificates = await this.certificateModel
+      .find(query)
+      .populate('userId', 'firstname lastname email phone lgaOfOrigin')
+      .populate('approvedBy', 'firstname lastname email phone lgaOfOrigin')
+
+      .sort({ created_at: -1 })
+      .lean()
+      .exec();
+    return certificates;
   }
 
   async getLatestCertificate() {
@@ -318,6 +411,7 @@ export class IndigeneCertificateService {
     const browser = await puppeteer.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      timeout: 60000, // Increase the timeout to 60 seconds
     });
 
     const page = await browser.newPage();
@@ -406,5 +500,28 @@ export class IndigeneCertificateService {
       console.error('Error updating verification hash:', error);
       throw error;
     }
+  }
+
+  /**
+   * Updates the payment status of a certificate request.
+   * @param id The ID of the certificate request.
+   * @param status The new payment status ('paid', 'failed', etc.).
+   * @returns The updated certificate document.
+   */
+  async updatePaymentStatus(id: string, status: string): Promise<Certificate> {
+    const updatedCertificate = await this.certificateModel
+      .findByIdAndUpdate(
+        id,
+        { paymentStatus: status },
+        { new: true }, // Return the updated document
+      )
+      .exec();
+
+    if (!updatedCertificate) {
+      throw new NotFoundException(
+        `Certificate request with ID ${id} not found.`,
+      );
+    }
+    return updatedCertificate;
   }
 }

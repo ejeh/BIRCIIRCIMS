@@ -29,6 +29,8 @@ import { BiometricsModule } from './biometrics/biometrics.module';
 import { MailModule } from './mail/mail.module';
 import { CloudinaryService } from './cloudinary/cloudinary.service';
 import { LgaModule } from './lga/lga.module';
+import { SettingsModule } from './settings/settings.module';
+import { ReportModule } from './report/report.module';
 
 // console.log(config.isProd); // boolean
 // console.log(dbUrl); // string | undefined
@@ -98,6 +100,8 @@ const DEV_TRANSPORTER = {
     BiometricsModule,
     MailModule,
     LgaModule,
+    SettingsModule,
+    ReportModule,
   ],
   controllers: [AppController],
   providers: [AppService, CloudinaryService],

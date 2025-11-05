@@ -14,10 +14,12 @@ import { AuthService } from './auth.service';
 import {
   ActivateParams,
   AuthenticatedUser,
+  ChangePasswordDto,
   ForgottenPasswordDto,
   LoginDto,
   ResetPasswordDto,
   SignUpDto,
+  Verify2FADto,
 } from './auth.interface';
 import { getOriginHeader } from './auth';
 import { Request, Response } from 'express';
@@ -25,6 +27,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { AppRequest } from 'src/generic/generic.interface';
 import config from 'src/config';
 import { SigUpKindredDto } from 'src/kindred/kindredDto';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @ApiTags('auth')
 @ApiBearerAuth()
@@ -36,7 +39,7 @@ export class AuthController {
   async activate(@Param() params: ActivateParams, @Res() res: Response) {
     const getFrontendBaseUrl = () => {
       return config.isDev
-        ? process.env.FRONTEND_URL || 'http://127.0.0.1:5501'
+        ? process.env.FRONTEND_URL || 'http://127.0.0.1:5503'
         : 'https://citizenship.benuestate.gov.ng';
     };
     const result = await this.authService.activate(params);
@@ -64,11 +67,21 @@ export class AuthController {
     return this.authService.signUpUser(signUpDto, getOriginHeader(req), 'user');
   }
 
-  @Post('signup-kindred')
+  @Post('admin-signup')
   @ApiResponse({ type: AuthenticatedUser })
-  async signupAgent(@Body() signUpDto: SigUpKindredDto, @Req() req: Request) {
-    return this.authService.signUpKindred(signUpDto, getOriginHeader(req));
+  adminSignup(@Body() signUpDto: SignUpDto, @Req() req: Request) {
+    return this.authService.signUpUser(
+      signUpDto,
+      getOriginHeader(req),
+      'support_admin',
+    );
   }
+
+  // @Post('signup-kindred')
+  // @ApiResponse({ type: AuthenticatedUser })
+  // async signupAgent(@Body() signUpDto: SigUpKindredDto, @Req() req: Request) {
+  //   return this.authService.signUpKindred(signUpDto, getOriginHeader(req));
+  // }
 
   @UseGuards(AuthGuard('local'))
   @Post('login')
@@ -95,6 +108,59 @@ export class AuthController {
     @Param('token') token: string,
   ) {
     return this.authService.resetPassword(resetPasswordDto, token);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('change-password')
+  async changePassword(
+    @Req() req,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    try {
+      await this.authService.changePassword(req.user.id, changePasswordDto);
+      return { message: 'Password changed successfully' };
+    } catch (error) {
+      console.error('Change password error:', error);
+      throw error;
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('2fa/setup')
+  async setup2FA(@Req() req) {
+    return this.authService.generate2FASecret(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('2fa/status')
+  async get2FAStatus(@Req() req) {
+    const user = await this.authService.getUserById(req.user.id);
+    return {
+      hasSecret: !!user.twoFactorSecret,
+      isEnabled: user.twoFactorEnabled,
+      userId: req.user.id,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('2fa/verify')
+  async verify2FA(@Req() req, @Body() verify2FADto: Verify2FADto) {
+    await this.authService.verify2FA(req.user.id, verify2FADto);
+    return { message: 'Verification successful' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('2fa/enable')
+  async enable2FA(@Req() req) {
+    const { backupCodes } = await this.authService.enable2FA(req.user.userId);
+    return { message: '2FA enabled successfully', backupCodes };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('2fa/disable')
+  async disable2FA(@Req() req) {
+    await this.authService.disable2FA(req.user.userId);
+    return { message: '2FA disabled successfully' };
   }
 
   @Post('verify')
@@ -144,6 +210,14 @@ export class AuthController {
         lga: 'Gboko',
       },
 
+      '88765432103': {
+        fullName: 'James Gbaden',
+        dob: '1990-01-01',
+        phone: '08043710650',
+        stateOfOrigin: 'Benue',
+        lga: 'Buruku',
+      },
+
       '88765432101': {
         fullName: 'Charles Luper',
         dob: '1990-01-01',
@@ -156,6 +230,13 @@ export class AuthController {
         fullName: 'Victor Atir',
         dob: '1990-01-01',
         phone: '08043710666',
+        stateOfOrigin: 'Benue',
+        lga: 'Gboko',
+      },
+      '88765432133': {
+        firstname: 'Akor Ejeh',
+        dob: '1990-01-01',
+        phone: '08043710667',
         stateOfOrigin: 'Benue',
         lga: 'Gboko',
       },

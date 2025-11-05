@@ -17,6 +17,7 @@ import { SmsService } from 'src/sms/sms.service';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from 'src/mail/mail.service';
 import { LgaModel } from 'src/lga/lga.model';
+import { IndigeneCertificateModule } from 'src/indigene-certificate/indigene-certificate.module';
 
 @Module({
   imports: [
@@ -29,6 +30,8 @@ import { LgaModel } from 'src/lga/lga.model';
       signOptions: {},
     }),
     PassportModule,
+    UsersModule,
+    IndigeneCertificateModule,
   ],
   controllers: [AuthController],
 
@@ -38,7 +41,6 @@ import { LgaModel } from 'src/lga/lga.model';
     JwtStrategy,
     LocalStrategy,
     UserMailerService,
-    UsersService,
     KindredService,
     SmsService,
     ConfigService,

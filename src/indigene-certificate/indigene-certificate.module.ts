@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { IndigeneCertificateController } from './indigene-certificate.controller';
 import { IndigeneCertificateService } from './indigene-certificate.service';
@@ -14,6 +14,12 @@ import { MailService } from 'src/mail/mail.service';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { HttpModule } from '@nestjs/axios';
 import { LgaModel } from 'src/lga/lga.model';
+import { IdcardModule } from 'src/idcard/idcard.module';
+import { UsersModule } from 'src/users/users.module';
+import { NotificationsService } from 'src/notifications/notifications.service';
+import { NotificationSchema } from 'src/notifications/notications.schema';
+import { NotificationsGateway } from 'src/notifications/notifications.gateway';
+import { JwtService } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -24,20 +30,28 @@ import { LgaModel } from 'src/lga/lga.model';
     MongooseModule.forFeature([
       { name: Certificate.name, schema: CertificateSchema },
     ]),
+    MongooseModule.forFeature([
+      { name: 'Notification', schema: NotificationSchema },
+    ]),
+
+    forwardRef(() => UsersModule),
+    forwardRef(() => IdcardModule),
   ],
   controllers: [IndigeneCertificateController],
 
   providers: [
     IndigeneCertificateService,
-    UsersService,
     UserMailerService,
     SmsService,
     ConfigService,
     MailService,
     CloudinaryService,
+    NotificationsService,
+    NotificationsGateway,
+    JwtService,
   ],
 
-  exports: [IndigeneCertificateService],
+  exports: [IndigeneCertificateService, MongooseModule],
 })
 export class IndigeneCertificateModule {}
 setupSwagger(IndigeneCertificateModule);

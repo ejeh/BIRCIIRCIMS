@@ -52,8 +52,8 @@ export class User {
   isActive: boolean;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.Date })
-  DOB?: Date;
+  @Prop({ type: mongoose.SchemaTypes.String })
+  DOB?: string;
 
   @ApiProperty()
   @Prop({ type: mongoose.SchemaTypes.String })
@@ -136,12 +136,12 @@ export class User {
   business?: Business[];
 
   @ApiProperty()
-  @Prop({ type: EducationalHistorySchema }) // Embed the next-of-kin schema
-  educationalHistory?: EducationalHistory;
+  @Prop({ type: [EducationalHistorySchema] }) // Embed the next-of-kin schema
+  educationalHistory?: EducationalHistory[];
 
   @ApiProperty()
-  @Prop({ type: [HealthInfoSchema] }) // Embed the next-of-kin schema
-  healthInfo?: HealthInfo[];
+  @Prop({ type: HealthInfoSchema }) // Embed the next-of-kin schema
+  healthInfo?: HealthInfo;
 
   @ApiProperty()
   @Prop({ type: [NeighborSchema] }) // Embed the next-of-kin schema
@@ -178,6 +178,9 @@ export class User {
   @Prop({ type: mongoose.SchemaTypes.String })
   community?: string;
 
+  @Prop({ type: mongoose.SchemaTypes.String })
+  kindred: string;
+
   @ApiProperty()
   @Prop({ type: mongoose.SchemaTypes.String, required: true })
   password: string;
@@ -210,6 +213,18 @@ export class User {
 
   @Prop({ type: mongoose.Types.ObjectId, ref: 'Lga', required: false })
   lga?: string; // which LGA this admin/manager is assigned to
+
+  @Prop({ default: false })
+  twoFactorEnabled: boolean;
+
+  @Prop({ type: mongoose.SchemaTypes.String })
+  twoFactorSecret: string;
+
+  @Prop({ type: [String] })
+  backupCodes: string[];
+
+  created_at?: Date;
+  updated_at?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

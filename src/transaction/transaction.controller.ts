@@ -1,9 +1,9 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   HttpCode,
-  HttpStatus,
   Param,
   Post,
   Query,
@@ -17,6 +17,8 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { UserRole } from 'src/users/users.role.enum';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import * as crypto from 'crypto';
+import { Transaction } from './transaction.schema';
+import { GetTransactionsReportDto } from './src/transaction/dto/get-transactions-report.dto';
 
 @Controller('api/transaction')
 export class TransactionController {
@@ -109,6 +111,36 @@ export class TransactionController {
   async verifyPayment(@Param('reference') reference: string) {
     return this.transactionService.verifyPayment(reference);
   }
+  @Get('all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.GLOBAL_ADMIN)
+  getAllTransactions() {
+    return this.transactionService.findAll();
+  }
+
+  @Get('stats')
+  @Roles(UserRole.GLOBAL_ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async getTransactionStats() {
+    return this.transactionService.getTransactionStats();
+  }
+
+  @Get('by-lga')
+  @Roles(UserRole.SUPPORT_ADMIN)
+  async getTrendsByLga(
+    @Query('lga') lga: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<Transaction[]> {
+    if (!lga) {
+      throw new BadRequestException('LGA query parameter is required.');
+    }
+    return this.transactionService.getTransactionsByLga(
+      lga,
+      startDate,
+      endDate,
+    );
+  }
 
   @UseGuards(JwtAuthGuard)
   @Roles(UserRole.SUPER_ADMIN)
@@ -125,5 +157,26 @@ export class TransactionController {
     @Query('limit') limit: number = 10,
   ) {
     return this.transactionService.getPaginatedData(page, limit);
+  }
+
+  @Get('export/pdf')
+  async exportPdf(
+    @Res() res: import('express').Response,
+    @Query() query: GetTransactionsReportDto,
+  ) {
+    try {
+      const pdfBuffer = await this.transactionService.generatePdfReport(query);
+
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="transactions_report_${new Date().toISOString().slice(0, 10)}.pdf"`,
+        'Content-Length': pdfBuffer.length,
+      });
+
+      res.end(pdfBuffer);
+    } catch (error) {
+      console.error('Error generating PDF report:', error);
+      res.status(500).send('Error generating PDF report');
+    }
   }
 }

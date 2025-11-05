@@ -2,6 +2,10 @@
 import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { VerificationStatus } from './users.neigbour.schema'; // Adjust the import path as necessary
+import {
+  VerificationHistoryEntry,
+  VerificationHistoryEntrySchema,
+} from './verification-history.schema';
 
 @Schema({ _id: false })
 @Schema({ timestamps: true })
@@ -14,6 +18,9 @@ export class Family extends Document {
 
   @Prop({ required: false, default: null })
   phone?: string;
+
+  @Prop({ required: false, default: null })
+  email?: string;
 
   @Prop({ required: false, default: null })
   address?: string;
@@ -53,6 +60,9 @@ export class Family extends Document {
 
   @Prop()
   updatedAt?: Date;
+
+  @Prop({ type: [VerificationHistoryEntrySchema], default: [] })
+  verificationHistory: VerificationHistoryEntry[];
 }
 
 export const FamilySchema = SchemaFactory.createForClass(Family);

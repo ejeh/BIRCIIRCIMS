@@ -35,18 +35,18 @@ export enum DisabilityStatus {
 export class HealthInfo extends Document {
   @Prop({
     type: String,
-    enum: BloodGroup,
     required: false,
-    default: null,
   })
   bloodGroup: BloodGroup;
 
-  @Prop({ type: String, enum: Genotype, required: false, default: null })
+  @Prop({ type: String })
   genotype: Genotype;
+
+  @Prop({ type: String })
+  medical_condition;
 
   @Prop({
     type: String,
-    enum: DisabilityStatus,
     default: DisabilityStatus.NONE,
   })
   disabilityStatus: DisabilityStatus;

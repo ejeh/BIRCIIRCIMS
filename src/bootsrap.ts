@@ -16,9 +16,6 @@ import * as bcrypt from 'bcryptjs';
 import { UserSchema } from './users/users.schema';
 import mongoose from 'mongoose';
 
-// import * as crypto from 'crypto';
-
-// (global as any).crypto = crypto;
 import { webcrypto as crypto } from 'crypto';
 
 if (!globalThis.crypto) {
@@ -90,9 +87,9 @@ export async function bootstrap() {
   // 2. Create the User model manually
   const UserModel = mongoose.model('User', UserSchema);
 
-  const email = 'ejehgodfrey@gmail.com';
-  const phone = '08069710658';
-  const NIN = '12345678901';
+  const email = 'akor@gmail.com';
+  const phone = '08043710667';
+  const NIN = '88765432133';
 
   const existingUser = await UserModel.findOne({ email });
 
@@ -101,25 +98,25 @@ export async function bootstrap() {
 
     await UserModel.create({
       email,
-      firstname: 'Godfrey',
+      firstname: 'AKor',
       lastname: 'Ejeh',
       phone,
       NIN,
       password: hashedPassword,
-      role: UserRole.SUPER_ADMIN,
+      role: UserRole.GLOBAL_ADMIN,
       isVerified: true,
       isActive: true,
     });
 
-    console.log('✅ Super admin created successfully');
-  } else if (existingUser.role !== UserRole.SUPER_ADMIN) {
+    console.log('✅ Global admin created successfully');
+  } else if (existingUser.role !== UserRole.GLOBAL_ADMIN) {
     await UserModel.updateOne(
       { email },
-      { $set: { role: UserRole.SUPER_ADMIN } },
+      { $set: { role: UserRole.GLOBAL_ADMIN } },
     );
-    console.log('✅ Super admin role assigned to existing user');
+    console.log('✅ Global admin role assigned to existing user');
   } else {
-    console.log('ℹ️ Super admin already exists');
+    console.log('ℹ️ Global admin already exists');
   }
 
   app.useStaticAssets(join(__dirname, '..', 'public')); // Serve static files

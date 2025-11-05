@@ -18,8 +18,6 @@ import { NotFoundException } from '@nestjs/common';
 import { IdcardService } from './idcard.service';
 import { UsersService } from 'src/users/users.service';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-
 import path, { extname, join } from 'path';
 import { Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -39,6 +37,8 @@ import QRCode from 'qrcode';
 import config from 'src/config';
 import * as crypto from 'crypto';
 import axios, { AxiosResponse } from 'axios';
+import { MailService } from 'src/mail/mail.service';
+import { SmsService } from 'src/sms/sms.service';
 
 @ApiTags('idCard.controller')
 @UseGuards(JwtAuthGuard)
@@ -49,14 +49,18 @@ export class IdcardController {
     private readonly userService: UsersService,
     private readonly cloudinaryService: CloudinaryService,
     private readonly httpService: HttpService,
+    private readonly mailService: MailService,
+    private readonly smsService: SmsService,
   ) {}
 
   @Post('create')
   @UseInterceptors(FilesInterceptor('files', 2))
   async createIdCard(
     @Body() body: any,
+    @Req() req,
     @UploadedFiles() files: Array<Express.Multer.File>,
   ) {
+    const user = req.user as any;
     const [refLetterUrl, utilityBillUrl] = await Promise.all([
       this.cloudinaryService.uploadFile(files[0], 'idcards/ref_letters'),
       this.cloudinaryService.uploadFile(files[1], 'idcards/utility_bills'),
@@ -69,27 +73,196 @@ export class IdcardController {
       utilityBill: utilityBillUrl,
     };
 
-    await this.userService.sendRequest(
-      'ejehgodfrey@gmail.com',
-      'New Request',
-      `Request for identity card from ${body.lastname}`,
-    );
-
-    return this.idcardService.createIdCard(data);
+    return this.idcardService.createIdCard(data, user.id);
   }
+
+  // @Post('create')
+  // @UseInterceptors(FilesInterceptor('files', 2))
+  // async createIdCard(
+  //   @Body() body: any,
+  //   @Req() req,
+  //   @UploadedFiles() files: Array<Express.Multer.File>,
+  // ) {
+  //   const user = req.user as any;
+  //   const [refLetterUrl, utilityBillUrl] = await Promise.all([
+  //     this.cloudinaryService.uploadFile(files[0], 'idcards/ref_letters'),
+  //     this.cloudinaryService.uploadFile(files[1], 'idcards/utility_bills'),
+  //   ]);
+
+  //   // Process family members and generate verification tokens
+  //   let processedFamily = [];
+  //   if (body.family && Array.isArray(body.family)) {
+  //     processedFamily = await Promise.all(
+  //       body.family.map(async (familyMember) => {
+  //         // Generate verification token and link
+  //         const verificationToken =
+  //           await this.idcardService.generateVerificationToken();
+  //         const verificationLink = `${process.env.FRONTEND_URL}/verify-family/${verificationToken}`;
+  //         const verificationExpiresAt = new Date();
+  //         verificationExpiresAt.setDate(verificationExpiresAt.getDate() + 7); // Token expires in 7 days
+
+  //         // Send verification notification to family member
+  //         if (familyMember.email) {
+  //           await this.mailService.sendFamilyVerificationEmail(
+  //             familyMember.email,
+  //             familyMember.name,
+  //             verificationLink,
+  //             user.name,
+  //           );
+  //         }
+
+  //         if (familyMember.phone) {
+  //           await this.smsService.sendSms(
+  //             familyMember.phone,
+  //             familyMember.name,
+  //             verificationLink,
+  //             user.name,
+  //           );
+  //         }
+
+  //         return {
+  //           ...familyMember,
+  //           verificationToken,
+  //           verificationLink,
+  //           verificationExpiresAt,
+  //           status: 'pending',
+  //           isFollowUpSent: false,
+  //         };
+  //       }),
+  //     );
+  //   }
+
+  //   const data = {
+  //     ...body,
+  //     bin: await this.idcardService.generateUniqueBIN(),
+  //     ref_letter: refLetterUrl,
+  //     utilityBill: utilityBillUrl,
+  //     family: processedFamily,
+  //   };
+
+  //   return this.idcardService.createIdCard(data, user.id);
+  // }
+
+  // @Post('verify-family/:token')
+  // async verifyFamily(
+  //   @Param('token') token: string,
+  //   @Body()
+  //   verificationData: {
+  //     isResident: boolean;
+  //     knownDuration: string;
+  //     knowsApplicant: boolean;
+  //     comments?: string;
+  //   },
+  // ) {
+  //   return this.idcardService.verifyFamilyMember(token, verificationData);
+  // }
+
+  // @Post('create')
+  // @UseInterceptors(FilesInterceptor('files', 2))
+  // async createIdCard(
+  //   @Body() body: any,
+  //   @Req() req,
+  //   @UploadedFiles() files: Array<Express.Multer.File>,
+  // ) {
+  //   const user = req.user as any;
+  //   const [refLetterUrl, utilityBillUrl] = await Promise.all([
+  //     this.cloudinaryService.uploadFile(files[0], 'idcards/ref_letters'),
+  //     this.cloudinaryService.uploadFile(files[1], 'idcards/utility_bills'),
+  //   ]);
+
+  //   // Process neighbors and generate verification tokens
+  //   let processedNeighbors = [];
+  //   if (body.neighbors && Array.isArray(body.neighbors)) {
+  //     processedNeighbors = await Promise.all(
+  //       body.neighbors.map(async (neighbor) => {
+  //         // Generate verification token and link
+  //         const verificationToken =
+  //           await this.idcardService.generateVerificationToken();
+  //         const verificationLink = `${process.env.FRONTEND_URL}/verify-neighbor/${verificationToken}`;
+  //         const verificationExpiresAt = new Date();
+  //         verificationExpiresAt.setDate(verificationExpiresAt.getDate() + 7); // Token expires in 7 days
+
+  //         // Send verification notification to neighbor
+  //         if (neighbor.email) {
+  //           await this.mailService.sendNeighborVerificationEmail(
+  //             neighbor.email,
+  //             neighbor.name,
+  //             verificationLink,
+  //             user.name,
+  //           );
+  //         }
+
+  //         if (neighbor.phone) {
+  //           await this.smsService.sendNeighborVerificationSms(
+  //             neighbor.phone,
+  //             neighbor.name,
+  //             verificationLink,
+  //             user.name,
+  //           );
+  //         }
+
+  //         return {
+  //           ...neighbor,
+  //           verificationToken,
+  //           verificationLink,
+  //           verificationExpiresAt,
+  //           status: 'pending',
+  //           isFollowUpSent: false,
+  //         };
+  //       }),
+  //     );
+  //   }
+
+  //   const data = {
+  //     ...body,
+  //     bin: await this.idcardService.generateUniqueBIN(),
+  //     ref_letter: refLetterUrl,
+  //     utilityBill: utilityBillUrl,
+  //     neighbors: processedNeighbors,
+  //   };
+
+  //   return this.idcardService.createIdCard(data, user.id);
+  // }
+
+  // // Add endpoint for neighbor verification
+  // @Post('verify-neighbor/:token')
+  // async verifyNeighbor(
+  //   @Param('token') token: string,
+  //   @Body()
+  //   verificationData: {
+  //     isNeighbor: boolean;
+  //     knownDuration: string;
+  //     knowsApplicant: boolean;
+  //     comments?: string;
+  //   },
+  // ) {
+  //   return this.idcardService.verifyNeighbor(token, verificationData);
+  // }
 
   @Get('get-all-request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: IdCard, isArray: true })
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN)
   async getCertsRequest(@Req() req: Request) {
-    return await this.idcardService.idCardModel.find({});
+    return await this.idcardService.idCardModel
+      .find({})
+      .populate('approvedBy', 'firstname lastname email')
+      .populate(
+        'userId',
+        'firstname lastname email stateOfOrigin lgaOfOrigin isProfileCompleted ',
+      )
+      .exec();
   }
 
   @Get('card-request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: IdCard, isArray: true })
-  @Roles(UserRole.SUPPORT_ADMIN, UserRole.SUPER_ADMIN, UserRole.KINDRED_HEAD)
+  @Roles(
+    UserRole.SUPPORT_ADMIN,
+    UserRole.SUPER_ADMIN,
+    UserRole.KINDRED_HEAD,
+    UserRole.GLOBAL_ADMIN,
+  )
   async getRequestsByStatuses(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
@@ -119,19 +292,23 @@ export class IdcardController {
 
   @Patch(':id/approve')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN)
   @ApiResponse({ type: IdCard, isArray: false })
-  async approveCert(@Param('id') id: string, @Body() Body: any) {
-    return await this.idcardService.approveIdCard(id);
+  async approveCert(
+    @Param('id') id: string,
+    @Body('approvedBy') approvedBy: string,
+  ) {
+    return await this.idcardService.approveIdCard(id, approvedBy);
   }
 
   @Patch(':id/reject')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN)
   @ApiResponse({ type: IdCard, isArray: false })
   async rejectCert(
     @Param('id') id: string,
     @Body('rejectionReason') rejectionReason: string,
+    @Body('approvedBy') approvedBy: string,
   ) {
     // Notify user
     const user = await this.idcardService.findCardById(id);
@@ -146,12 +323,12 @@ export class IdcardController {
            `,
     );
 
-    return await this.idcardService.rejectCard(id, rejectionReason);
+    return await this.idcardService.rejectCard(id, rejectionReason, approvedBy);
   }
 
   @Get(':id/request')
   @ApiResponse({ type: IdCard, isArray: false })
-  async getUserProfile(@Param('id') id: string, @Body() body: any) {
+  async getIdcardRequest(@Param('id') id: string, @Body() body: any) {
     return await this.idcardService.findById(id);
   }
 
@@ -160,6 +337,7 @@ export class IdcardController {
     return this.idcardService.deleteItem(item);
   }
 
+  @Public()
   @Get('download/:id')
   @ApiResponse({ type: IdCard, isArray: false })
   async downloadCertificate(@Param('id') id: string, @Res() res: Response) {
@@ -197,15 +375,15 @@ export class IdcardController {
           : 'https://api.citizenship.benuestate.gov.ng';
 
       // 2. Create QR Code URL
-      const verificationUrl = `${getBaseUrl()}/api/idcard/verify/${id}/${hash}`;
+      // const verificationUrl = `${getBaseUrl()}/api/idcard/verify/${id}/${hash}`;
 
       // const qrCodeData = `Name: ${user.firstname} ${user.middlename} ${user.lastname} | issueDate: ${formattedDate} | Sex: ${user.gender} | issuer: Benue Digital Infrastructure Company | verificationUrl:${verificationUrl} `;
 
-      const qrCodeData = `Verification Url: ${verificationUrl} `;
+      const idCardQrCodeData = `${getBaseUrl()}/api/idcard/view/${card.id}`;
 
       // const qrCodeData = `Name: ${user.firstname} ${user.middlename} ${user.lastname} | BIN: ${card.bin} | DOB: ${formattedDOB} | Sex: ${user.gender}`;
 
-      const qrCodeUrl = await this.generateQrCode(qrCodeData); // Generate QR code URL
+      const qrCodeUrl = await this.generateQrCode(idCardQrCodeData); // Generate QR code URL
       card.qrCodeUrl = qrCodeUrl; // Save the QR code URL in the card
 
       const htmlTemplate = await this.loadHtmlTemplate('card-template.html');
@@ -217,20 +395,17 @@ export class IdcardController {
       );
 
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader(
-        'Content-Disposition',
-        'attachment; filename=certificate.pdf',
-      );
+      res.setHeader('Content-Disposition', 'attachment; filename=card.pdf');
 
       // Stream the file instead of reading it fully into memory
-      res.download(pdfPath, 'certificate.pdf', async (err) => {
+      res.download(pdfPath, 'card.pdf', async (err) => {
         if (err) {
           console.error('Error sending file:', err);
           return; // return res.status(500).json({ message: 'Error downloading file' });
         }
 
         // Mark as downloaded and delete temp file after sending
-        await this.markCertificateAsDownloaded(id);
+        await this.markCardAsDownloaded(id);
 
         // Save verication hash
         await this.idcardService.saveVerificationHash(id, hash);
@@ -304,7 +479,7 @@ export class IdcardController {
       .replace(/{{gender}}/g, user.gender);
   }
 
-  private async markCertificateAsDownloaded(id: string): Promise<void> {
+  private async markCardAsDownloaded(id: string): Promise<void> {
     try {
       await this.idcardService.markAsDownloaded(id);
     } catch (updateErr) {
@@ -323,6 +498,124 @@ export class IdcardController {
       console.error('Error generating QR code:', error);
       throw new Error('Failed to generate QR code');
     }
+  }
+
+  // Add these new endpoints to handle QR code downloads
+  @Public()
+  @Get('download/idcard/:id')
+  async downloadIdCard(@Param('id') id: string, @Res() res: Response) {
+    try {
+      const card = await this.idcardService.findCardById(id);
+      const user = await this.userService.findById(card.userId);
+
+      if (!card) {
+        return res.status(404).json({ message: 'ID Card not found' });
+      }
+
+      // Generate the ID card PDF
+      const htmlTemplate = await this.loadHtmlTemplate('idcard-view.html');
+      const populatedHtml = this.populateHtmlTemplate(htmlTemplate, card, user);
+      const pdfPath = await this.idcardService.generateIDCardPDF(
+        id,
+        populatedHtml,
+      );
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename=idcard.pdf');
+
+      // Stream the file
+      res.download(pdfPath, 'idcard.pdf', (err) => {
+        if (err) {
+          console.error('Error sending file:', err);
+          return res.status(500).json({ message: 'Error downloading file' });
+        }
+      });
+    } catch (error) {
+      console.error('Error processing request:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+  // Add endpoints to fetch document details for the QR page
+  @Public()
+  @Get('idcard/:id')
+  async getIdCardDetails(@Param('id') id: string) {
+    try {
+      const card = await this.idcardService.findCardById(id);
+      const user = await this.userService.findById(card.userId);
+
+      if (!card) {
+        throw new NotFoundException('ID Card not found');
+      }
+
+      const dateOfIssue = new Date();
+
+      // Format as "February 20, 1991"
+      const formattedDateOfIssue = dateOfIssue.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
+      return {
+        id: card.id,
+        firstname: user.firstname,
+        lastname: user.lastname,
+        bin: card.bin,
+        issueDate: formattedDateOfIssue,
+      };
+    } catch (error) {
+      throw new NotFoundException('ID Card not found');
+    }
+  }
+
+  @Public()
+  @Get('view/:id')
+  async viewIdCard(@Param('id') id: string, @Res() res: Response) {
+    try {
+      // Find the ID card
+      const card = await this.idcardService.findCardById(id);
+
+      if (!card) {
+        return res.status(404).json({ message: 'ID Card not found' });
+      }
+
+      // Read and return the HTML page for ID card
+      const templatePath = join(
+        __dirname,
+        '..',
+        '..',
+        'templates',
+        'idcard-view.html',
+      );
+
+      try {
+        const htmlContent = await fs.promises.readFile(templatePath, 'utf8');
+        res.setHeader('Content-Type', 'text/html');
+        // Set CSP to allow inline scripts
+        res.setHeader(
+          'Content-Security-Policy',
+          "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'",
+        );
+        return res.send(htmlContent);
+      } catch (fileError) {
+        console.error('Error reading ID card template:', fileError);
+        return res.status(500).json({ message: 'Template not found' });
+      }
+    } catch (error) {
+      console.error('Error processing request:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+  @Get('location-stats')
+  async getLocationStats() {
+    return this.idcardService.getLocationStats();
+  }
+
+  @Get(':id/request')
+  async getOneIdCard(@Param('id') id: string) {
+    return this.idcardService.findById(id);
   }
 
   @Get(':id')

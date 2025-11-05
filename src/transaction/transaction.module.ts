@@ -7,17 +7,36 @@ import { IndigeneCertificateService } from 'src/indigene-certificate/indigene-ce
 import { Certificate } from 'src/indigene-certificate/indigene-certicate.schema';
 import { KindredModel } from 'src/kindred/kindred.model';
 import { UserModel } from 'src/users/users.model';
+import { NotificationsService } from 'src/notifications/notifications.service';
+import { NotificationSchema } from 'src/notifications/notications.schema';
+import { NotificationsGateway } from 'src/notifications/notifications.gateway';
+import { JwtService } from '@nestjs/jwt';
+import { IdcardService } from 'src/idcard/idcard.service';
+import { IdCard } from 'src/idcard/idcard.schema';
 
 @Module({
   imports: [
     KindredModel,
     UserModel,
     MongooseModule.forFeature([{ name: 'Certificate', schema: Certificate }]),
+    MongooseModule.forFeature([{ name: 'IdCard', schema: IdCard }]),
+
     MongooseModule.forFeature([
       { name: 'Transaction', schema: TransactionSchema },
     ]),
+    MongooseModule.forFeature([
+      { name: 'Notification', schema: NotificationSchema },
+    ]),
   ],
   controllers: [TransactionController],
-  providers: [TransactionService, IndigeneCertificateService],
+  providers: [
+    TransactionService,
+    IndigeneCertificateService,
+    NotificationsService,
+    NotificationsGateway,
+    JwtService,
+    IdcardService,
+  ],
+  exports: [TransactionService, MongooseModule],
 })
 export class TransactionModule {}

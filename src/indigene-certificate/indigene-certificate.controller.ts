@@ -20,11 +20,7 @@ import { UserNotFoundException } from 'src/common/exception';
 
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { IndigeneCertificateService } from './indigene-certificate.service';
-import {
-  AnyFilesInterceptor,
-  FileInterceptor,
-  FilesInterceptor,
-} from '@nestjs/platform-express';
+import { AnyFilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { Response } from 'express';
@@ -104,6 +100,7 @@ export class IndigeneCertificateController {
   async createCertificate(
     @Body() body: any,
     @UploadedFiles() files: Array<Express.Multer.File>,
+    @Req() req,
   ) {
     // ✅ Map uploaded files by field name
     const fileMap = files.reduce(
@@ -146,13 +143,7 @@ export class IndigeneCertificateController {
       birthCertificate: birthCertificateUrl,
     };
 
-    await this.userService.sendRequest(
-      'ejehgodfrey@gmail.com',
-      'New Request',
-      `Request for certificate of origin from ${body.email}`,
-    );
-
-    return this.indigeneCertificateService.createCertificate(data);
+    return this.indigeneCertificateService.createCertificate(data, req.user);
   }
 
   // Step 2: Download attestation template
@@ -182,6 +173,7 @@ export class IndigeneCertificateController {
     return this.indigeneCertificateService.uploadAttestation(id, file);
   }
 
+  @Public()
   @Get('download/:id')
   @ApiResponse({ type: Certificate, isArray: false })
   async downloadCertificate(@Param('id') id: string, @Res() res: Response) {
@@ -222,13 +214,12 @@ export class IndigeneCertificateController {
           : 'https://api.citizenship.benuestate.gov.ng';
 
       // 2. Create QR Code URL
-      const verificationUrl = `${getBaseUrl()}/api/indigene/certificate/verify/${id}/${hash}`;
+      // const verificationUrl = `${getBaseUrl()}/api/indigene/certificate/verify/${id}/${hash}`;
 
       // const qrCodeData = `Name: ${user.firstname} ${user.middlename} ${user.lastname} | issueDate: ${formattedDate} | Sex: ${user.gender} | issuer: Benue Digital Infrastructure Company | verificationUrl:${verificationUrl} `;
 
-      const qrCodeData = `Verification Url: ${verificationUrl} `;
-
-      const qrCodeUrl = await this.generateQrCode(qrCodeData); // Generate QR code URL
+      const certificateQrCodeData = `${getBaseUrl()}/api/indigene/certificate/view/${id}`;
+      const qrCodeUrl = await this.generateQrCode(certificateQrCodeData); // Generate QR code URL
       certificate.qrCodeUrl = qrCodeUrl; // Save the QR code URL in the certificate
 
       const htmlTemplate = await this.loadHtmlTemplate(
@@ -354,20 +345,152 @@ export class IndigeneCertificateController {
     }
   }
 
+  @Public()
+  @Get('download/certificate/:id')
+  async downloadCert(@Param('id') id: string, @Res() res: Response) {
+    try {
+      const certificate =
+        await this.indigeneCertificateService.findCertificateById(id);
+      const user = await this.userService.findById(certificate.userId);
+
+      if (!certificate) {
+        return res.status(404).json({ message: 'Certificate not found' });
+      }
+
+      // Generate the certificate PDF
+      const htmlTemplate = await this.loadHtmlTemplate('certificate-view.html');
+      const populatedHtml = this.populateHtmlTemplate(
+        htmlTemplate,
+        certificate,
+        user,
+      );
+      const pdfPath =
+        await this.indigeneCertificateService.generateCertificatePDF(
+          id,
+          populatedHtml,
+        );
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename=certificate.pdf',
+      );
+
+      // Stream the file
+      res.download(pdfPath, 'certificate.pdf', (err) => {
+        if (err) {
+          console.error('Error sending file:', err);
+          return res.status(500).json({ message: 'Error downloading file' });
+        }
+      });
+    } catch (error) {
+      console.error('Error processing request:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+  @Public()
+  @Get('certificate/:id')
+  async getCertificateDetails(@Param('id') id: string) {
+    try {
+      const certificate =
+        await this.indigeneCertificateService.findCertificateById(id);
+      const user = await this.userService.findById(certificate.userId);
+
+      if (!certificate) {
+        throw new NotFoundException('Certificate not found');
+      }
+
+      const dateOfIssue = new Date();
+
+      // Format as "February 20, 1991"
+      const formattedDateOfIssue = dateOfIssue.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
+      return {
+        id: certificate.id,
+        name: `${user.firstname} ${user.lastname}`,
+        lga: user.lgaOfOrigin,
+        state: user.stateOfOrigin,
+        kindred: certificate.kindred,
+        issueDate: formattedDateOfIssue,
+      };
+    } catch (error) {
+      throw new NotFoundException('Certificate not found');
+    }
+  }
+
+  @Public()
+  @Get('view/:id')
+  async viewCertificate(@Param('id') id: string, @Res() res: Response) {
+    try {
+      // Find the certificate
+      const certificate =
+        await this.indigeneCertificateService.findCertificateById(id);
+
+      if (!certificate) {
+        return res.status(404).json({ message: 'Certificate not found' });
+      }
+
+      // Read and return the HTML page for certificate
+      const templatePath = join(
+        __dirname,
+        '..',
+        '..',
+        'templates',
+        'certificate-view.html',
+      );
+      console.log('Certificate template path:', templatePath);
+
+      try {
+        const htmlContent = await fs.promises.readFile(templatePath, 'utf8');
+        res.setHeader('Content-Type', 'text/html');
+        // Set CSP to allow inline scripts
+        res.setHeader(
+          'Content-Security-Policy',
+          "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'",
+        );
+        return res.send(htmlContent);
+      } catch (fileError) {
+        console.error('Error reading certificate template:', fileError);
+        return res.status(500).json({ message: 'Template not found' });
+      }
+    } catch (error) {
+      console.error('Error processing request:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
   @Get('get-all-request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: Certificate, isArray: true })
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.GLOBAL_ADMIN)
   async getCertsRequest(@Req() req: Request) {
-    return await this.indigeneCertificateService.certificateModel.find({});
+    return await this.indigeneCertificateService.certificateModel
+      .find({})
+      .populate('approvedBy', 'firstname lastname email')
+      .populate(
+        'userId',
+        'firstname lastname email stateOfOrigin lgaOfOrigin isProfileCompleted ',
+      )
+      .exec();
   }
 
   @Patch(':id/approve')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN, UserRole.KINDRED_HEAD)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN)
   @ApiResponse({ type: Certificate, isArray: false })
-  async approveCert(@Param('id') id: string, @Body() Body: any) {
-    return await this.indigeneCertificateService.approveCertificate(id);
+  async approveCert(
+    @Param('id') id: string,
+    @Body('approvedBy') approvedBy: string,
+  ) {
+    return await this.indigeneCertificateService.approveCertificate(
+      id,
+      approvedBy,
+    );
   }
 
   @Patch(':id/verify')
@@ -380,11 +503,12 @@ export class IndigeneCertificateController {
 
   @Patch(':id/reject')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN)
   @ApiResponse({ type: Certificate, isArray: false })
   async rejectCert(
     @Param('id') id: string,
     @Body('rejectionReason') rejectionReason: string,
+    @Body('approvedBy') approvedBy: string,
   ) {
     // Notify user
     const user = await this.indigeneCertificateService.findCertificateById(id);
@@ -402,6 +526,7 @@ export class IndigeneCertificateController {
     return await this.indigeneCertificateService.rejectCertificate(
       id,
       rejectionReason,
+      approvedBy,
     );
   }
 
@@ -420,6 +545,11 @@ export class IndigeneCertificateController {
     @Query('limit') limit: number = 10,
   ) {
     return this.indigeneCertificateService.getPaginatedData(page, limit);
+  }
+
+  @Get('by-lga')
+  async getCertificatesByLga(@Query('lga') lga: string) {
+    return this.indigeneCertificateService.findByLga(lga);
   }
 
   @Get('latest')
@@ -453,7 +583,7 @@ export class IndigeneCertificateController {
   @Get('request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: Certificate, isArray: true })
-  @Roles(UserRole.SUPPORT_ADMIN, UserRole.SUPER_ADMIN, UserRole.KINDRED_HEAD)
+  @Roles(UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN, UserRole.KINDRED_HEAD)
   async getRequestsByStatuses(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
@@ -481,7 +611,9 @@ export class IndigeneCertificateController {
   }
 
   @Get(':id/request')
+  @UseGuards(RolesGuard)
   @ApiResponse({ type: Certificate, isArray: false })
+  @Roles(UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN)
   async getUserProfile(@Param('id') id: string, @Body() body: any) {
     return await this.indigeneCertificateService.findById(id);
   }

@@ -1,6 +1,10 @@
 // next-of-kin.schema.ts
 import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import {
+  VerificationHistoryEntry,
+  VerificationHistoryEntrySchema,
+} from './verification-history.schema';
 
 export enum VerificationStatus {
   PENDING = 'pending',
@@ -20,6 +24,9 @@ export class Neighbor extends Document {
 
   @Prop({ required: false, default: null })
   phone?: string;
+
+  @Prop({ required: false, default: null })
+  email?: string;
 
   // Verification fields
   @Prop({ default: VerificationStatus.PENDING })
@@ -57,6 +64,9 @@ export class Neighbor extends Document {
 
   @Prop()
   updatedAt?: Date;
+
+  @Prop({ type: [VerificationHistoryEntrySchema], default: [] })
+  verificationHistory: VerificationHistoryEntry[];
 }
 
 export const NeighborSchema = SchemaFactory.createForClass(Neighbor);

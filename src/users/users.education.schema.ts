@@ -36,15 +36,28 @@ export class TertiaryInfo extends Document {
 export const TertiaryInfoSchema = SchemaFactory.createForClass(TertiaryInfo);
 
 @NestSchema()
+// export class EducationalHistory extends Document {
+//   @Prop({ type: SchoolInfoSchema, required: false })
+//   primarySchool: SchoolInfo;
+
+//   @Prop({ type: SchoolInfoSchema, required: false })
+//   secondarySchool: SchoolInfo;
+
+//   @Prop({ type: [TertiaryInfoSchema], required: false })
+//   tertiaryInstitutions: TertiaryInfo[];
+// }
 export class EducationalHistory extends Document {
-  @Prop({ type: SchoolInfoSchema, required: false })
-  primarySchool: SchoolInfo;
+  @Prop({ type: String, required: false })
+  institution: string;
 
-  @Prop({ type: SchoolInfoSchema, required: false })
-  secondarySchool: SchoolInfo;
+  @Prop({ type: String, required: false })
+  qualification: string;
 
-  @Prop({ type: [TertiaryInfoSchema], required: false })
-  tertiaryInstitutions: TertiaryInfo[];
+  @Prop({ type: Date, required: false })
+  startDate: Date;
+
+  @Prop({ type: Date, required: false })
+  endDate: Date;
 }
 
 export const EducationalHistorySchema =

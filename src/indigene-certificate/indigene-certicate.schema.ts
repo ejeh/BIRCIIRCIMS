@@ -2,6 +2,7 @@ import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { ApiProperty } from '@nestjs/swagger';
 import { Document } from 'mongoose';
+// import { Family, FamilySchema } from './indegene-family-schema';
 
 @Schema({
   timestamps: {
@@ -160,6 +161,26 @@ export class Certificate extends Document {
 
   @Prop({ type: mongoose.SchemaTypes.String })
   verificationHash: string; // Hash for verification
+
+  created_at?: Date;
+  updated_at?: Date;
+
+  @Prop({ type: mongoose.SchemaTypes.Date, default: null })
+  approvalDate: Date;
+
+  @Prop({
+    type: mongoose.Types.ObjectId,
+    ref: 'User',
+    required: false,
+  })
+  approvedBy: mongoose.Types.ObjectId;
+
+  // @ApiProperty()
+  // @Prop({ type: [FamilySchema] }) // Embed the next-of-kin schema
+  // family?: Family[];
+
+  @Prop({ type: mongoose.SchemaTypes.String, default: 'pending' })
+  paymentStatus: string; // Can be 'pending' or 'paid'
 }
 
 export const CertificateSchema = SchemaFactory.createForClass(Certificate);

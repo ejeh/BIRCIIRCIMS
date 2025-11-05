@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsBoolean, IsMongoId } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsMongoId,
+  IsEmail,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UserPublicData {
@@ -111,7 +117,21 @@ export class UpdateProfileDto {
   @IsString()
   @IsOptional()
   @ApiProperty({})
+  readonly firstname?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiProperty({})
+  readonly email?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiProperty({})
   readonly lastname?: string;
+
+  @IsOptional()
+  @ApiProperty({})
+  readonly phone?: number;
 
   @IsString()
   @IsOptional()
@@ -280,4 +300,22 @@ export class VerificationStatusDto {
   total: number;
   isVerified: boolean;
   references: any[];
+}
+
+export class UpdateUserAdminDto {
+  @IsOptional()
+  @IsString()
+  firstname?: string;
+
+  @IsOptional()
+  @IsString()
+  lastname?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  phoneNumber?: string;
 }

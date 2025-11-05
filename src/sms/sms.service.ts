@@ -106,4 +106,23 @@ export class SmsService {
       return false;
     }
   }
+
+  /**
+  //  * Sends neighbor verification SMS
+  //  * @param to Phone number of the neighbor
+  //  * @param neighborName Name of the neighbor
+  //  * @param verificationLink Verification link for the neighbor
+  //  * @param applicantName Name of the applicant who listed this neighbor
+  //  * @returns Promise<boolean> indicating if the SMS was sent successfully
+  //  */
+  // async sendNeighborVerificationSms(
+  //   to: string,
+  //   neighborName: string,
+  //   verificationLink: string,
+  //   applicantName: string,
+  // ): Promise<boolean> {
+  //   const message = `Hi ${neighborName}, ${applicantName} has applied for a Benue Resident ID and listed you as their neighbor. Please verify their information by clicking this link: ${verificationLink}. This link expires in 7 days. If you don't know ${applicantName}, please ignore this message.`;
+
+  //   return this.sendSms(to, message);
+  // }
 }

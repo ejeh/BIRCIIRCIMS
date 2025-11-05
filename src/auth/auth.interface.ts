@@ -50,6 +50,10 @@ export class SignUpDto {
   @MaxLength(255)
   @ApiProperty({})
   readonly lgaOfOrigin!: string;
+
+  @MaxLength(255)
+  @ApiProperty({})
+  readonly kindred;
 }
 
 export class ActivateParams {
@@ -96,4 +100,24 @@ export class ResetPasswordDto {
   @ApiProperty({ example: 'password', minLength: 8 })
   @MinLength(8)
   readonly password!: string;
+}
+
+export class ChangePasswordDto {
+  @ApiProperty({ example: 'password', minLength: 8 })
+  @MinLength(8)
+  currentPassword: string;
+
+  @ApiProperty({ example: 'password', minLength: 8 })
+  @MinLength(8)
+  newPassword: string;
+}
+
+// src/auth/dto/verify-2fa.dto.ts
+export class Verify2FADto {
+  @ApiProperty({ example: '123456', minLength: 6, maxLength: 6 })
+  @IsString()
+  @MinLength(6)
+  @MaxLength(6)
+  @IsNotEmpty()
+  readonly code: string;
 }

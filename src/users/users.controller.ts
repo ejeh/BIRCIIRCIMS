@@ -15,13 +15,23 @@ import {
   NotFoundException,
   BadRequestException,
   Post,
+  HttpCode,
+  Res,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { User } from './users.schema';
 import {
   UpdateProfileDto,
+  UpdateUserAdminDto,
   UpdateUserRoleDto,
   VerifyReferenceDto,
 } from './users.dto';
@@ -32,6 +42,8 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ParseJSONPipe } from './parse-json.pipe'; // Create a custom pipe to handle JSON parsing.
 import { Public } from 'src/common/decorators/public.decorator';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
 @ApiTags('users-controller')
 @ApiBearerAuth()
@@ -41,6 +53,7 @@ export class UsersController {
   constructor(
     private readonly userService: UsersService,
     private readonly cloudinaryService: CloudinaryService,
+    @InjectModel(User.name) private readonly usersModel: Model<User>,
   ) {}
 
   @Put(':id')
@@ -176,7 +189,7 @@ export class UsersController {
         user.religion,
         user.community,
         user.business?.length ? 'filled' : '',
-        user.healthInfo?.length ? 'filled' : '',
+        user.healthInfo ? 'filled' : '',
       ];
       const optionalFilled = optionalFields.filter(
         (val) => val !== undefined && val !== null && String(val).trim() !== '',
@@ -320,6 +333,49 @@ export class UsersController {
     }
   }
 
+  @Get(':id/verification-history/:refId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get verification history for a specific reference',
+  })
+  @ApiParam({ name: 'id', description: 'The User ID' })
+  @ApiParam({
+    name: 'refId',
+    description: 'The ID of the neighbor or family reference',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Verification history retrieved successfully.',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          date: { type: 'string', format: 'date-time' },
+          status: { type: 'string' },
+          comments: { type: 'string' },
+          deviceInfo: { type: 'string' },
+          verifiedBy: { type: 'string' },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'User or Reference not found.' })
+  async getVerificationHistory(
+    @Param('id') userId: string,
+    @Param('refId') refId: string,
+  ) {
+    const history = await this.userService.getVerificationHistory(
+      userId,
+      refId,
+    );
+    return {
+      success: true,
+      message: 'Verification history retrieved successfully.',
+      data: history,
+    };
+  }
+
   @Get(':id/verification-tokens')
   async getVerificationTokens(@Param('id') id: string) {
     const user = await this.userService.userModel.findById(id);
@@ -342,6 +398,7 @@ export class UsersController {
       })),
     };
   }
+
   @Public()
   @Get('verify-reference/:token')
   @ApiResponse({ type: Object, isArray: false })
@@ -367,20 +424,202 @@ export class UsersController {
 
   @Patch(':id/role')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN, UserRole.SUPPORT_ADMIN)
   @ApiResponse({ type: User, isArray: false })
   async updateUserRole(
     @Param('id') id: string,
     @Body() body: UpdateUserRoleDto,
+    @Req() req,
   ) {
-    if (body.role === 'support_admin' && !body.lgaId) {
-      throw new BadRequestException('Support Admin must be assigned to an LGA');
-    }
-    // return await this.userService.userModel
-    //   .findByIdAndUpdate(id, { ...body }, { new: true })
-    //   .populate('lgaId', 'name headquaters');
+    // if (body.role === 'support_admin' && !body.lgaId) {
+    //   throw new BadRequestException('Support Admin must be assigned to an LGA');
+    // }
+    return this.userService.updateUserRole(id, body, req.user);
+  }
 
-    return this.userService.updateUserRole(id, body);
+  // 📝 Update user details
+  @Put(':id/user-details')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.GLOBAL_ADMIN)
+  async updateUser(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserAdminDto,
+  ) {
+    return this.userService.updateUser(id, updateUserDto);
+  }
+
+  // 🚫 Toggle user active/inactive
+  @Patch(':id/toggle-status')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.GLOBAL_ADMIN, UserRole.SUPPORT_ADMIN)
+  async toggleUserStatus(@Param('id') id: string) {
+    return this.userService.toggleUserStatus(id);
+  }
+
+  @Get('role-stats')
+  async getRoleStats() {
+    // const globalAdminCount = 0; // Assuming there's always one global admin for simplicity
+    const globalAdminCount = await this.usersModel.countDocuments({
+      role: 'global_admin',
+    });
+    const superAdminCount = await this.usersModel.countDocuments({
+      role: 'super_admin',
+    });
+    const supportAdminCount = await this.usersModel.countDocuments({
+      role: 'support_admin',
+    });
+    const kindredHeadCount = await this.usersModel.countDocuments({
+      role: 'kindred_head',
+    });
+    const userCount = await this.usersModel.countDocuments({ role: 'user' });
+
+    return {
+      global_admin: {
+        count: globalAdminCount,
+        permissions: 'Full system access',
+      },
+      super_admin: {
+        count: superAdminCount,
+        permissions: 'Manage admins and system settings',
+      },
+      support_admin: {
+        count: supportAdminCount,
+        permissions: 'Manage requests, moderate users',
+      },
+      kindred_head: {
+        count: kindredHeadCount,
+        permissions: 'LGA/Kindred certificate requests',
+      },
+      user: { count: userCount, permissions: 'Submit requests only' },
+    };
+  }
+
+  @Get('analytics-stats')
+  @Roles(UserRole.GLOBAL_ADMIN)
+  async getAnalytics() {
+    return this.userService.getAnalytics();
+  }
+
+  @Get('stats')
+  @ApiResponse({
+    status: 200,
+    description:
+      'Returns membership statistics (age, gender, state distributions)',
+    isArray: false,
+  })
+  @Roles(UserRole.GLOBAL_ADMIN)
+  async getStats() {
+    return this.userService.getMemberStats();
+  }
+
+  @Get('dashboard-stats')
+  @ApiResponse({
+    status: 200,
+    description: 'Returns dashboard statistics for users',
+  })
+  @Roles(UserRole.GLOBAL_ADMIN)
+  // async getDashboardStats() {
+  //   return this.userService.getDashboardStats();
+  // }
+  async getDashboardStats(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.userService.getDashboardStats(startDate, endDate);
+  }
+
+  @Get('dashboard/export/pdf')
+  async exportDashboardPdf(
+    @Res() res,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    try {
+      const pdfBuffer = await this.userService.generateDashboardPdfReport(
+        startDate,
+        endDate,
+      );
+
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="dashboard_report_${new Date().toISOString().slice(0, 10)}.pdf"`,
+        'Content-Length': pdfBuffer.length,
+      });
+
+      res.end(pdfBuffer);
+    } catch (error) {
+      console.error('Error generating dashboard PDF:', error);
+      res.status(500).send('Error generating PDF report');
+    }
+  }
+
+  @Get('me')
+  async getCurrentUser(@Req() req) {
+    return this.userService.findById(req.user.id);
+  }
+
+  @Get('by-lga')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SUPPORT_ADMIN)
+  @ApiResponse({ type: User, isArray: true })
+  @ApiQuery({
+    name: 'lga',
+    required: false,
+    description: 'Filter users by LGA',
+  })
+  async getUsersByLGA(@Query('lga') lga?: string) {
+    if (lga) {
+      return this.userService.findByLGA(lga);
+    }
+    return this.userService.findAll();
+  }
+
+  @Get('trends')
+  getTrends(
+    @Query('lga') lga: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.userService.getTrends(lga, startDate, endDate);
+  }
+
+  @Get('demographics')
+  getDemographics(
+    @Query('lga') lga: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.userService.getDemographics(lga, startDate, endDate);
+  }
+
+  @Get('kindred-activity')
+  getKindredActivity(@Query('lga') lga: string) {
+    return this.userService.getKindredActivity(lga);
+  }
+
+  @Get('recent-activities')
+  getRecentActivities(@Query('lga') lga: string) {
+    return this.userService.getRecentActivities(lga);
+  }
+
+  @Get('lga-trends')
+  getLgaTrends(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.userService.getLgaRequestTrends(startDate, endDate);
+  }
+
+  @Get('initialize')
+  async initializeDashboard(@Req() req) {
+    const user = req.user as any;
+    return this.userService.getDashboardData(user);
+  }
+
+  @Get('refresh-analytics')
+  async getFullAnalyticsData(@Query('lga') lga?: string) {
+    // This single endpoint will return all the data needed for the analytics page
+    return this.userService.getFullAnalyticsData(lga);
   }
 
   @Get(':id')
@@ -393,15 +632,14 @@ export class UsersController {
     }
 
     return {
-      ...user.toObject(),
-      DOB: user.DOB ? user.DOB.toISOString().split('T')[0] : '', // Check for null
+      user,
     };
   }
 
   @Get()
   @UseGuards(RolesGuard)
   @ApiResponse({ type: User, isArray: true })
-  @Roles(UserRole.SUPER_ADMIN, UserRole.SUPPORT_ADMIN, UserRole.KINDRED_HEAD)
+  @Roles(UserRole.GLOBAL_ADMIN)
   async getPaginatedData(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,

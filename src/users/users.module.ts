@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { UsersController } from './users.controller';
 import { UserMailerService } from './users.mailer.service';
 import { UsersService } from './users.service';
@@ -10,11 +10,21 @@ import { ConfigService } from '@nestjs/config';
 import { MailService } from 'src/mail/mail.service';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { LgaModel } from 'src/lga/lga.model';
+import { IndigeneCertificateModule } from 'src/indigene-certificate/indigene-certificate.module';
+import { MongooseModule } from '@nestjs/mongoose';
+import { IdcardModule } from 'src/idcard/idcard.module';
+import { TransactionModule } from 'src/transaction/transaction.module';
+import { NotificationsModule } from 'src/notifications/notifications.module';
 
 @Module({
   imports: [
     UserModel,
     LgaModel,
+    forwardRef(() => NotificationsModule),
+    forwardRef(() => IndigeneCertificateModule),
+    forwardRef(() => IdcardModule),
+    forwardRef(() => TransactionModule),
+
     JwtModule.register({
       secret: process.env.SECRET_KEY,
       signOptions: { expiresIn: '1h' },
@@ -31,7 +41,7 @@ import { LgaModel } from 'src/lga/lga.model';
     CloudinaryService,
   ],
 
-  exports: [UsersService],
+  exports: [UsersService, MongooseModule],
 })
 export class UsersModule {}
 

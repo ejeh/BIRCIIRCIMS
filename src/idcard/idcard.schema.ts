@@ -2,6 +2,7 @@ import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { ApiProperty } from '@nestjs/swagger';
 import { Document } from 'mongoose';
+// import { Neighbor, NeighborSchema } from './idcard-neighbor.schema';
 
 @Schema({
   timestamps: {
@@ -30,7 +31,7 @@ export class IdCard extends Document {
   lastname: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: true, unique: true })
+  @Prop({ type: mongoose.SchemaTypes.String, required: true })
   email: string;
 
   @ApiProperty()
@@ -75,7 +76,6 @@ export class IdCard extends Document {
   @Prop({
     type: mongoose.SchemaTypes.String,
     required: true,
-    unique: true,
   })
   phone: number;
 
@@ -90,6 +90,26 @@ export class IdCard extends Document {
 
   @Prop({ type: mongoose.SchemaTypes.String })
   verificationHash: string; // Hash for verification
+
+  created_at?: Date;
+  updated_at?: Date;
+
+  @Prop({ type: mongoose.SchemaTypes.Date, default: null })
+  approvalDate: Date;
+
+  @Prop({
+    type: mongoose.Types.ObjectId,
+    ref: 'User',
+    required: false,
+  })
+  approvedBy: mongoose.Types.ObjectId;
+
+  @Prop({ type: mongoose.SchemaTypes.String, default: 'pending' })
+  paymentStatus: string; // Can be 'pending' or 'paid'
+
+  // @ApiProperty()
+  //   @Prop({ type: [NeighborSchema] }) // Embed the next-of-kin schema
+  //   neighbors?: Neighbor[];
 }
 
 export const IdCardSchema = SchemaFactory.createForClass(IdCard);

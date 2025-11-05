@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { IdCard } from './idcard.schema';
@@ -6,15 +11,18 @@ import { UserNotFoundException } from 'src/common/exception';
 import puppeteer from 'puppeteer';
 import path from 'path';
 import * as fs from 'fs';
+import * as crypto from 'crypto';
 import { Types } from 'mongoose';
 import { NotificationsGateway } from 'src/notifications/notifications.gateway';
+import { NotificationsService } from 'src/notifications/notifications.service';
+// import { VerificationStatus } from './idcard-neighbor.schema';
 
 @Injectable()
 export class IdcardService {
   constructor(
     @InjectModel(IdCard.name)
     public readonly idCardModel: Model<IdCard>,
-    private readonly notificationsGateway: NotificationsGateway,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async generateUniqueNumber(): Promise<string> {
@@ -37,31 +45,158 @@ export class IdcardService {
     return bin;
   }
 
-  async createIdCard(data: Partial<IdCard>): Promise<IdCard> {
-    return this.idCardModel.create(data);
+  async createIdCard(data: Partial<IdCard>, id: any): Promise<IdCard> {
+    const existingRequest = await this.idCardModel
+      .findOne({ userId: id })
+      .exec();
+    if (existingRequest && existingRequest.status === 'Pending') {
+      // Duplicate key error (MongoDB)
+      throw new HttpException(
+        'A pending ID card request already exists for this user.',
+
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    const newRequest = await this.idCardModel.create(data);
+
+    // 🔔 Send notification
+    await this.notificationsService.createSystemNotification(
+      data.userId,
+      'ID Card Request Submitted',
+      'Your ID card request has been successfully submitted and is pending review.',
+      'idcard',
+      '/dashboard/idcard-requests',
+    );
+    return newRequest;
   }
+
+  // async generateVerificationToken(): Promise<string> {
+  //   return crypto.randomBytes(32).toString('hex');
+  // }
+
+  // async verifyNeighbor(
+  //   token: string,
+  //   verificationData: {
+  //     isNeighbor: boolean;
+  //     knownDuration: string;
+  //     knowsApplicant: boolean;
+  //     comments?: string;
+  //   },
+  // ) {
+  //   // Find the ID card with the neighbor having this verification token
+  //   const idCard = await this.idCardModel.findOne({
+  //     'neighbors.verificationToken': token,
+  //     'neighbors.verificationExpiresAt': { $gt: new Date() },
+  //   });
+
+  //   if (!idCard) {
+  //     throw new NotFoundException('Invalid or expired verification token');
+  //   }
+
+  //   // Find the neighbor
+  //   const neighborIndex = idCard.neighbors.findIndex(
+  //     (n) => n.verificationToken === token,
+  //   );
+
+  //   if (neighborIndex === -1) {
+  //     throw new NotFoundException('Neighbor not found');
+  //   }
+
+  //   // Update neighbor verification data by mutating the existing subdocument (preserves Mongoose doc methods)
+  //   const neighbor = idCard.neighbors[neighborIndex];
+  //   Object.assign(neighbor, verificationData);
+  //   neighbor.status = VerificationStatus.VERIFIED;
+  //   neighbor.verifiedAt = new Date();
+
+  //   // Check if all neighbors are verified
+  //   const allNeighborsVerified = idCard.neighbors.every(
+  //     (n) => n.status === 'verified',
+  //   );
+
+  //   if (allNeighborsVerified) {
+  //     idCard.status = 'verified';
+  //   }
+
+  //   // Save the updated ID card
+  //   await idCard.save();
+
+  //   return {
+  //     message: 'Neighbor verification completed successfully',
+  //     allVerified: allNeighborsVerified,
+  //   };
+  // }
 
   async findCardById(id: string): Promise<IdCard> {
     return this.idCardModel.findById(id);
   }
 
+  async getLocationStats() {
+    // 1️⃣ Aggregate number of requests per location (e.g., LGA)
+    const stats = await this.idCardModel.aggregate([
+      {
+        $group: {
+          _id: '$lga', // or 'location' depending on your schema
+          totalRequests: { $sum: 1 },
+        },
+      },
+      { $sort: { totalRequests: -1 } },
+    ]);
+
+    // 2️⃣ Add coordinates manually (or from a Location model if you have one)
+    const coordinates: Record<string, { lat: number; lng: number }> = {
+      Ado: { lat: 7.25, lng: 7.85 },
+      Agatu: { lat: 7.833, lng: 7.883 },
+      Apa: { lat: 7.767, lng: 7.967 },
+      Buruku: { lat: 7.45, lng: 9.2 },
+      Gboko: { lat: 7.321, lng: 9.002 },
+      Guma: { lat: 7.967, lng: 8.717 },
+      'Gwer East': { lat: 7.433, lng: 8.75 },
+      'Gwer West': { lat: 7.583, lng: 8.417 },
+      'Katsina-Ala': { lat: 7.166, lng: 9.283 },
+      Konshisha: { lat: 7.167, lng: 8.667 },
+      Kwande: { lat: 6.833, lng: 9.5 },
+      Logo: { lat: 7.483, lng: 9.133 },
+      Makurdi: { lat: 7.733, lng: 8.536 },
+      Obi: { lat: 7.85, lng: 8.367 },
+      Ogbadibo: { lat: 7.067, lng: 7.75 },
+      Ohimini: { lat: 7.25, lng: 7.933 },
+      Oju: { lat: 6.85, lng: 8.417 },
+      Okpokwu: { lat: 7.05, lng: 7.817 },
+      Otukpo: { lat: 7.192, lng: 8.129 },
+      Tarka: { lat: 7.5, lng: 9.0 },
+      Ukum: { lat: 7.133, lng: 9.767 },
+      Ushongo: { lat: 7.083, lng: 9.017 },
+      Vandeikya: { lat: 6.783, lng: 9.067 },
+    };
+
+    // 3️⃣ Map results into frontend-friendly format
+    return stats.map((item) => ({
+      name: item._id || 'Unknown',
+      totalRequests: item.totalRequests,
+      lat: coordinates[item._id]?.lat || 7.5, // fallback center
+      lng: coordinates[item._id]?.lng || 8.8,
+    }));
+  }
+
   async findById(id: string): Promise<IdCard> {
     const user = await this.idCardModel
       .findById(id)
+      .populate('approvedBy', 'firstname lastname email')
       .populate(
         'userId',
-        'firstname lastname email passportPhoto isProfileCompleted stateOfOrigin lgaOfOrigin',
+        'firstname lastname email isProfileCompleted stateOfOrigin lgaOfOrigin',
       )
       .exec();
     if (!user) {
       throw UserNotFoundException();
     }
+
     return user;
   }
 
   async findOne(id: string): Promise<IdCard> {
     const idCard = await this.idCardModel.findOne({ userId: id });
-
     return idCard;
   }
 
@@ -99,47 +234,59 @@ export class IdcardService {
       .exec();
   }
 
-  async approveIdCard(id: string): Promise<IdCard> {
-    const updatedCard = await this.idCardModel
-      .findByIdAndUpdate(id, { status: 'Approved' }, { new: true })
+  async approveIdCard(id: string, approvedBy: string): Promise<IdCard> {
+    const request = await this.idCardModel
+      .findByIdAndUpdate(
+        id,
+        {
+          status: 'Approved',
+          approvalDate: new Date(),
+          approvedBy: new Types.ObjectId(approvedBy),
+        },
+        { new: true },
+      )
       .exec();
-    // Emit WebSocket notification
-    this.notificationsGateway.emitStatusUpdate(id, 'Approved', '');
-
-    if ((updatedCard && updatedCard.userId, toString())) {
-      // 2. Emit WebSocket notification with **userId** instead of card id
-      this.notificationsGateway.emitStatusUpdate(
-        updatedCard.userId.toString(),
-        'Approved',
-        '',
+    if (request) {
+      await this.notificationsService.createSystemNotification(
+        request.userId,
+        'ID Card Approved',
+        'Congratulations! Your ID card request has been approved.',
+        'idcard',
+        '/dashboard/idcard-requests',
       );
     }
-    return updatedCard;
+    return request;
   }
 
-  async rejectCard(id: string, reason: string): Promise<IdCard> {
-    const updatedCard = await this.idCardModel
+  async rejectCard(
+    id: string,
+    reason: string,
+    rejectedBy: string,
+  ): Promise<IdCard> {
+    const request = await this.idCardModel
       .findByIdAndUpdate(
         id,
         {
           status: 'Rejected',
           rejectionReason: reason,
           resubmissionAllowed: true,
+          approvedBy: new Types.ObjectId(rejectedBy),
+          approvalDate: new Date(),
         },
         { new: true },
       )
       .exec();
-    // Emit WebSocket notification
-    if ((updatedCard && updatedCard.userId, toString())) {
-      // 2. Emit WebSocket notification with **userId** instead of card id
-      this.notificationsGateway.emitStatusUpdate(
-        updatedCard.userId.toString(),
-        'Rejected',
-        reason,
+    if (request) {
+      await this.notificationsService.createSystemNotification(
+        request.userId,
+        'ID Card Request Rejected',
+        `Your ID card request was rejected. Reason: ${reason}`,
+        'idcard',
+        '/dashboard/idcard-requests',
       );
     }
 
-    return updatedCard;
+    return request;
   }
 
   // Delete Certificate
@@ -269,5 +416,26 @@ export class IdcardService {
       console.error('Error updating verification hash:', error);
       throw error;
     }
+  }
+
+  /**
+   * Updates the payment status of an ID card request.
+   * @param id The ID of the ID card request.
+   * @param status The new payment status ('paid', 'failed', etc.).
+   * @returns The updated ID card document.
+   */
+  async updatePaymentStatus(id: string, status: string): Promise<IdCard> {
+    const updatedCard = await this.idCardModel
+      .findByIdAndUpdate(
+        id,
+        { paymentStatus: status },
+        { new: true }, // Return the updated document
+      )
+      .exec();
+
+    if (!updatedCard) {
+      throw new NotFoundException(`ID Card request with ID ${id} not found.`);
+    }
+    return updatedCard;
   }
 }
