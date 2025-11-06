@@ -65,13 +65,13 @@ export class IndigeneCertificateController {
             message: 'Passport Photo must be an image (.jpg, .jpeg, .png)',
           },
           idCard: {
-            mime: ['application/pdf'],
-            ext: ['.pdf'],
+            mime: ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'],
+            ext: ['.pdf', '.jpeg', '.jpg', '.png'],
             message: 'ID Card must be a PDF file',
           },
           birthCertificate: {
-            mime: ['application/pdf'],
-            ext: ['.pdf'],
+            mime: ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'],
+            ext: ['.pdf', '.jpeg', '.jpg', '.png'],
             message: 'Birth Certificate must be a PDF file',
           },
         };
@@ -143,7 +143,7 @@ export class IndigeneCertificateController {
       birthCertificate: birthCertificateUrl,
     };
 
-    return this.indigeneCertificateService.createCertificate(data, req.user);
+    return this.indigeneCertificateService.createCertificate(data, req.user.id);
   }
 
   // Step 2: Download attestation template
