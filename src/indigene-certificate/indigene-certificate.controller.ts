@@ -67,12 +67,12 @@ export class IndigeneCertificateController {
           idCard: {
             mime: ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'],
             ext: ['.pdf', '.jpeg', '.jpg', '.png'],
-            message: 'ID Card must be a PDF file',
+            message: 'ID Card must be an image or a PDF file',
           },
           birthCertificate: {
             mime: ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'],
             ext: ['.pdf', '.jpeg', '.jpg', '.png'],
-            message: 'Birth Certificate must be a PDF file',
+            message: 'Birth Certificate must be an image or a PDF file',
           },
         };
 
