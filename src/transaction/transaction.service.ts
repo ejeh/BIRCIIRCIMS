@@ -182,7 +182,7 @@ export class TransactionService {
       const updatedTransaction = await this.transactionModel
         .findOneAndUpdate(
           { reference },
-          { status: 'successful' },
+          { status: 'success' },
           { new: true }, // <-- Important: return the updated doc
         )
         .exec();

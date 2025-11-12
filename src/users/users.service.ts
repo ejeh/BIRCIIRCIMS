@@ -451,6 +451,32 @@ export class UsersService {
       );
     }
 
+    // NEW: Check for duplicate phone numbers and emails across all references
+    const phoneNumbers = allReferencesData
+      .filter((ref) => ref.phone)
+      .map((ref) => ref.phone);
+
+    const emails = allReferencesData
+      .filter((ref) => ref.email)
+      .map((ref) => ref.email);
+
+    const uniquePhones = new Set(phoneNumbers);
+    const uniqueEmails = new Set(emails);
+
+    if (uniquePhones.size !== phoneNumbers.length) {
+      throw new HttpException(
+        'Duplicate phone numbers found in references. Each reference must have a unique phone number.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (uniqueEmails.size !== emails.length) {
+      throw new HttpException(
+        'Duplicate emails found in references. Each reference must have a unique email.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const now = new Date();
 
     // Mark expired verifications
