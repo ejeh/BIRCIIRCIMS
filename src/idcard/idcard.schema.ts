@@ -73,11 +73,15 @@ export class IdCard extends Document {
   utilityBill: string; // URL for the signed attestation letter
 
   @ApiProperty()
+  @Prop({ required: true })
+  passportPhoto: string; // File path or URL for the passport photo
+
+  @ApiProperty()
   @Prop({
     type: mongoose.SchemaTypes.String,
     required: true,
   })
-  phone: number;
+  phone: string;
 
   @Prop({ required: false, default: null })
   qrCodeUrl?: string; // URL for the QR code
@@ -107,9 +111,12 @@ export class IdCard extends Document {
   @Prop({ type: mongoose.SchemaTypes.String, default: 'pending' })
   paymentStatus: string; // Can be 'pending' or 'paid'
 
-  // @ApiProperty()
-  //   @Prop({ type: [NeighborSchema] }) // Embed the next-of-kin schema
-  //   neighbors?: Neighbor[];
+  @Prop()
+  lastResubmittedAt?: Date;
+
+  @ApiProperty({ required: false, nullable: true })
+  @Prop({ type: mongoose.SchemaTypes.Date, default: null })
+  downloadExpiryDate: Date;
 }
 
 export const IdCardSchema = SchemaFactory.createForClass(IdCard);

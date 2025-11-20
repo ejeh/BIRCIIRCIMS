@@ -17,6 +17,8 @@ import { UserSchema } from './users/users.schema';
 import mongoose from 'mongoose';
 
 import { webcrypto as crypto } from 'crypto';
+import { RolePermissionSchema } from './roles/role-permission.schema';
+import { getDefaultPermissions } from './roles/roles-permission.default';
 
 if (!globalThis.crypto) {
   (globalThis as any).crypto = crypto;
@@ -76,6 +78,38 @@ export const configureApp = (app: any) => {
   );
 };
 
+async function seedPermissions() {
+  console.log('🔑 Starting permissions seeding...');
+  const RolePermissionModel = mongoose.model(
+    'RolePermission',
+    RolePermissionSchema,
+  );
+  const roles = Object.values(UserRole);
+
+  for (const role of roles) {
+    const existingRolePermission = await RolePermissionModel.findOne({ role });
+
+    if (!existingRolePermission) {
+      // Create if it doesn't exist
+      await RolePermissionModel.create({
+        role,
+        permissions: getDefaultPermissions(role),
+      });
+      console.log(`✅ Created permissions for role: ${role}`);
+    } else if (existingRolePermission.permissions.length === 0) {
+      // Update if it exists but is empty
+      await RolePermissionModel.updateOne(
+        { role },
+        { $set: { permissions: getDefaultPermissions(role) } },
+      );
+      console.log(`✅ Updated empty permissions for role: ${role}`);
+    } else {
+      console.log(`ℹ️ Permissions already exist for role: ${role}`);
+    }
+  }
+  console.log('🔑 Permissions seeding completed.');
+}
+
 export async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
@@ -118,6 +152,9 @@ export async function bootstrap() {
   } else {
     console.log('ℹ️ Global admin already exists');
   }
+
+  // 3. Seed permissions after user creation
+  await seedPermissions();
 
   app.useStaticAssets(join(__dirname, '..', 'public')); // Serve static files
   app.setBaseViewsDir(join(__dirname, '..', 'views'));

@@ -20,6 +20,7 @@ import { NotificationsService } from 'src/notifications/notifications.service';
 import { NotificationSchema } from 'src/notifications/notications.schema';
 import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 import { JwtService } from '@nestjs/jwt';
+import { ResubmissionService } from 'src/common/services/resubmission.service';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { JwtService } from '@nestjs/jwt';
     NotificationsService,
     NotificationsGateway,
     JwtService,
+    ResubmissionService,
   ],
 
   exports: [IndigeneCertificateService, MongooseModule],

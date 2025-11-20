@@ -1,8 +1,10 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
+  InternalServerErrorException,
   Options,
   Param,
   Patch,
@@ -17,7 +19,10 @@ import {
 import { NotFoundException } from '@nestjs/common';
 import { IdcardService } from './idcard.service';
 import { UsersService } from 'src/users/users.service';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import {
+  AnyFilesInterceptor,
+  FilesInterceptor,
+} from '@nestjs/platform-express';
 import path, { extname, join } from 'path';
 import { Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -39,6 +44,10 @@ import * as crypto from 'crypto';
 import axios, { AxiosResponse } from 'axios';
 import { MailService } from 'src/mail/mail.service';
 import { SmsService } from 'src/sms/sms.service';
+import { FileSizeValidationPipe } from 'src/common/pipes/file-size-validation.pipe';
+import { UpdateIdCardDto } from './dto/update-idcard.dto';
+import { PassportPhotoQualityPipe } from 'src/common/pipes/passport-photo-quality.pipes';
+import { GenericImageValidationPipe } from 'src/common/pipes/generic-image-validation.pipe';
 
 @ApiTags('idCard.controller')
 @UseGuards(JwtAuthGuard)
@@ -49,201 +58,113 @@ export class IdcardController {
     private readonly userService: UsersService,
     private readonly cloudinaryService: CloudinaryService,
     private readonly httpService: HttpService,
-    private readonly mailService: MailService,
-    private readonly smsService: SmsService,
   ) {}
 
   @Post('create')
-  @UseInterceptors(FilesInterceptor('files', 2))
+  @UseInterceptors(
+    AnyFilesInterceptor({
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (req, file, cb) => {
+        const fieldTypeRules = {
+          passportPhoto: {
+            mime: ['image/jpeg', 'image/png', 'image/jpg'],
+            ext: ['.jpeg', '.jpg', '.png'],
+            message: 'Passport Photo must be an image (.jpg, .jpeg, .png)',
+          },
+          ref_letter: {
+            mime: ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'],
+            ext: ['.pdf', '.jpeg', '.jpg', '.png'],
+            message: 'ID Card must be an image or a PDF file',
+          },
+          utilityBill: {
+            mime: ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'],
+            ext: ['.pdf', '.jpeg', '.jpg', '.png'],
+            message: 'Birth Certificate must be an image or a PDF file',
+          },
+        };
+
+        const rules = fieldTypeRules[file.fieldname];
+        const ext = extname(file.originalname).toLowerCase();
+
+        console.log(rules);
+
+        if (!rules) {
+          return cb(
+            new BadRequestException(`Unexpected file field: ${file.fieldname}`),
+            false,
+          );
+        }
+
+        const isValidMime = rules.mime.includes(file.mimetype);
+        const isValidExt = rules.ext.includes(ext);
+
+        if (!isValidMime || !isValidExt) {
+          return cb(new BadRequestException(rules.message), false);
+        }
+
+        cb(null, true);
+      },
+    }),
+  )
   async createIdCard(
     @Body() body: any,
     @Req() req,
-    @UploadedFiles() files: Array<Express.Multer.File>,
+    @UploadedFiles(
+      // new GenericImageValidationPipe(),
+      new PassportPhotoQualityPipe(),
+      new FileSizeValidationPipe({
+        passportPhoto: { maxSize: 2 * 1024 * 1024 },
+        ref_letter: { maxSize: 5 * 1024 * 1024 }, // 3MB
+        utilityBill: { maxSize: 5 * 1024 * 1024 }, // 5MB
+      }),
+    )
+    files: Array<Express.Multer.File>,
   ) {
-    const user = req.user as any;
-    const [refLetterUrl, utilityBillUrl] = await Promise.all([
-      this.cloudinaryService.uploadFile(files[0], 'idcards/ref_letters'),
-      this.cloudinaryService.uploadFile(files[1], 'idcards/utility_bills'),
-    ]);
+    await this.idcardService.canUserCreateIdcard(req.user.id);
 
-    const data = {
+    // 2. Map files by fieldname
+    const fileMap = files.reduce(
+      (acc, file) => ({ ...acc, [file.fieldname]: file }),
+      {},
+    );
+
+    // 3. Define required document fields and their Cloudinary folders
+    const documentConfig = {
+      ref_letter: 'idcards/ref_letters',
+      utilityBill: 'idcards/utility_bills',
+      passportPhoto: 'idcards/passportPhoto',
+    };
+
+    // 4. Dynamically upload all required files
+    const uploadPromises = Object.entries(documentConfig).map(
+      async ([fieldName, folder]) => {
+        if (!fileMap[fieldName]) {
+          throw new BadRequestException(`${fieldName} file is required.`);
+        }
+        return this.cloudinaryService.uploadFile(fileMap[fieldName], folder);
+      },
+    );
+
+    const [passportPhotoUrl, refLetterUrl, utilityBillUrl] =
+      await Promise.all(uploadPromises);
+
+    // 5. Create the FINAL data object to save to the database
+    const dataToSave = {
       ...body,
       bin: await this.idcardService.generateUniqueBIN(),
       ref_letter: refLetterUrl,
       utilityBill: utilityBillUrl,
+      passportPhoto: passportPhotoUrl,
     };
 
-    return this.idcardService.createIdCard(data, user.id);
+    return this.idcardService.createIdCard(dataToSave, req.user.id);
   }
-
-  // @Post('create')
-  // @UseInterceptors(FilesInterceptor('files', 2))
-  // async createIdCard(
-  //   @Body() body: any,
-  //   @Req() req,
-  //   @UploadedFiles() files: Array<Express.Multer.File>,
-  // ) {
-  //   const user = req.user as any;
-  //   const [refLetterUrl, utilityBillUrl] = await Promise.all([
-  //     this.cloudinaryService.uploadFile(files[0], 'idcards/ref_letters'),
-  //     this.cloudinaryService.uploadFile(files[1], 'idcards/utility_bills'),
-  //   ]);
-
-  //   // Process family members and generate verification tokens
-  //   let processedFamily = [];
-  //   if (body.family && Array.isArray(body.family)) {
-  //     processedFamily = await Promise.all(
-  //       body.family.map(async (familyMember) => {
-  //         // Generate verification token and link
-  //         const verificationToken =
-  //           await this.idcardService.generateVerificationToken();
-  //         const verificationLink = `${process.env.FRONTEND_URL}/verify-family/${verificationToken}`;
-  //         const verificationExpiresAt = new Date();
-  //         verificationExpiresAt.setDate(verificationExpiresAt.getDate() + 7); // Token expires in 7 days
-
-  //         // Send verification notification to family member
-  //         if (familyMember.email) {
-  //           await this.mailService.sendFamilyVerificationEmail(
-  //             familyMember.email,
-  //             familyMember.name,
-  //             verificationLink,
-  //             user.name,
-  //           );
-  //         }
-
-  //         if (familyMember.phone) {
-  //           await this.smsService.sendSms(
-  //             familyMember.phone,
-  //             familyMember.name,
-  //             verificationLink,
-  //             user.name,
-  //           );
-  //         }
-
-  //         return {
-  //           ...familyMember,
-  //           verificationToken,
-  //           verificationLink,
-  //           verificationExpiresAt,
-  //           status: 'pending',
-  //           isFollowUpSent: false,
-  //         };
-  //       }),
-  //     );
-  //   }
-
-  //   const data = {
-  //     ...body,
-  //     bin: await this.idcardService.generateUniqueBIN(),
-  //     ref_letter: refLetterUrl,
-  //     utilityBill: utilityBillUrl,
-  //     family: processedFamily,
-  //   };
-
-  //   return this.idcardService.createIdCard(data, user.id);
-  // }
-
-  // @Post('verify-family/:token')
-  // async verifyFamily(
-  //   @Param('token') token: string,
-  //   @Body()
-  //   verificationData: {
-  //     isResident: boolean;
-  //     knownDuration: string;
-  //     knowsApplicant: boolean;
-  //     comments?: string;
-  //   },
-  // ) {
-  //   return this.idcardService.verifyFamilyMember(token, verificationData);
-  // }
-
-  // @Post('create')
-  // @UseInterceptors(FilesInterceptor('files', 2))
-  // async createIdCard(
-  //   @Body() body: any,
-  //   @Req() req,
-  //   @UploadedFiles() files: Array<Express.Multer.File>,
-  // ) {
-  //   const user = req.user as any;
-  //   const [refLetterUrl, utilityBillUrl] = await Promise.all([
-  //     this.cloudinaryService.uploadFile(files[0], 'idcards/ref_letters'),
-  //     this.cloudinaryService.uploadFile(files[1], 'idcards/utility_bills'),
-  //   ]);
-
-  //   // Process neighbors and generate verification tokens
-  //   let processedNeighbors = [];
-  //   if (body.neighbors && Array.isArray(body.neighbors)) {
-  //     processedNeighbors = await Promise.all(
-  //       body.neighbors.map(async (neighbor) => {
-  //         // Generate verification token and link
-  //         const verificationToken =
-  //           await this.idcardService.generateVerificationToken();
-  //         const verificationLink = `${process.env.FRONTEND_URL}/verify-neighbor/${verificationToken}`;
-  //         const verificationExpiresAt = new Date();
-  //         verificationExpiresAt.setDate(verificationExpiresAt.getDate() + 7); // Token expires in 7 days
-
-  //         // Send verification notification to neighbor
-  //         if (neighbor.email) {
-  //           await this.mailService.sendNeighborVerificationEmail(
-  //             neighbor.email,
-  //             neighbor.name,
-  //             verificationLink,
-  //             user.name,
-  //           );
-  //         }
-
-  //         if (neighbor.phone) {
-  //           await this.smsService.sendNeighborVerificationSms(
-  //             neighbor.phone,
-  //             neighbor.name,
-  //             verificationLink,
-  //             user.name,
-  //           );
-  //         }
-
-  //         return {
-  //           ...neighbor,
-  //           verificationToken,
-  //           verificationLink,
-  //           verificationExpiresAt,
-  //           status: 'pending',
-  //           isFollowUpSent: false,
-  //         };
-  //       }),
-  //     );
-  //   }
-
-  //   const data = {
-  //     ...body,
-  //     bin: await this.idcardService.generateUniqueBIN(),
-  //     ref_letter: refLetterUrl,
-  //     utilityBill: utilityBillUrl,
-  //     neighbors: processedNeighbors,
-  //   };
-
-  //   return this.idcardService.createIdCard(data, user.id);
-  // }
-
-  // // Add endpoint for neighbor verification
-  // @Post('verify-neighbor/:token')
-  // async verifyNeighbor(
-  //   @Param('token') token: string,
-  //   @Body()
-  //   verificationData: {
-  //     isNeighbor: boolean;
-  //     knownDuration: string;
-  //     knowsApplicant: boolean;
-  //     comments?: string;
-  //   },
-  // ) {
-  //   return this.idcardService.verifyNeighbor(token, verificationData);
-  // }
 
   @Get('get-all-request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: IdCard, isArray: true })
   @Roles(UserRole.GLOBAL_ADMIN)
-  async getCertsRequest(@Req() req: Request) {
+  async getCertsRequest() {
     return await this.idcardService.idCardModel
       .find({})
       .populate('approvedBy', 'firstname lastname email')
@@ -257,12 +178,7 @@ export class IdcardController {
   @Get('card-request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: IdCard, isArray: true })
-  @Roles(
-    UserRole.SUPPORT_ADMIN,
-    UserRole.SUPER_ADMIN,
-    UserRole.KINDRED_HEAD,
-    UserRole.GLOBAL_ADMIN,
-  )
+  @Roles(UserRole.SUPPORT_ADMIN, UserRole.KINDRED_HEAD, UserRole.GLOBAL_ADMIN)
   async getRequestsByStatuses(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
@@ -326,6 +242,12 @@ export class IdcardController {
     return await this.idcardService.rejectCard(id, rejectionReason, approvedBy);
   }
 
+  @Get(':id/requests')
+  @ApiResponse({ type: IdCard, isArray: true })
+  async getRequestsForId(@Param('id') id: string) {
+    return await this.idcardService.findRequestsByUserId(id);
+  }
+
   @Get(':id/request')
   @ApiResponse({ type: IdCard, isArray: false })
   async getIdcardRequest(@Param('id') id: string, @Body() body: any) {
@@ -350,10 +272,29 @@ export class IdcardController {
         return res.status(404).json({ message: 'Card not found' });
       }
 
+      // if (card.downloaded) {
+      //   return res
+      //     .status(400)
+      //     .json({ message: 'Card has already been downloaded.' });
+      // }
+
+      // If already downloaded before → check expiry
       if (card.downloaded) {
-        return res
-          .status(400)
-          .json({ message: 'Card has already been downloaded.' });
+        const now = new Date();
+
+        if (!card.downloadExpiryDate || card.downloadExpiryDate < now) {
+          return res.status(400).json({
+            message: 'Download window has expired. Please request a new card.',
+          });
+        }
+      } else {
+        // First-time download → activate 10-minute window
+        card.downloaded = true;
+        // card.downloadExpiryDate = new Date(Date.now() + 10 * 60 * 1000);
+        card.downloadExpiryDate = new Date(
+          Date.now() + 3 * 30 * 24 * 60 * 60 * 1000, // 3 months
+        );
+        await card.save();
       }
 
       const date = new Date(user.DOB);
@@ -375,14 +316,8 @@ export class IdcardController {
           : 'https://api.citizenship.benuestate.gov.ng';
 
       // 2. Create QR Code URL
-      // const verificationUrl = `${getBaseUrl()}/api/idcard/verify/${id}/${hash}`;
-
-      // const qrCodeData = `Name: ${user.firstname} ${user.middlename} ${user.lastname} | issueDate: ${formattedDate} | Sex: ${user.gender} | issuer: Benue Digital Infrastructure Company | verificationUrl:${verificationUrl} `;
 
       const idCardQrCodeData = `${getBaseUrl()}/api/idcard/view/${card.id}`;
-
-      // const qrCodeData = `Name: ${user.firstname} ${user.middlename} ${user.lastname} | BIN: ${card.bin} | DOB: ${formattedDOB} | Sex: ${user.gender}`;
-
       const qrCodeUrl = await this.generateQrCode(idCardQrCodeData); // Generate QR code URL
       card.qrCodeUrl = qrCodeUrl; // Save the QR code URL in the card
 
@@ -473,7 +408,7 @@ export class IdcardController {
       .replace(/{{surname}}/g, data.lastname)
       .replace(/{{dob}}/g, formattedDOB)
       .replace(/{{bin}}/g, data.bin)
-      .replace(/{{passportPhoto}}/g, user.passportPhoto)
+      .replace(/{{passportPhoto}}/g, data.passportPhoto)
       .replace(/{{qrCodeUrl}}/g, data.qrCodeUrl)
       .replace(/{{issueDate}}/g, formattedDateOfIssue)
       .replace(/{{gender}}/g, user.gender);
@@ -481,7 +416,8 @@ export class IdcardController {
 
   private async markCardAsDownloaded(id: string): Promise<void> {
     try {
-      await this.idcardService.markAsDownloaded(id);
+      // await this.idcardService.markAsDownloaded(id);
+      await this.idcardService.markAsDownloadedForThreeMonths(id);
     } catch (updateErr) {
       console.error('Error marking certificate as downloaded:', updateErr);
     }
@@ -625,8 +561,84 @@ export class IdcardController {
   }
 
   @Post(':id/resubmit')
-  @ApiResponse({ type: IdCard, isArray: false })
-  resubmitRequest(@Param('id') id: string, @Body() updatedData: any) {
+  @UseInterceptors(
+    AnyFilesInterceptor({
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (req, file, cb) => {
+        const fieldTypeRules = {
+          passportPhotoUrl: {
+            mime: ['image/jpeg', 'image/png', 'image/jpg'],
+            ext: ['.jpeg', '.jpg', '.png'],
+          },
+          refLetterUrl: {
+            mime: ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'],
+            ext: ['.pdf', '.jpeg', '.jpg', '.png'],
+          },
+          utilityBillUrl: {
+            mime: ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'],
+            ext: ['.pdf', '.jpeg', '.jpg', '.png'],
+          },
+        };
+        const rules = fieldTypeRules[file.fieldname];
+        const ext = require('path').extname(file.originalname).toLowerCase();
+        if (
+          !rules ||
+          !rules.mime.includes(file.mimetype) ||
+          !rules.ext.includes(ext)
+        ) {
+          return cb(
+            new BadRequestException(`Invalid file type for ${file.fieldname}`),
+            false,
+          );
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async resubmitRequest(
+    @Param('id') id: string,
+    @Body() updatedData: UpdateIdCardDto,
+    @UploadedFiles(
+      // new GenericImageValidationPipe(),
+      new PassportPhotoQualityPipe({ isOptional: true }),
+      new FileSizeValidationPipe({
+        passportPhoto: { maxSize: 2 * 1024 * 1024 },
+        refLetterUrl: { maxSize: 3 * 1024 * 1024 },
+        utilityBillUrl: { maxSize: 5 * 1024 * 1024 },
+      }),
+    )
+    files: Array<Express.Multer.File>,
+  ): Promise<IdCard> {
+    const existingIdcard = await this.idcardService.findById(id);
+
+    if (files && files.length > 0) {
+      const documentType = updatedData.documentTypeToUpdate;
+      if (!documentType) {
+        throw new BadRequestException(
+          'When uploading a file, you must specify "documentTypeToUpdate" in the request body.',
+        );
+      }
+
+      const fileToUpload = files.find((f) => f.fieldname === documentType);
+      if (!fileToUpload) {
+        throw new BadRequestException(
+          `The specified document type "${documentType}" was not found in the uploaded files.`,
+        );
+      }
+
+      const oldImageUrl = existingIdcard[documentType];
+      if (oldImageUrl) {
+        await this.cloudinaryService.deleteFile(oldImageUrl);
+      }
+
+      const folder = `idcard/${documentType}`;
+      const newImageUrl = await this.cloudinaryService.uploadFile(
+        fileToUpload,
+        folder,
+      );
+      updatedData[documentType] = newImageUrl;
+    }
+
     return this.idcardService.resubmitRequest(id, updatedData);
   }
 
@@ -658,34 +670,77 @@ export class IdcardController {
   async streamDocument(
     @Param('requestId') requestId: string,
     @Param('docType') docType: 'utilityBill' | 'ref_letter',
+
     @Res() res: Response,
   ) {
     const request = await this.idcardService.findById(requestId);
 
     if (!request || !request[docType]) {
-      throw new NotFoundException(`Document '${docType}' not found`);
+      throw new NotFoundException(
+        `Document '${docType}' not found for this request.`,
+      );
     }
 
     const originalUrl = request[docType];
-    const inlineUrl = originalUrl.includes('?')
-      ? `${originalUrl}&fl_attachment=false`
-      : `${originalUrl}?fl_attachment=false`;
+
+    // --- THE KEY FIX: Determine MIME type from the URL structure ---
+    let contentType: string;
+    let fileExtension: string;
+
+    if (originalUrl.includes('/image/upload/')) {
+      // This is an image. Let's find the format from the URL.
+      // Example: .../image/upload/v12345678/public_id.jpg
+      const urlParts = originalUrl.split('/');
+      const fileName = urlParts.pop(); // Get 'public_id.jpg'
+      const format = fileName.split('.').pop()?.split('?')[0]; // Get 'jpg'
+
+      if (format) {
+        contentType = `image/${format}`;
+        fileExtension = `.${format}`;
+      } else {
+        // Fallback if no format is specified in the URL
+        console.log(
+          `Could not determine image format for URL: ${originalUrl}. Defaulting to jpeg.`,
+        );
+        contentType = 'image/jpeg';
+        fileExtension = '.jpg';
+      }
+    } else if (originalUrl.includes('/raw/upload/')) {
+      // This is a non-image file, which we will assume is a PDF.
+      contentType = 'application/pdf';
+      fileExtension = '.pdf';
+    } else {
+      // Ultimate fallback if the URL is unrecognizable
+      console.log(`Unrecognized Cloudinary URL format: ${originalUrl}`);
+      throw new InternalServerErrorException(
+        'Could not determine the type of the stored document.',
+      );
+    }
 
     try {
-      const cloudinaryRes: AxiosResponse<any> = await axios.get(inlineUrl, {
+      // We can stream the original URL directly; we don't need the `fl_attachment` param
+      // since we are setting our own `Content-Disposition` header.
+      const cloudinaryRes: AxiosResponse<any> = await axios.get(originalUrl, {
         responseType: 'stream',
       });
 
+      // --- Set the headers based on OUR determination, not Cloudinary's ---
       res.set({
-        'Content-Type':
-          cloudinaryRes.headers['content-type'] || 'application/pdf',
-        'Content-Disposition': `inline; filename="${docType}.pdf"`,
+        'Content-Type': contentType,
+        'Content-Disposition': `inline; filename="${docType}${fileExtension}"`,
+        'Cache-Control': 'public, max-age=86400',
       });
 
+      // Pipe the stream from Cloudinary to the client
       return cloudinaryRes.data.pipe(res);
     } catch (error) {
-      console.error('Error streaming document:', error.message);
-      res.status(500).send('Failed to stream document');
+      console.log(
+        `Error streaming document from Cloudinary: ${error.message}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException(
+        'Could not retrieve the document. Please try again later.',
+      );
     }
   }
 

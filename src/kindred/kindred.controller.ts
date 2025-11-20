@@ -32,7 +32,7 @@ export class KindredController {
   }
 
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPPORT_ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.SUPPORT_ADMIN)
   @Get(':userId')
   async getkindredHeads(
     @Param('userId') userId: string,

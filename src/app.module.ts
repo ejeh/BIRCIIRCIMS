@@ -31,6 +31,9 @@ import { CloudinaryService } from './cloudinary/cloudinary.service';
 import { LgaModule } from './lga/lga.module';
 import { SettingsModule } from './settings/settings.module';
 import { ReportModule } from './report/report.module';
+import { VerificationLimitsModule } from './verification-limits/verification-limits.module';
+import { RolesController } from './roles/roles.controller';
+import { RolesModule } from './roles/roles.module';
 
 // console.log(config.isProd); // boolean
 // console.log(dbUrl); // string | undefined
@@ -102,8 +105,10 @@ const DEV_TRANSPORTER = {
     LgaModule,
     SettingsModule,
     ReportModule,
+    VerificationLimitsModule,
+    RolesModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, RolesController],
   providers: [AppService, CloudinaryService],
 })
 export class AppModule implements NestModule {

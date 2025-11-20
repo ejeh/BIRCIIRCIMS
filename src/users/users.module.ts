@@ -15,6 +15,9 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { IdcardModule } from 'src/idcard/idcard.module';
 import { TransactionModule } from 'src/transaction/transaction.module';
 import { NotificationsModule } from 'src/notifications/notifications.module';
+import { VerificationLimitsModule } from 'src/verification-limits/verification-limits.module';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { RolesModule } from 'src/roles/roles.module';
 
 @Module({
   imports: [
@@ -24,11 +27,13 @@ import { NotificationsModule } from 'src/notifications/notifications.module';
     forwardRef(() => IndigeneCertificateModule),
     forwardRef(() => IdcardModule),
     forwardRef(() => TransactionModule),
+    VerificationLimitsModule,
 
     JwtModule.register({
       secret: process.env.SECRET_KEY,
       signOptions: { expiresIn: '1h' },
     }),
+    RolesModule,
   ],
   controllers: [UsersController],
 

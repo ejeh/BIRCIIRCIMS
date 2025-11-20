@@ -13,6 +13,7 @@ import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 import { JwtService } from '@nestjs/jwt';
 import { IdcardService } from 'src/idcard/idcard.service';
 import { IdCard } from 'src/idcard/idcard.schema';
+import { ResubmissionService } from 'src/common/services/resubmission.service';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { IdCard } from 'src/idcard/idcard.schema';
     NotificationsGateway,
     JwtService,
     IdcardService,
+    ResubmissionService,
   ],
   exports: [TransactionService, MongooseModule],
 })

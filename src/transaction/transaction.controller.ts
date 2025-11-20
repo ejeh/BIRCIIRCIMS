@@ -105,7 +105,7 @@ export class TransactionController {
   async getApprovedItems() {
     return this.transactionService.getApprovedItems();
   }
-  @Roles(UserRole.SUPER_ADMIN)
+  // @Roles(UserRole.SUPER_ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard) // Protect endpoint
   @Get('verify/:reference')
   async verifyPayment(@Param('reference') reference: string) {
@@ -143,14 +143,14 @@ export class TransactionController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Roles(UserRole.SUPER_ADMIN)
+  // @Roles(UserRole.SUPER_ADMIN)
   @Get(':userId')
   async getUserTransactions(@Param('userId') userId: string) {
     return this.transactionService.getUserTransactions(userId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN)
+  // @Roles(UserRole.SUPER_ADMIN)
   @Get()
   async getPaginatedData(
     @Query('page') page: number = 1,

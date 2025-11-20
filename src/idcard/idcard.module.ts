@@ -17,6 +17,7 @@ import { IndigeneCertificateModule } from 'src/indigene-certificate/indigene-cer
 import { UsersModule } from 'src/users/users.module';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { JwtService } from '@nestjs/jwt';
+import { ResubmissionService } from 'src/common/services/resubmission.service';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { JwtService } from '@nestjs/jwt';
     CloudinaryService,
     NotificationsService,
     JwtService,
+    ResubmissionService,
   ],
   exports: [IdcardService, MongooseModule],
 })

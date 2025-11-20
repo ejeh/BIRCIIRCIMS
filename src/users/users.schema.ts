@@ -17,6 +17,10 @@ import {
 import { HealthInfo, HealthInfoSchema } from './users.health.schema';
 import { Neighbor, NeighborSchema } from './users.neigbour.schema';
 import { Family, FamilySchema } from './users.family.schema';
+import {
+  RoleAssignment,
+  RoleAssignmentSchema,
+} from './users.role-assiggnment.schema';
 
 export type UserMethods = {
   getPublicData: () => UserPublicData;
@@ -108,7 +112,7 @@ export class User {
   identification?: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String })
+  @Prop({ type: mongoose.SchemaTypes.String, unique: true })
   id_number?: string;
 
   @ApiProperty()
@@ -225,6 +229,12 @@ export class User {
 
   created_at?: Date;
   updated_at?: Date;
+
+  @Prop({ type: [RoleAssignmentSchema] })
+  roleHistory?: RoleAssignment[];
+
+  @Prop({ type: mongoose.SchemaTypes.ObjectId, ref: 'User' })
+  assignedBy?: mongoose.Types.ObjectId;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

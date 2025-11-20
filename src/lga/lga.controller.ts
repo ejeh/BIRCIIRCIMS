@@ -27,7 +27,7 @@ export class LgaController {
   // ✅ CREATE
   @Post()
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN)
+  // @Roles(UserRole.SUPER_ADMIN)
   async create(@Body() createLgaDto: CreateLgaDto, @Req() req): Promise<Lga> {
     return this.lgaService.create(createLgaDto, req.user.id);
   }
@@ -35,7 +35,7 @@ export class LgaController {
   // ✅ UPDATE
   @Patch(':id')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN)
+  // @Roles(UserRole.SUPER_ADMIN)
   async update(
     @Param('id') id: string,
     @Body() updateLgaDto: UpdateLgaDto,
@@ -47,7 +47,7 @@ export class LgaController {
   // ✅ DELETE
   @Delete(':id')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN)
+  // @Roles(UserRole.SUPER_ADMIN)
   async remove(
     @Param('id') id: string,
     @Req() req,

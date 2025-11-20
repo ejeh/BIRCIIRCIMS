@@ -15,6 +15,7 @@ import {
   Delete,
   BadRequestException,
   NotFoundException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { UserNotFoundException } from 'src/common/exception';
 
@@ -41,6 +42,13 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import axios, { AxiosResponse } from 'axios';
+import { FileSizeValidationPipe } from '../common/pipes/file-size-validation.pipe';
+import { PassportPhotoQualityPipe } from 'src/common/pipes/passport-photo-quality.pipes';
+import {
+  CreateCertificateDto,
+  UpdateCertificateDto,
+} from './dto/update-certificate.dto';
+import { GenericImageValidationPipe } from 'src/common/pipes/generic-image-validation.pipe';
 
 @ApiTags('indigene-certificate.controller')
 @UseGuards(JwtAuthGuard)
@@ -98,52 +106,63 @@ export class IndigeneCertificateController {
     }),
   )
   async createCertificate(
-    @Body() body: any,
-    @UploadedFiles() files: Array<Express.Multer.File>,
+    // ✅ 2. USE THE DTO HERE. This is the most important change.
+    @Body() createCertificateDto: CreateCertificateDto,
+    @UploadedFiles(
+      new PassportPhotoQualityPipe(),
+      new FileSizeValidationPipe({
+        passportPhoto: { maxSize: 2 * 1024 * 1024 },
+        idCard: { maxSize: 3 * 1024 * 1024 },
+        birthCertificate: { maxSize: 5 * 1024 * 1024 },
+      }),
+    )
+    files: Array<Express.Multer.File>,
     @Req() req,
   ) {
-    // ✅ Map uploaded files by field name
+    // 1. Validate business rules first
+    await this.indigeneCertificateService.canUserCreateCertificate(req.user.id);
+
+    // 2. Map files by fieldname
     const fileMap = files.reduce(
-      (acc, file) => {
-        acc[file.fieldname] = file;
-        return acc;
-      },
-      {} as Record<string, Express.Multer.File>,
+      (acc, file) => ({ ...acc, [file.fieldname]: file }),
+      {},
     );
 
-    const requiredFields = ['passportPhoto', 'idCard', 'birthCertificate'];
-    for (const field of requiredFields) {
-      if (!fileMap[field]) {
-        throw new BadRequestException(`${field} file is required.`);
-      }
-    }
+    // 3. Define required document fields and their Cloudinary folders
+    const documentConfig = {
+      passportPhoto: 'certificates/passport',
+      idCard: 'certificates/idcard',
+      birthCertificate: 'certificates/birthcert',
+    };
 
-    // ✅ Upload files to Cloudinary
+    // 4. Dynamically upload all required files
+    const uploadPromises = Object.entries(documentConfig).map(
+      async ([fieldName, folder]) => {
+        if (!fileMap[fieldName]) {
+          throw new BadRequestException(`${fieldName} file is required.`);
+        }
+        return this.cloudinaryService.uploadFile(fileMap[fieldName], folder);
+      },
+    );
+
     const [passportPhotoUrl, idCardUrl, birthCertificateUrl] =
-      await Promise.all([
-        this.cloudinaryService.uploadFile(
-          fileMap.passportPhoto,
-          'certificates/passport',
-        ),
-        this.cloudinaryService.uploadFile(
-          fileMap.idCard,
-          'certificates/idcard',
-        ),
-        this.cloudinaryService.uploadFile(
-          fileMap.birthCertificate,
-          'certificates/birthcert',
-        ),
-      ]);
+      await Promise.all(uploadPromises);
 
-    const data = {
-      ...body,
+    // 5. Create the FINAL data object to save to the database
+    const dataToSave = {
+      ...createCertificateDto, // Spread the validated text fields from the DTO
       refNumber: uuid(),
+      // Add the newly uploaded file URLs
       passportPhoto: passportPhotoUrl,
       idCard: idCardUrl,
       birthCertificate: birthCertificateUrl,
     };
 
-    return this.indigeneCertificateService.createCertificate(data, req.user.id);
+    // 6. Call the service with the complete data object
+    return this.indigeneCertificateService.createCertificate(
+      dataToSave,
+      req.user.id,
+    );
   }
 
   // Step 2: Download attestation template
@@ -187,10 +206,27 @@ export class IndigeneCertificateController {
         return res.status(404).json({ message: 'Certificate not found' });
       }
 
+      // If already downloaded before → check expiry
       if (certificate.downloaded) {
-        return res
-          .status(400)
-          .json({ message: 'Certificate has already been downloaded.' });
+        const now = new Date();
+
+        if (
+          !certificate.downloadExpiryDate ||
+          certificate.downloadExpiryDate < now
+        ) {
+          return res.status(400).json({
+            message:
+              'Download window has expired. Please request a new certificate.',
+          });
+        }
+      } else {
+        // First-time download → activate 10-minute window
+        certificate.downloaded = true;
+        // certificate.downloadExpiryDate = new Date(Date.now() + 10 * 60 * 1000);
+        certificate.downloadExpiryDate = new Date(
+          Date.now() + 3 * 30 * 24 * 60 * 60 * 1000, // 3 months
+        );
+        await certificate.save();
       }
 
       const dateOfIssue = new Date();
@@ -214,10 +250,6 @@ export class IndigeneCertificateController {
           : 'https://api.citizenship.benuestate.gov.ng';
 
       // 2. Create QR Code URL
-      // const verificationUrl = `${getBaseUrl()}/api/indigene/certificate/verify/${id}/${hash}`;
-
-      // const qrCodeData = `Name: ${user.firstname} ${user.middlename} ${user.lastname} | issueDate: ${formattedDate} | Sex: ${user.gender} | issuer: Benue Digital Infrastructure Company | verificationUrl:${verificationUrl} `;
-
       const certificateQrCodeData = `${getBaseUrl()}/api/indigene/certificate/view/${id}`;
       const qrCodeUrl = await this.generateQrCode(certificateQrCodeData); // Generate QR code URL
       certificate.qrCodeUrl = qrCodeUrl; // Save the QR code URL in the certificate
@@ -326,7 +358,8 @@ export class IndigeneCertificateController {
 
   private async markCertificateAsDownloaded(id: string): Promise<void> {
     try {
-      await this.indigeneCertificateService.markAsDownloaded(id);
+      // await this.indigeneCertificateService.markAsDownloaded(id);
+      await this.indigeneCertificateService.markAsDownloadedForThreeMonths(id);
     } catch (updateErr) {
       console.error('Error marking certificate as downloaded:', updateErr);
     }
@@ -467,21 +500,17 @@ export class IndigeneCertificateController {
   @Get('get-all-request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: Certificate, isArray: true })
-  @Roles(UserRole.SUPER_ADMIN, UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN)
   async getCertsRequest(@Req() req: Request) {
     return await this.indigeneCertificateService.certificateModel
       .find({})
       .populate('approvedBy', 'firstname lastname email')
-      .populate(
-        'userId',
-        'firstname lastname email stateOfOrigin lgaOfOrigin isProfileCompleted ',
-      )
       .exec();
   }
 
   @Patch(':id/approve')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN, UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN)
   @ApiResponse({ type: Certificate, isArray: false })
   async approveCert(
     @Param('id') id: string,
@@ -495,7 +524,7 @@ export class IndigeneCertificateController {
 
   @Patch(':id/verify')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN, UserRole.KINDRED_HEAD)
+  @Roles(UserRole.KINDRED_HEAD)
   @ApiResponse({ type: Certificate, isArray: false })
   async verifyRequest(@Param('id') id: string, @Body() Body: any) {
     return await this.indigeneCertificateService.verifyRequest(id);
@@ -503,7 +532,7 @@ export class IndigeneCertificateController {
 
   @Patch(':id/reject')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN, UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN)
   @ApiResponse({ type: Certificate, isArray: false })
   async rejectCert(
     @Param('id') id: string,
@@ -531,15 +560,93 @@ export class IndigeneCertificateController {
   }
 
   @Post(':id/resubmit')
-  @ApiResponse({ type: Certificate, isArray: false })
-  resubmitRequest(@Param('id') id: string, @Body() updatedData: any) {
+  @UseInterceptors(
+    // ✅ CHANGE TO AnyFilesInterceptor to handle multiple file names
+    AnyFilesInterceptor({
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (req, file, cb) => {
+        // Re-use your existing file filter logic
+        const fieldTypeRules = {
+          passportPhoto: {
+            mime: ['image/jpeg', 'image/png', 'image/jpg'],
+            ext: ['.jpeg', '.jpg', '.png'],
+          },
+          idCard: {
+            mime: ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'],
+            ext: ['.pdf', '.jpeg', '.jpg', '.png'],
+          },
+          birthCertificate: {
+            mime: ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'],
+            ext: ['.pdf', '.jpeg', '.jpg', '.png'],
+          },
+        };
+        const rules = fieldTypeRules[file.fieldname];
+        const ext = require('path').extname(file.originalname).toLowerCase();
+        if (
+          !rules ||
+          !rules.mime.includes(file.mimetype) ||
+          !rules.ext.includes(ext)
+        ) {
+          return cb(
+            new BadRequestException(`Invalid file type for ${file.fieldname}`),
+            false,
+          );
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async resubmitRequest(
+    @Param('id') id: string,
+    @Body() updatedData: UpdateCertificateDto,
+    @UploadedFiles(
+      // new GenericImageValidationPipe(),
+      new PassportPhotoQualityPipe({ isOptional: true }),
+      new FileSizeValidationPipe({
+        passportPhoto: { maxSize: 2 * 1024 * 1024 },
+        idCard: { maxSize: 3 * 1024 * 1024 },
+        birthCertificate: { maxSize: 5 * 1024 * 1024 },
+      }),
+    )
+    files: Array<Express.Multer.File>,
+  ): Promise<Certificate> {
+    const existingCertificate =
+      await this.indigeneCertificateService.findById(id);
+
+    if (files && files.length > 0) {
+      const documentType = updatedData.documentTypeToUpdate;
+      if (!documentType) {
+        throw new BadRequestException(
+          'When uploading a file, you must specify "documentTypeToUpdate" in the request body.',
+        );
+      }
+
+      const fileToUpload = files.find((f) => f.fieldname === documentType);
+      if (!fileToUpload) {
+        throw new BadRequestException(
+          `The specified document type "${documentType}" was not found in the uploaded files.`,
+        );
+      }
+
+      const oldImageUrl = existingCertificate[documentType];
+      if (oldImageUrl) {
+        await this.cloudinaryService.deleteFile(oldImageUrl);
+      }
+
+      const folder = `certificates/${documentType}`;
+      const newImageUrl = await this.cloudinaryService.uploadFile(
+        fileToUpload,
+        folder,
+      );
+      updatedData[documentType] = newImageUrl;
+    }
+
     return this.indigeneCertificateService.resubmitRequest(id, updatedData);
   }
 
   @Get()
   @UseGuards(RolesGuard)
   @ApiResponse({ type: Certificate, isArray: true })
-  @Roles(UserRole.SUPER_ADMIN)
   async getPaginatedData(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
@@ -568,7 +675,7 @@ export class IndigeneCertificateController {
   @Get('approval')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: Certificate, isArray: true })
-  @Roles(UserRole.SUPPORT_ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.SUPPORT_ADMIN)
   async getApprovedCert(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
@@ -600,21 +707,27 @@ export class IndigeneCertificateController {
 
   @Get(':id/get')
   @ApiResponse({ type: Certificate, isArray: false })
-  async getCert(@Param('id') id: string, @Body() body: any) {
+  async getCert(@Param('id') id: string) {
     return await this.indigeneCertificateService.findById(id);
   }
 
   @Get(':id')
   @ApiResponse({ type: Certificate, isArray: false })
-  async getProfile(@Param('id') id: string, @Body() body: any) {
+  async getProfile(@Param('id') id: string) {
     return await this.indigeneCertificateService.findOne(id);
+  }
+
+  @Get(':id/requests')
+  @ApiResponse({ type: Certificate, isArray: true })
+  async getRequestsForId(@Param('id') id: string) {
+    return await this.indigeneCertificateService.findRequestsByUserId(id);
   }
 
   @Get(':id/request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: Certificate, isArray: false })
   @Roles(UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN)
-  async getUserProfile(@Param('id') id: string, @Body() body: any) {
+  async getUserProfile(@Param('id') id: string) {
     return await this.indigeneCertificateService.findById(id);
   }
 
@@ -651,29 +764,71 @@ export class IndigeneCertificateController {
     const request = await this.indigeneCertificateService.findById(requestId);
 
     if (!request || !request[docType]) {
-      throw new NotFoundException(`Document '${docType}' not found`);
+      throw new NotFoundException(
+        `Document '${docType}' not found for this request.`,
+      );
     }
 
     const originalUrl = request[docType];
-    const inlineUrl = originalUrl.includes('?')
-      ? `${originalUrl}&fl_attachment=false`
-      : `${originalUrl}?fl_attachment=false`;
+
+    // --- THE KEY FIX: Determine MIME type from the URL structure ---
+    let contentType: string;
+    let fileExtension: string;
+
+    if (originalUrl.includes('/image/upload/')) {
+      // This is an image. Let's find the format from the URL.
+      // Example: .../image/upload/v12345678/public_id.jpg
+      const urlParts = originalUrl.split('/');
+      const fileName = urlParts.pop(); // Get 'public_id.jpg'
+      const format = fileName.split('.').pop()?.split('?')[0]; // Get 'jpg'
+
+      if (format) {
+        contentType = `image/${format}`;
+        fileExtension = `.${format}`;
+      } else {
+        // Fallback if no format is specified in the URL
+        console.log(
+          `Could not determine image format for URL: ${originalUrl}. Defaulting to jpeg.`,
+        );
+        contentType = 'image/jpeg';
+        fileExtension = '.jpg';
+      }
+    } else if (originalUrl.includes('/raw/upload/')) {
+      // This is a non-image file, which we will assume is a PDF.
+      contentType = 'application/pdf';
+      fileExtension = '.pdf';
+    } else {
+      // Ultimate fallback if the URL is unrecognizable
+      console.log(`Unrecognized Cloudinary URL format: ${originalUrl}`);
+      throw new InternalServerErrorException(
+        'Could not determine the type of the stored document.',
+      );
+    }
 
     try {
-      const cloudinaryRes: AxiosResponse<any> = await axios.get(inlineUrl, {
+      // We can stream the original URL directly; we don't need the `fl_attachment` param
+      // since we are setting our own `Content-Disposition` header.
+      const cloudinaryRes: AxiosResponse<any> = await axios.get(originalUrl, {
         responseType: 'stream',
       });
 
+      // --- Set the headers based on OUR determination, not Cloudinary's ---
       res.set({
-        'Content-Type':
-          cloudinaryRes.headers['content-type'] || 'application/pdf',
-        'Content-Disposition': `inline; filename="${docType}.pdf"`,
+        'Content-Type': contentType,
+        'Content-Disposition': `inline; filename="${docType}${fileExtension}"`,
+        'Cache-Control': 'public, max-age=86400',
       });
 
+      // Pipe the stream from Cloudinary to the client
       return cloudinaryRes.data.pipe(res);
     } catch (error) {
-      console.error('Error streaming document:', error.message);
-      res.status(500).send('Failed to stream document');
+      console.log(
+        `Error streaming document from Cloudinary: ${error.message}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException(
+        'Could not retrieve the document. Please try again later.',
+      );
     }
   }
 

@@ -5,7 +5,6 @@ import {
   BadRequestException,
   HttpException,
   HttpStatus,
-  ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { UserDocument } from './users.schema';
@@ -13,7 +12,6 @@ import { Model } from 'mongoose';
 import { hashPassword } from 'src/auth/auth';
 import { v4 as uuid } from 'uuid';
 import config from 'src/config';
-import { UserMailerService } from './users.mailer.service';
 import {
   EmailAlreadyUsedException,
   PasswordResetTokenInvalidException,
@@ -24,15 +22,16 @@ import { VerificationStatus } from './users.neigbour.schema';
 import axios from 'axios';
 import { MailService } from '../mail/mail.service';
 import { UpdateUserAdminDto, UpdateUserRoleDto } from './users.dto';
-import { Lga } from 'src/lga/lga.schema';
 import { Certificate } from 'src/indigene-certificate/indigene-certicate.schema';
 import { IdCard } from 'src/idcard/idcard.schema';
 import { Transaction } from 'src/transaction/transaction.schema';
 import { Kindred } from 'src/kindred/kindred.schema';
+import { RolePermission } from 'src/roles/role-permission.schema';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { RoleAssignmentService } from 'src/roles/role-assignment.service';
 import { UserRole } from './users.role.enum';
 import { Types } from 'mongoose';
-import PDFDocument from 'pdfkit'; // Import pdfkit
+import PDFDocument from 'pdfkit';
 
 @Injectable()
 export class UsersService {
@@ -40,15 +39,14 @@ export class UsersService {
 
   constructor(
     @InjectModel('User') public readonly userModel: Model<UserDocument>,
-    // @InjectModel('Lga') private readonly lgaModel: Model<Lga>,
     @InjectModel('Certificate') private readonly certModel: Model<Certificate>,
     @InjectModel('IdCard') private readonly idCardModel: Model<IdCard>,
     @InjectModel('Transaction') private readonly transModel: Model<Transaction>,
     @InjectModel('Kindred') private kindredModel: Model<Kindred>,
-    // @InjectModel('Notification') private notificationModel: Model<Notification>,
+    @InjectModel(RolePermission.name)
+    private rolePermissionModel: Model<RolePermission>,
     private readonly notificationsService: NotificationsService,
-
-    // private readonly userMailer: UserMailerService,
+    private readonly roleAssignmentService: RoleAssignmentService,
     private readonly smsService: SmsService,
     private readonly mailService: MailService,
   ) {}
@@ -260,50 +258,31 @@ export class UsersService {
     };
   }
 
-  // async updateUserRole(id: string, body: UpdateUserRoleDto) {
-  //   const update: any = { role: body.role };
+  // async updateUserRole(id: string, body: UpdateUserRoleDto, currentUser: any) {
+  //   const targetUser = await this.userModel.findById(id);
+  //   if (!targetUser) {
+  //     throw new NotFoundException('User not found');
+  //   }
 
-  //   // if (body.role === 'support_admin') {
-  //   //   // Verify the LGA exists
-  //   //   const lga = await this.lgaModel.findById(body.lgaId);
-  //   //   if (!lga) {
-  //   //     throw new NotFoundException('LGA not found');
-  //   //   }
+  //   // Restrict: support_admin cannot update another support_admin
+  //   if (
+  //     currentUser.role === UserRole.SUPPORT_ADMIN &&
+  //     targetUser.role === UserRole.SUPPORT_ADMIN
+  //   ) {
+  //     throw new ForbiddenException(
+  //       'Support Admins are not allowed to modify other Support Admins',
+  //     );
+  //   }
 
-  //   //   update.lga = body.lgaId;
-  //   // } else {
-  //   //   // If changing role away from support_admin, remove LGA binding
-  //   //   update.lga = null;
-  //   // }
+  //   // Proceed to update the role
+  //   const updatedUser = await this.userModel.findByIdAndUpdate(
+  //     id,
+  //     { role: body.role },
+  //     { new: true },
+  //   );
 
-  //   return this.userModel.findByIdAndUpdate(id, update, { new: true });
+  //   return updatedUser;
   // }
-
-  async updateUserRole(id: string, body: UpdateUserRoleDto, currentUser: any) {
-    const targetUser = await this.userModel.findById(id);
-    if (!targetUser) {
-      throw new NotFoundException('User not found');
-    }
-
-    // Restrict: support_admin cannot update another support_admin
-    if (
-      currentUser.role === UserRole.SUPPORT_ADMIN &&
-      targetUser.role === UserRole.SUPPORT_ADMIN
-    ) {
-      throw new ForbiddenException(
-        'Support Admins are not allowed to modify other Support Admins',
-      );
-    }
-
-    // Proceed to update the role
-    const updatedUser = await this.userModel.findByIdAndUpdate(
-      id,
-      { role: body.role },
-      { new: true },
-    );
-
-    return updatedUser;
-  }
 
   async sendRequest(
     email: string,
@@ -330,102 +309,6 @@ export class UsersService {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
   }
-
-  // async initiateVerification(userId: string) {
-  //   const user = await this.userModel.findById(userId);
-  //   if (!user) {
-  //     throw UserNotFoundException();
-  //   }
-
-  //   //   // Check for at least one valid reference (name and phone)
-  //   const allReferencesData = [
-  //     ...(user.neighbor || []),
-  //     ...(user.family || []),
-  //   ];
-  //   const hasValidReference = allReferencesData.every(
-  //     (ref) => ref.name && ref.phone,
-  //   );
-
-  //   if (!hasValidReference) {
-  //     throw new HttpException(
-  //       'Cannot initiate verification: No valid references with both name and phone provided.',
-  //       HttpStatus.BAD_REQUEST,
-  //     );
-  //   }
-
-  //   const now = new Date();
-
-  //   // Mark expired verifications
-  //   user.neighbor.forEach((ref) => {
-  //     if (
-  //       ref.status === 'pending' &&
-  //       new Date(ref.verificationExpiresAt) < now
-  //     ) {
-  //       ref.status = VerificationStatus.EXPIRED;
-  //     }
-  //   });
-
-  //   user.family.forEach((ref) => {
-  //     if (
-  //       ref.status === 'pending' &&
-  //       new Date(ref.verificationExpiresAt) < now
-  //     ) {
-  //       ref.status = VerificationStatus.EXPIRED;
-  //     }
-  //   });
-
-  //   await user.save();
-
-  //   //  Prevent re-initiation if verification is already pending
-  //   // Check for pending verifications
-  //   const allReferences = [...(user.neighbor || []), ...(user.family || [])];
-
-  //   const hasPending = allReferences.some(
-  //     (ref) =>
-  //       ref.status === 'pending' &&
-  //       new Date(ref.verificationExpiresAt) > new Date(),
-  //   );
-
-  //   if (hasPending) {
-  //     throw new HttpException(
-  //       'Verification already in progress. Cannot re-initiate.',
-  //       HttpStatus.BAD_REQUEST,
-  //     );
-  //   }
-
-  //   // Get references with pending status and unexpired
-  //   const pendingNeighbors = (user.neighbor || []).filter(
-  //     (ref) => ref.name && ref.phone && ref.status === 'pending',
-  //   );
-
-  //   const pendingFamily = (user.family || []).filter(
-  //     (ref) => ref.name && ref.phone && ref.status === 'pending',
-  //   );
-
-  //   if (pendingNeighbors.length === 0 && pendingFamily.length === 0) {
-  //     throw new HttpException(
-  //       'No pending references available for verification.',
-  //       HttpStatus.BAD_REQUEST,
-  //     );
-  //   }
-
-  //   // Send verification only to pending references
-  //   for (const neighbor of pendingNeighbors) {
-  //     if (!neighbor.verificationToken) {
-  //       await this.setupReferenceVerification(user, neighbor, 'neighbor');
-  //     }
-  //   }
-
-  //   for (const familyMember of pendingFamily) {
-  //     if (!familyMember.verificationToken) {
-  //       await this.setupReferenceVerification(user, familyMember, 'family');
-  //     }
-  //   }
-
-  //   return this.userModel.findById(userId);
-  // }
-
-  // Update your verification methods to use SMS service
 
   async initiateVerification(userId: string) {
     const user = await this.userModel.findById(userId);
@@ -938,163 +821,6 @@ export class UsersService {
       stateDistribution,
     };
   }
-
-  // async getDashboardStats() {
-  //   // --- Registration Trend from Users ---
-  //   const registrations = await this.userModel.aggregate([
-  //     {
-  //       $group: {
-  //         _id: { $month: '$created_at' },
-  //         count: { $sum: 1 },
-  //       },
-  //     },
-  //     { $sort: { _id: 1 } },
-  //   ]);
-  //   const months = [
-  //     'Jan',
-  //     'Feb',
-  //     'Mar',
-  //     'Apr',
-  //     'May',
-  //     'Jun',
-  //     'Jul',
-  //     'Aug',
-  //     'Sep',
-  //     'Oct',
-  //     'Nov',
-  //     'Dec',
-  //   ];
-  //   const registrationTrend = months.map((m, idx) => {
-  //     const found = registrations.find((r) => r._id === idx + 1);
-  //     return found ? found.count : 0;
-  //   });
-
-  //   // --- Request Status from Certificate + IdCard ---
-  //   const certStatuses = await this.certModel.aggregate([
-  //     { $group: { _id: '$status', count: { $sum: 1 } } },
-  //   ]);
-  //   const idcardStatuses = await this.idCardModel.aggregate([
-  //     { $group: { _id: '$status', count: { $sum: 1 } } },
-  //   ]);
-  //   const statusMap: Record<string, number> = {
-  //     Approved: 0,
-  //     Pending: 0,
-  //     Rejected: 0,
-  //   };
-  //   [...certStatuses, ...idcardStatuses].forEach((s) => {
-  //     if (s._id) statusMap[s._id] = (statusMap[s._id] || 0) + s.count;
-  //   });
-
-  //   // --- Top LGAs from both models ---
-
-  //   const certLgas = await this.certModel.aggregate([
-  //     {
-  //       $group: {
-  //         _id: '$lgaOfOrigin',
-  //         count: { $sum: 1 },
-  //       },
-  //     },
-  //     { $sort: { count: -1 } },
-  //     { $limit: 5 },
-  //   ]);
-
-  //   const topLGAs = certLgas.map((lga) => ({
-  //     name: lga._id || 'Unknown',
-  //     count: lga.count,
-  //   }));
-
-  //   // --- Recent Users from User model ---
-  //   const recentUsers = await this.userModel
-  //     .find()
-  //     .sort({ created_at: -1 })
-  //     .limit(5)
-  //     .lean();
-
-  //   // 4️⃣ --- Payment summary from Transaction model ---
-  //   const paymentSummary = await this.transModel.aggregate([
-  //     {
-  //       $group: {
-  //         _id: '$status',
-  //         totalAmount: { $sum: '$amount' },
-  //         count: { $sum: 1 },
-  //       },
-  //     },
-  //   ]);
-
-  //   const payments = {
-  //     total: paymentSummary.reduce((acc, t) => acc + t.count, 0),
-  //     success: paymentSummary.find((t) => t._id === 'success')?.count || 0,
-  //     failed: paymentSummary.find((t) => t._id === 'failed')?.count || 0,
-  //     pending: paymentSummary.find((t) => t._id === 'pending')?.count || 0,
-  //     totalAmount: paymentSummary.reduce((acc, t) => acc + t.totalAmount, 0),
-  //   };
-
-  //   const recentTransactions = await this.transModel
-  //     .find({})
-  //     .sort({ createdAt: -1 })
-  //     .limit(5)
-  //     .select('amount status paymentType reference createdAt');
-
-  //   // --- Recent Activity from both models ---
-  //   const certificates = await this.certModel
-  //     .find()
-  //     .sort({ created_at: -1 })
-  //     .limit(5);
-  //   const idcards = await this.idCardModel
-  //     .find()
-  //     .sort({ created_at: -1 })
-  //     .limit(5);
-
-  //   // Combine and normalize
-  //   const recentActivities = [
-  //     ...certificates.map((cert) => ({
-  //       name: `${cert.firstname} ${cert.lastname}`,
-  //       type: 'certificate',
-  //       status: cert.status,
-  //       createdAt: cert.created_at,
-  //     })),
-  //     ...idcards.map((id) => ({
-  //       name: `${id.firstname} ${id.lastname}`,
-  //       type: 'idcard',
-  //       status: id.status,
-  //       createdAt: id.created_at,
-  //     })),
-
-  //     ...recentUsers.map((u) => ({
-  //       name: `${u.firstname} ${u.lastname}`,
-  //       type: 'user',
-  //       status: u.isActive ? 'Active' : 'Inactive',
-  //       role: u.role,
-  //       createdAt: u.created_at,
-  //     })),
-  //     ...recentTransactions.map((t) => ({
-  //       type: 'transaction',
-  //       ref: t.reference,
-  //       amount: t.amount,
-  //       paymentType: t.paymentType,
-  //       status: t.status,
-  //       createdAt: t.createdAt,
-  //     })),
-  //   ]
-  //     .sort(
-  //       (a, b) =>
-  //         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  //     )
-  //     .slice(0, 5);
-
-  //   return {
-  //     totals: {
-  //       certificates: await this.certModel.countDocuments(),
-  //       idcards: await this.idCardModel.countDocuments(),
-  //       transactions: payments.total,
-  //     },
-  //     registrationTrend,
-  //     payments,
-  //     requestStatus: statusMap,
-  //     topLGAs,
-  //     recentActivities,
-  //   };
-  // }
 
   /**
    * Gets dashboard statistics, optionally filtered by a date range.
@@ -1691,18 +1417,6 @@ export class UsersService {
       .limit(5)
       .select('firstname lastname created_at status');
 
-    // const activities = [
-    //   ...recentIdCards.map((r) => ({
-    //     title: 'ID Card Request',
-    //     description: `${r.firstname} - ${r.status}`,
-    //     timestamp: r.created_at,
-    //   })),
-    //   ...recentCertificates.map((r) => ({
-    //     title: 'Certificate Request',
-    //     description: `${r.firstname} - ${r.status}`,
-    //     timestamp: r.created_at,
-    //   })),
-    // ].sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1));
     const activities = [
       ...recentIdCards.map((r) => ({
         time: new Date(r.created_at).toLocaleString(),
@@ -2166,55 +1880,6 @@ export class UsersService {
     return dateMatch;
   }
 
-  // private formatDemographics(demographics: any[]) {
-  //   const genderDist: Record<string, number> = { Male: 0, Female: 0 };
-  //   const ageDist: Record<string, number> = {
-  //     'Under 18': 0,
-  //     '18-25': 0,
-  //     '26-35': 0,
-  //     '36-50': 0,
-  //     '51+': 0,
-  //   };
-  //   const combinedGroups: Record<string, number> = {
-  //     'Male 18-35': 0,
-  //     'Female 18-35': 0,
-  //     'Male 36+': 0,
-  //     'Female 36+': 0,
-  //   };
-
-  //   demographics.forEach((group) => {
-  //     const gender = group._id;
-  //     const counts = group.counts;
-  //     counts.forEach((c) => {
-  //       const g = c.gender;
-  //       if (g === 'male') genderDist.Male++;
-  //       else if (g === 'female') genderDist.Female++;
-  //     });
-  //     counts.forEach((c) => {
-  //       const age = c.age;
-  //       if (age < 18) ageDist['Under 18']++;
-  //       else if (age <= 25) ageDist['18-25']++;
-  //       else if (age <= 35) ageDist['26-35']++;
-  //       else if (age <= 50) ageDist['36-50']++;
-  //       else ageDist['51+']++;
-  //     });
-  //   });
-
-  //   return {
-  //     genderDistribution: {
-  //       labels: Object.keys(genderDist),
-  //       values: Object.values(genderDist),
-  //     },
-  //     ageDistribution: {
-  //       labels: Object.keys(ageDist),
-  //       values: Object.values(ageDist),
-  //     },
-  //     combinedGroups: {
-  //       labels: Object.keys(combinedGroups),
-  //       values: Object.values(combinedGroups),
-  //     },
-  //   };
-  // }
   private formatDemographics(data: { gender: any[]; age: any[] }) {
     const genderDist: Record<string, number> = { Male: 0, Female: 0 };
     const ageDist: Record<string, number> = {
@@ -2334,5 +1999,52 @@ export class UsersService {
       }
     });
     return result;
+  }
+
+  async findUserWithPermissions(id: string) {
+    const user = await this.userModel.findById(id).exec();
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const rolePermission = await this.rolePermissionModel
+      .findOne({ role: user.role })
+      .exec();
+
+    return {
+      ...user.toObject(),
+      permissions: rolePermission ? rolePermission.permissions : [],
+    };
+  }
+
+  async updateUserRole(
+    userId: string,
+    newRole: UserRole,
+    assignedBy: string,
+    reason: string,
+  ) {
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const previousRole = user.role;
+
+    // Create role assignment record
+    await this.roleAssignmentService.createAssignment(
+      userId,
+      previousRole,
+      newRole,
+      assignedBy,
+      reason,
+    );
+
+    // Update user role
+    user.role = newRole;
+    // Ensure assignedBy is stored as an ObjectId
+    user.assignedBy = new Types.ObjectId(assignedBy);
+    await user.save();
+
+    return user;
   }
 }

@@ -20,6 +20,7 @@ import { MailService } from 'src/mail/mail.service';
 import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { RolesModule } from 'src/roles/roles.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { JwtService } from '@nestjs/jwt';
     ]),
     forwardRef(() => IdcardModule),
     forwardRef(() => TransactionModule),
+    RolesModule,
   ],
 
   controllers: [ReportController],

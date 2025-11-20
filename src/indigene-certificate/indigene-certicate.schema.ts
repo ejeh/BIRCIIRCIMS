@@ -44,6 +44,10 @@ export class Certificate extends Document {
   @Prop({ default: false })
   downloaded: Boolean;
 
+  @ApiProperty({ required: false, nullable: true })
+  @Prop({ type: mongoose.SchemaTypes.Date, default: null })
+  downloadExpiryDate: Date;
+
   @ApiProperty()
   @Prop({ type: mongoose.SchemaTypes.String, required: true })
   email: string;
@@ -93,7 +97,7 @@ export class Certificate extends Document {
     type: mongoose.SchemaTypes.String,
     required: true,
   })
-  phone: number;
+  phone: string;
 
   @ApiProperty()
   @Prop({ type: mongoose.SchemaTypes.String, required: true })
@@ -175,12 +179,11 @@ export class Certificate extends Document {
   })
   approvedBy: mongoose.Types.ObjectId;
 
-  // @ApiProperty()
-  // @Prop({ type: [FamilySchema] }) // Embed the next-of-kin schema
-  // family?: Family[];
-
   @Prop({ type: mongoose.SchemaTypes.String, default: 'pending' })
   paymentStatus: string; // Can be 'pending' or 'paid'
+
+  @Prop()
+  lastResubmittedAt?: Date;
 }
 
 export const CertificateSchema = SchemaFactory.createForClass(Certificate);

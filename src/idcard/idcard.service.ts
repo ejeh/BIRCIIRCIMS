@@ -1,4 +1,6 @@
 import {
+  BadRequestException,
+  ConflictException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -15,14 +17,17 @@ import * as crypto from 'crypto';
 import { Types } from 'mongoose';
 import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 import { NotificationsService } from 'src/notifications/notifications.service';
-// import { VerificationStatus } from './idcard-neighbor.schema';
+import { UserDocument } from 'src/users/users.schema';
+import { ResubmissionService } from '../common/services/resubmission.service';
 
 @Injectable()
 export class IdcardService {
   constructor(
     @InjectModel(IdCard.name)
     public readonly idCardModel: Model<IdCard>,
+    @InjectModel('User') public readonly userModel: Model<UserDocument>,
     private readonly notificationsService: NotificationsService,
+    private resubmissionService: ResubmissionService,
   ) {}
 
   async generateUniqueNumber(): Promise<string> {
@@ -45,90 +50,66 @@ export class IdcardService {
     return bin;
   }
 
-  async createIdCard(data: Partial<IdCard>, id: any): Promise<IdCard> {
+  /**
+   * Validates if a user is eligible to create a new certificate request.
+   * Throws an exception if the user is not eligible.
+   * @param userId The ID of the user to validate.
+   */
+  async canUserCreateIdcard(userId: string): Promise<void> {
+    // 1. Check for existing pending requests
     const existingRequest = await this.idCardModel
-      .findOne({ userId: id })
+      .exists({ userId, status: 'Pending' })
       .exec();
-    if (existingRequest && existingRequest.status === 'Pending') {
-      // Duplicate key error (MongoDB)
-      throw new HttpException(
-        'A pending ID card request already exists for this user.',
-
-        HttpStatus.CONFLICT,
+    if (existingRequest) {
+      throw new ConflictException(
+        'A pending card request already exists for this user.',
       );
     }
 
-    const newRequest = await this.idCardModel.create(data);
+    // 2. Check for pending payments on an approved request
+    const isApprovedWithPendingPayment = await this.idCardModel
+      .exists({ userId, status: 'Approved', paymentStatus: 'pending' })
+      .exec();
+    if (isApprovedWithPendingPayment) {
+      throw new ConflictException('You have a pending payment to make.');
+    }
 
-    // 🔔 Send notification
-    await this.notificationsService.createSystemNotification(
-      data.userId,
-      'ID Card Request Submitted',
-      'Your ID card request has been successfully submitted and is pending review.',
-      'idcard',
-      '/dashboard/idcard-requests',
-    );
-    return newRequest;
+    // 3. Fetch the user to check their state of origin
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
   }
 
-  // async generateVerificationToken(): Promise<string> {
-  //   return crypto.randomBytes(32).toString('hex');
-  // }
-
-  // async verifyNeighbor(
-  //   token: string,
-  //   verificationData: {
-  //     isNeighbor: boolean;
-  //     knownDuration: string;
-  //     knowsApplicant: boolean;
-  //     comments?: string;
-  //   },
-  // ) {
-  //   // Find the ID card with the neighbor having this verification token
-  //   const idCard = await this.idCardModel.findOne({
-  //     'neighbors.verificationToken': token,
-  //     'neighbors.verificationExpiresAt': { $gt: new Date() },
-  //   });
-
-  //   if (!idCard) {
-  //     throw new NotFoundException('Invalid or expired verification token');
-  //   }
-
-  //   // Find the neighbor
-  //   const neighborIndex = idCard.neighbors.findIndex(
-  //     (n) => n.verificationToken === token,
-  //   );
-
-  //   if (neighborIndex === -1) {
-  //     throw new NotFoundException('Neighbor not found');
-  //   }
-
-  //   // Update neighbor verification data by mutating the existing subdocument (preserves Mongoose doc methods)
-  //   const neighbor = idCard.neighbors[neighborIndex];
-  //   Object.assign(neighbor, verificationData);
-  //   neighbor.status = VerificationStatus.VERIFIED;
-  //   neighbor.verifiedAt = new Date();
-
-  //   // Check if all neighbors are verified
-  //   const allNeighborsVerified = idCard.neighbors.every(
-  //     (n) => n.status === 'verified',
-  //   );
-
-  //   if (allNeighborsVerified) {
-  //     idCard.status = 'verified';
-  //   }
-
-  //   // Save the updated ID card
-  //   await idCard.save();
-
-  //   return {
-  //     message: 'Neighbor verification completed successfully',
-  //     allVerified: allNeighborsVerified,
-  //   };
-  // }
+  async createIdCard(data: Partial<IdCard>, userId: any): Promise<IdCard> {
+    try {
+      const newRequest = await this.idCardModel.create(data);
+      // 🔔 Send notification
+      await this.notificationsService.createSystemNotification(
+        userId,
+        'ID Card Request Submitted',
+        'Your ID card request has been successfully submitted and is pending review.',
+        'idcard',
+        '/dashboard/idcard-requests',
+      );
+      return newRequest;
+    } catch (error: any) {
+      if (error.code === 11000) {
+        // This is a final safeguard for race conditions.
+        throw new ConflictException('Identity card request already exists.');
+      }
+      throw new BadRequestException(
+        error.message || 'Failed to create certificate.',
+      );
+    }
+  }
 
   async findCardById(id: string): Promise<IdCard> {
     return this.idCardModel.findById(id);
+  }
+
+  async findRequestsByUserId(userId: string): Promise<IdCard[]> {
+    return await this.idCardModel.find({ userId }).populate('userId').exec();
   }
 
   async getLocationStats() {
@@ -298,10 +279,26 @@ export class IdcardService {
     return this.idCardModel.findById(id);
   }
 
-  async markAsDownloaded(id: string): Promise<void> {
+  // async markAsDownloaded(id: string): Promise<void> {
+  //   await this.idCardModel.updateOne(
+  //     { _id: id },
+  //     { $set: { downloaded: true } },
+  //   );
+  // }
+
+  async markAsDownloadedForThreeMonths(id: string): Promise<void> {
+    const expiry = new Date();
+    expiry.setMonth(expiry.getMonth() + 3); // +3 months
+    // expiry.setMinutes(expiry.getMinutes() + 10); // +10 minutes
+
     await this.idCardModel.updateOne(
       { _id: id },
-      { $set: { downloaded: true } },
+      {
+        $set: {
+          downloaded: true,
+          downloadExpiryDate: expiry,
+        },
+      },
     );
   }
 
@@ -348,34 +345,21 @@ export class IdcardService {
     return tempFilePath;
   }
 
+  /**
+   * Resubmit a rejected ID card request
+   * @param id The ID card ID
+   * @param updatedData The updated ID card data
+   * @returns The updated ID card
+   */
   async resubmitRequest(
     id: string,
     updatedData: Partial<IdCard>,
   ): Promise<IdCard> {
-    const request = await this.idCardModel.findById(id);
-    if (
-      !request ||
-      request.status !== 'Rejected' ||
-      !request.resubmissionAllowed
-    ) {
-      throw new Error('Request cannot be resubmitted.');
-    }
-
-    const MAX_RESUBMISSIONS = 3; // Set your limit here
-    if (request.resubmissionAttempts >= MAX_RESUBMISSIONS) {
-      throw new Error('Maximum resubmission attempts reached.');
-    }
-
-    return this.idCardModel.findByIdAndUpdate(
+    return this.resubmissionService.resubmitRequest(
+      this.idCardModel,
       id,
-      {
-        ...updatedData,
-        status: 'Pending',
-        rejectionReason: null,
-        resubmissionAllowed: false,
-        $inc: { resubmissionAttempts: 1 },
-      },
-      { new: true },
+      updatedData,
+      'ID Card',
     );
   }
 

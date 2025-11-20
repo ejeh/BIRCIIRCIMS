@@ -1,4 +1,6 @@
 import {
+  BadRequestException,
+  ConflictException,
   ForbiddenException,
   HttpException,
   HttpStatus,
@@ -17,6 +19,7 @@ import * as path from 'path';
 import { Kindred } from 'src/kindred/kindred.schema';
 import { UserDocument } from 'src/users/users.schema';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { ResubmissionService } from '../common/services/resubmission.service';
 
 @Injectable()
 export class IndigeneCertificateService {
@@ -25,64 +28,80 @@ export class IndigeneCertificateService {
     public readonly certificateModel: Model<Certificate>,
     @InjectModel('User') public readonly userModel: Model<UserDocument>,
     private readonly notificationsService: NotificationsService,
+    private readonly resubmissionService: ResubmissionService,
   ) {}
 
-  async createCertificate(
-    data: Partial<Certificate>,
-    id: any,
-  ): Promise<Certificate> {
+  /**
+   * Validates if a user is eligible to create a new certificate request.
+   * Throws an exception if the user is not eligible.
+   * @param userId The ID of the user to validate.
+   */
+  async canUserCreateCertificate(userId: string): Promise<void> {
+    // 1. Check for existing pending requests
     const existingRequest = await this.certificateModel
-      .findOne({ userId: id })
+      .exists({ userId, status: 'Pending' })
       .exec();
-    if (existingRequest && existingRequest.status === 'Pending') {
-      // Duplicate key error (MongoDB)
-      throw new HttpException(
+    if (existingRequest) {
+      throw new ConflictException(
         'A pending Certificate request already exists for this user.',
-
-        HttpStatus.CONFLICT,
       );
     }
 
-    // 1. Fetch the user to check their state of origin
-    const user = await this.userModel.findById(id).exec();
+    // 2. Check for pending payments on an approved request
+    const isApprovedWithPendingPayment = await this.certificateModel
+      .exists({ userId, status: 'Approved', paymentStatus: 'pending' })
+      .exec();
+    if (isApprovedWithPendingPayment) {
+      throw new ConflictException('You have a pending payment to make.');
+    }
+
+    // 3. Fetch the user to check their state of origin
+    const user = await this.userModel.findById(userId).exec();
     if (!user) {
       throw new NotFoundException('User not found.');
     }
 
-    // 2. Enforce the business rule
+    // 4. Enforce the business rule for state of origin
     if (user.stateOfOrigin?.toLowerCase() !== 'benue') {
       throw new ForbiddenException(
         'Access Denied: You are not eligible to create a Certificate of Origin request as you are not an indigene of Benue State.',
       );
     }
 
-    let newRequest;
+    // If we reach here, the user is eligible to proceed.
+    // The method returns void (implicitly).
+  }
+
+  /**
+   * Creates the certificate record in the database.
+   * Assumes all pre-flight validation has already passed.
+   */
+  async createCertificate(data: any, userId: string): Promise<Certificate> {
     try {
-      // const user = await this.userModel.find()
-      newRequest = await this.certificateModel.create(data);
+      const newRequest = await this.certificateModel.create({
+        ...data,
+      });
+
       // 🔔 Send notification
       await this.notificationsService.createSystemNotification(
-        data.userId,
+        userId,
         'Certificate Request Submitted',
         'Your certificate request has been submitted for processing.',
         'certificate',
         '/dashboard/certificate-requests',
         data.lgaOfOrigin,
       );
+
+      return newRequest;
     } catch (error: any) {
       if (error.code === 11000) {
-        // Duplicate key error (MongoDB)
-        throw new HttpException(
-          'Certificate request already exists.',
-          HttpStatus.CONFLICT,
-        );
+        // This is a final safeguard for race conditions.
+        throw new ConflictException('Certificate request already exists.');
       }
-      throw new HttpException(
+      throw new BadRequestException(
         error.message || 'Failed to create certificate.',
-        HttpStatus.BAD_REQUEST,
       );
     }
-    return newRequest;
   }
 
   async findCertificateById(id: string): Promise<Certificate> {
@@ -213,34 +232,21 @@ export class IndigeneCertificateService {
     return request;
   }
 
+  /**
+   * Resubmit a rejected certificate request
+   * @param id The certificate ID
+   * @param updatedData The updated certificate data
+   * @returns The updated certificate
+   */
   async resubmitRequest(
     id: string,
     updatedData: Partial<Certificate>,
   ): Promise<Certificate> {
-    const request = await this.certificateModel.findById(id);
-    if (
-      !request ||
-      request.status !== 'Rejected' ||
-      !request.resubmissionAllowed
-    ) {
-      throw new Error('Request cannot be resubmitted.');
-    }
-
-    const MAX_RESUBMISSIONS = 3; // Set your limit here
-    if (request.resubmissionAttempts >= MAX_RESUBMISSIONS) {
-      throw new Error('Maximum resubmission attempts reached.');
-    }
-
-    return this.certificateModel.findByIdAndUpdate(
+    return this.resubmissionService.resubmitRequest(
+      this.certificateModel,
       id,
-      {
-        ...updatedData,
-        status: 'Pending',
-        rejectionReason: null,
-        resubmissionAllowed: false,
-        $inc: { resubmissionAttempts: 1 },
-      },
-      { new: true },
+      updatedData,
+      'Certificate',
     );
   }
 
@@ -289,6 +295,22 @@ export class IndigeneCertificateService {
     await this.certificateModel.updateOne(
       { _id: id },
       { $set: { downloaded: true } },
+    );
+  }
+
+  async markAsDownloadedForThreeMonths(id: string): Promise<void> {
+    const expiry = new Date();
+    expiry.setMonth(expiry.getMonth() + 3); // +3 months
+    // expiry.setMinutes(expiry.getMinutes() + 10); // +10 minutes
+
+    await this.certificateModel.updateOne(
+      { _id: id },
+      {
+        $set: {
+          downloaded: true,
+          downloadExpiryDate: expiry,
+        },
+      },
     );
   }
 
@@ -449,6 +471,13 @@ export class IndigeneCertificateService {
     await fs.promises.writeFile(tempFilePath, pdfBuffer);
 
     return tempFilePath;
+  }
+
+  async findRequestsByUserId(userId: string): Promise<Certificate[]> {
+    return await this.certificateModel
+      .find({ userId })
+      .populate('userId')
+      .exec();
   }
 
   // Delete Certificate
