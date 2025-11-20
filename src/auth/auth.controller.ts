@@ -212,8 +212,8 @@ export class AuthController {
 
       '88765432103': {
         fullName: 'James Gbaden',
-        dob: '1990-01-01',
-        phone: '08043710650',
+        dob: '1967-01-01',
+        phone: '08043710689',
         stateOfOrigin: 'Benue',
         lga: 'Buruku',
       },
@@ -221,7 +221,7 @@ export class AuthController {
       '88765432101': {
         fullName: 'Charles Luper',
         dob: '1990-01-01',
-        phone: '08043710658',
+        phone: '08043710555',
         stateOfOrigin: 'Benue',
         lga: 'Gboko',
       },
@@ -234,11 +234,19 @@ export class AuthController {
         lga: 'Gboko',
       },
       '88765432133': {
-        firstname: 'Akor Ejeh',
+        fullName: 'Akor Ejeh',
         dob: '1990-01-01',
         phone: '08043710667',
         stateOfOrigin: 'Benue',
         lga: 'Gboko',
+      },
+
+      '88765432111': {
+        fullName: 'Gabriel Nwaje',
+        dob: '1987-01-01',
+        phone: '08043710633',
+        stateOfOrigin: 'Enugu',
+        lga: 'Nsuka',
       },
     };
 

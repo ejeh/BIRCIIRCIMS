@@ -129,26 +129,60 @@ export class UsersController {
       console.log('education', education);
       if (!Array.isArray(education) || education.length === 0) return false;
 
-      return education.every(
-        (edu) =>
-          edu.institution?.trim() &&
-          edu.qualification?.trim() &&
-          edu.startDate?.trim() &&
-          edu.endDate?.trim(),
-      );
+      return education.every((edu) => {
+        const institutionFilled =
+          typeof edu.institution === 'string' && edu.institution.trim() !== '';
+
+        const qualificationFilled =
+          typeof edu.qualification === 'string' &&
+          edu.qualification.trim() !== '';
+
+        const startDateFilled =
+          edu.startDate instanceof Date ||
+          (typeof edu.startDate === 'string' && edu.startDate.trim() !== '');
+
+        const endDateFilled =
+          edu.endDate instanceof Date ||
+          (typeof edu.endDate === 'string' && edu.endDate.trim() !== '');
+
+        return (
+          institutionFilled &&
+          qualificationFilled &&
+          startDateFilled &&
+          endDateFilled
+        );
+      });
     }
 
     function isEmploymentHistoryComplete(history: any[]): boolean {
       if (!Array.isArray(history) || history.length === 0) return false;
 
-      return history.every(
-        (job) =>
-          job.companyName?.trim() &&
-          job.address?.trim() &&
-          job.designation?.trim() &&
-          job.startDate?.trim() &&
-          job.endDate?.trim(),
-      );
+      return history.every((job) => {
+        const companyNameFilled =
+          typeof job.companyName === 'string' && job.companyName.trim() !== '';
+
+        const addressFilled =
+          typeof job.address === 'string' && job.address.trim() !== '';
+
+        const designationFilled =
+          typeof job.designation === 'string' && job.designation.trim() !== '';
+
+        const startDateFilled =
+          job.startDate instanceof Date ||
+          (typeof job.startDate === 'string' && job.startDate.trim() !== '');
+
+        const endDateFilled =
+          job.endDate instanceof Date ||
+          (typeof job.endDate === 'string' && job.endDate.trim() !== '');
+
+        return (
+          companyNameFilled &&
+          addressFilled &&
+          designationFilled &&
+          startDateFilled &&
+          endDateFilled
+        );
+      });
     }
 
     function isFamilyComplete(family: any[]): boolean {
@@ -423,7 +457,6 @@ export class UsersController {
 
       return user;
     } catch (error) {
-      // throw EmailAlreadyUsedException();
       throw new HttpException(
         error.message || 'An error occurred while updating the profile',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -674,9 +707,6 @@ export class UsersController {
     description: 'Returns dashboard statistics for users',
   })
   @Roles(UserRole.GLOBAL_ADMIN)
-  // async getDashboardStats() {
-  //   return this.userService.getDashboardStats();
-  // }
   async getDashboardStats(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,

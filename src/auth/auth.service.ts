@@ -112,6 +112,14 @@ export class AuthService {
       lga: 'Buruku',
       status: 'verified',
     },
+
+    '88765432111': {
+      firstname: 'Gabriel',
+      lastname: 'Nwaje',
+      stateOfOrigin: 'Enugu',
+      lga: 'Nsuka',
+      status: 'verified',
+    },
   };
 
   async validateUser(email: string, password: string): Promise<UserDocument> {
@@ -206,68 +214,6 @@ export class AuthService {
     };
   }
 
-  // async signUpKindred(userData: SigUpKindredDto, origin: string) {
-  //   const { NIN, firstname, lastname, stateOfOrigin } = userData;
-
-  //   if (!this.fakeDatabase[NIN]) {
-  //     throw new BadRequestException('NIN not found');
-  //   }
-
-  //   const storedData = this.fakeDatabase[NIN];
-  //   if (
-  //     storedData.firstname !== firstname ||
-  //     storedData.lastname !== lastname ||
-  //     storedData.stateOfOrigin.toLocaleLowerCase() !==
-  //       stateOfOrigin.toLocaleLowerCase()
-  //   ) {
-  //     throw new BadRequestException('User details do not match the NIN record');
-  //   }
-
-  //   // Create user first
-  //   const user = await this.usersService.create(
-  //     userData.firstname,
-  //     userData.lastname,
-  //     userData.email,
-  //     userData.password,
-  //     userData.phone,
-  //     userData.stateOfOrigin,
-  //     userData.lga,
-  //     userData.NIN,
-  //     'kindred_head',
-  //     origin,
-  //   );
-
-  //   try {
-  //     // Then try to create kindred
-  //     await this.kindredService.createKindred({
-  //       userId: userData.userId,
-  //       firstname: user.firstname,
-  //       lastname: user.lastname,
-  //       email: user.email,
-  //       lga: user.lgaOfOrigin,
-  //       stateOfOrigin: user.stateOfOrigin,
-  //       phone: userData.phone,
-  //       kindred: userData.kindred,
-  //       address: userData.address,
-  //     });
-  //   } catch (err) {
-  //     await this.usersService.deleteUserById(user.id);
-  //     throw new InternalServerErrorException(
-  //       'Failed to create kindred: ' + err.message,
-  //     );
-  //   }
-
-  //   // Return token and user if all successful
-  //   return {
-  //     token: this.jwtService.sign(
-  //       { ...user.getPublicData() },
-  //       { subject: `${user.id}` },
-  //     ),
-  //     user: user.getPublicData(),
-  //   };
-  // }
-
-  // user jwt decode obj
   async login(user?: any) {
     if (!user.isActive) {
       throw new UnauthorizedException(

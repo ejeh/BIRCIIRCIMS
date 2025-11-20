@@ -247,42 +247,18 @@ export class UsersService {
     const skip = (page - 1) * limit;
     const data = await this.userModel
       .find()
+      .populate('assignedBy', 'firstname lastname email')
       .skip(skip)
       .limit(limit)
       .populate('lga', 'name headquaters')
       .exec();
     const totalCount = await this.userModel.countDocuments().exec();
+    console.log('data', data);
     return {
       data,
       hasNextPage: skip + limit < totalCount,
     };
   }
-
-  // async updateUserRole(id: string, body: UpdateUserRoleDto, currentUser: any) {
-  //   const targetUser = await this.userModel.findById(id);
-  //   if (!targetUser) {
-  //     throw new NotFoundException('User not found');
-  //   }
-
-  //   // Restrict: support_admin cannot update another support_admin
-  //   if (
-  //     currentUser.role === UserRole.SUPPORT_ADMIN &&
-  //     targetUser.role === UserRole.SUPPORT_ADMIN
-  //   ) {
-  //     throw new ForbiddenException(
-  //       'Support Admins are not allowed to modify other Support Admins',
-  //     );
-  //   }
-
-  //   // Proceed to update the role
-  //   const updatedUser = await this.userModel.findByIdAndUpdate(
-  //     id,
-  //     { role: body.role },
-  //     { new: true },
-  //   );
-
-  //   return updatedUser;
-  // }
 
   async sendRequest(
     email: string,
