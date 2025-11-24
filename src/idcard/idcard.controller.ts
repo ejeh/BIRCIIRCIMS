@@ -566,17 +566,20 @@ export class IdcardController {
       limits: { fileSize: 5 * 1024 * 1024 },
       fileFilter: (req, file, cb) => {
         const fieldTypeRules = {
-          passportPhotoUrl: {
+          passportPhoto: {
             mime: ['image/jpeg', 'image/png', 'image/jpg'],
             ext: ['.jpeg', '.jpg', '.png'],
+            message: 'Passport Photo must be an image (.jpg, .jpeg, .png)',
           },
-          refLetterUrl: {
+          ref_letter: {
             mime: ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'],
             ext: ['.pdf', '.jpeg', '.jpg', '.png'],
+            message: 'ID Card must be an image or a PDF file',
           },
-          utilityBillUrl: {
+          utilityBill: {
             mime: ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'],
             ext: ['.pdf', '.jpeg', '.jpg', '.png'],
+            message: 'Birth Certificate must be an image or a PDF file',
           },
         };
         const rules = fieldTypeRules[file.fieldname];
@@ -591,6 +594,7 @@ export class IdcardController {
             false,
           );
         }
+
         cb(null, true);
       },
     }),
@@ -603,8 +607,8 @@ export class IdcardController {
       new PassportPhotoQualityPipe({ isOptional: true }),
       new FileSizeValidationPipe({
         passportPhoto: { maxSize: 2 * 1024 * 1024 },
-        refLetterUrl: { maxSize: 3 * 1024 * 1024 },
-        utilityBillUrl: { maxSize: 5 * 1024 * 1024 },
+        ref_letter: { maxSize: 3 * 1024 * 1024 },
+        utilityBill: { maxSize: 5 * 1024 * 1024 },
       }),
     )
     files: Array<Express.Multer.File>,

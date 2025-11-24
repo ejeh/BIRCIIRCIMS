@@ -11,6 +11,7 @@ import { comparePassword, hashPassword } from './auth';
 import { LoginCredentialsException } from 'src/common/exception';
 import {
   ActivateParams,
+  AdminSignUpDto,
   ChangePasswordDto,
   ForgottenPasswordDto,
   ResetPasswordDto,
@@ -22,11 +23,10 @@ import { UserMailerService } from 'src/users/users.mailer.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { v4 as uuid } from 'uuid';
 import config from 'src/config';
-import { SigUpKindredDto } from 'src/kindred/kindredDto';
-import { KindredService } from 'src/kindred/kindred.service';
 import { UserPublicData } from 'src/users/users.dto';
 import * as bcrypt from 'bcryptjs';
 import { authenticator } from 'otplib';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -35,13 +35,14 @@ export class AuthService {
     private readonly userMailer: UserMailerService,
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-    private readonly kindredService: KindredService,
+    private readonly mailService: MailService,
   ) {}
 
   private fakeDatabase = {
     '12345678901': {
       firstname: 'Godfrey',
       lastname: 'Ejeh',
+      middlename: 'Akor',
       stateOfOrigin: 'Benue',
       lga: 'Ogbadibo',
       status: 'verified',
@@ -49,6 +50,7 @@ export class AuthService {
     '98765432109': {
       firstname: 'John',
       lastname: 'Doe',
+      middlename: 'Smith',
       stateOfOrigin: 'Benue',
       lga: 'Buruku',
       status: 'verified',
@@ -56,6 +58,7 @@ export class AuthService {
     '98765432102': {
       firstname: 'Simon',
       lastname: 'Iber',
+      middlename: 'Akper',
       stateOfOrigin: 'Benue',
       lga: 'Buruku',
       status: 'verified',
@@ -63,6 +66,7 @@ export class AuthService {
     '98765432162': {
       firstname: 'Sheyi',
       lastname: 'Shay',
+      middlename: 'Oladele',
       stateOfOrigin: 'Ogun',
       lga: 'Ifo',
       status: 'verified',
@@ -70,6 +74,7 @@ export class AuthService {
     '88765432102': {
       firstname: 'Arome',
       lastname: 'Mbur',
+      middlename: 'Idris',
       stateOfOrigin: 'Kogi',
       lga: 'Okene',
       status: 'verified',
@@ -78,6 +83,7 @@ export class AuthService {
     '88765432105': {
       firstname: 'Derick',
       lastname: 'Gbaden',
+      middlename: 'Godwin',
       stateOfOrigin: 'Benue',
       lga: 'Gboko',
       status: 'verified',
@@ -86,6 +92,7 @@ export class AuthService {
     '88765432101': {
       firstname: 'Charles',
       lastname: 'Luper',
+      middlename: 'Tersoo',
       stateOfOrigin: 'Benue',
       lga: 'Gboko',
       status: 'verified',
@@ -93,6 +100,7 @@ export class AuthService {
     '88765432131': {
       firstname: 'Victor',
       lastname: 'Atir',
+      middlename: 'James',
       stateOfOrigin: 'Benue',
       lga: 'Gboko',
       status: 'verified',
@@ -100,6 +108,7 @@ export class AuthService {
     '88765432133': {
       firstname: 'Akor',
       lastname: 'Ejeh',
+      middlename: 'Godfrey',
       stateOfOrigin: 'Benue',
       lga: 'Gboko',
       status: 'verified',
@@ -108,6 +117,7 @@ export class AuthService {
     '88765432103': {
       firstname: 'James',
       lastname: 'Gbaden',
+      middlename: 'Derick',
       stateOfOrigin: 'Benue',
       lga: 'Buruku',
       status: 'verified',
@@ -116,8 +126,17 @@ export class AuthService {
     '88765432111': {
       firstname: 'Gabriel',
       lastname: 'Nwaje',
+      middlename: 'Sunday',
       stateOfOrigin: 'Enugu',
-      lga: 'Nsuka',
+      lga: 'Nsukka',
+      status: 'verified',
+    },
+
+    '88765432456': {
+      firstname: 'Adrian',
+      lastname: 'Idoko',
+      stateOfOrigin: 'Delta',
+      lga: 'Ughelli North',
       status: 'verified',
     },
   };
@@ -164,7 +183,7 @@ export class AuthService {
       await user.save();
 
     // Send email with activation link
-    this.userMailer.sendActivationMail(
+    this.mailService.sendActivationMail(
       user.email,
       user.id,
       user.activationToken,
@@ -174,7 +193,7 @@ export class AuthService {
     return { success: true, message: 'Activation email sent successfully' };
   }
 
-  async signUpUser(userData: SignUpDto, origin: string, role: string) {
+  async signupUser(userData: SignUpDto, origin: string, role: string) {
     const { NIN, firstname, lastname, stateOfOrigin } = userData;
 
     if (!this.fakeDatabase[NIN]) {
@@ -192,14 +211,15 @@ export class AuthService {
     }
     const user = await this.usersService.create(
       userData.firstname,
+      userData.middlename,
       userData.lastname,
+      userData.DOB,
       userData.email,
       userData.password,
       userData.phone,
       userData.stateOfOrigin,
       userData.lgaOfOrigin,
       userData.NIN,
-      userData.kindred,
       role,
       origin,
     );
@@ -211,6 +231,58 @@ export class AuthService {
       user: user.getPublicData(),
       success: true,
       message: 'NIN Verified Successfully',
+    };
+  }
+
+  async adminSignup(userData: AdminSignUpDto, origin: string, role: string) {
+    console.log('Admin Signup Role:', role);
+    const { NIN, firstname, lastname, stateOfOrigin, phone, email } = userData;
+
+    if (!this.fakeDatabase[NIN]) {
+      throw new BadRequestException('NIN not found');
+    }
+
+    const storedData = this.fakeDatabase[NIN];
+
+    if (
+      storedData.firstname !== firstname ||
+      storedData.lastname !== lastname ||
+      storedData.stateOfOrigin.toLocaleLowerCase() !==
+        stateOfOrigin.toLocaleLowerCase()
+    ) {
+      throw new BadRequestException('User details do not match the NIN record');
+    }
+
+    // 🔐 Auto-generate password from phone
+    const generatedPassword = phone.toString().slice(-8);
+    // Example: phone = '08034567890' → password = '567890'
+
+    const user = await this.usersService.createUser(
+      firstname,
+      userData.middlename,
+      lastname,
+      userData.DOB,
+      email,
+      generatedPassword, // pass auto-generated password
+      phone,
+      stateOfOrigin,
+      userData.lgaOfOrigin,
+      NIN,
+      role,
+      origin,
+    );
+
+    // 📧 Send welcome email with password
+    await this.mailService.sendWelcomePasswordEmail(email, generatedPassword);
+
+    return {
+      token: this.jwtService.sign(
+        { ...user.getPublicData() },
+        { subject: `${user.id}` },
+      ),
+      user: user.getPublicData(),
+      success: true,
+      message: 'User created successfully',
     };
   }
 

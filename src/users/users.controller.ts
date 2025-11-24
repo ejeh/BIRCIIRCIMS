@@ -126,7 +126,6 @@ export class UsersController {
     }
 
     function isEducationalHistoryComplete(education: any[]): boolean {
-      console.log('education', education);
       if (!Array.isArray(education) || education.length === 0) return false;
 
       return education.every((edu) => {
@@ -264,6 +263,7 @@ export class UsersController {
       totalWeight += 30;
 
       // --- OPTIONAL INFO (10%) ---
+      console.log(user);
       const optionalFields = [
         user.religion,
         user.community,
@@ -564,9 +564,6 @@ export class UsersController {
   // ) {
   //   return this.userService.updateUserRole(id, body, req.user);
   // }
-
-  // src/users/users.controller.ts
-  // Update the role change endpoint
 
   @Patch(':id/role')
   @ApiOperation({ summary: 'Change user role' })

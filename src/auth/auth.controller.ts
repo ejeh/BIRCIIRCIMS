@@ -13,6 +13,7 @@ import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import {
   ActivateParams,
+  AdminSignUpDto,
   AuthenticatedUser,
   ChangePasswordDto,
   ForgottenPasswordDto,
@@ -26,7 +27,6 @@ import { Request, Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { AppRequest } from 'src/generic/generic.interface';
 import config from 'src/config';
-import { SigUpKindredDto } from 'src/kindred/kindredDto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 @ApiTags('auth')
@@ -64,24 +64,19 @@ export class AuthController {
   @Post('signup')
   @ApiResponse({ type: AuthenticatedUser })
   signup(@Body() signUpDto: SignUpDto, @Req() req: Request) {
-    return this.authService.signUpUser(signUpDto, getOriginHeader(req), 'user');
+    return this.authService.signupUser(signUpDto, getOriginHeader(req), 'user');
   }
 
   @Post('admin-signup')
   @ApiResponse({ type: AuthenticatedUser })
-  adminSignup(@Body() signUpDto: SignUpDto, @Req() req: Request) {
-    return this.authService.signUpUser(
-      signUpDto,
+  adminSignup(@Body() adminSignUpDto: AdminSignUpDto, @Req() req: Request) {
+    const role = adminSignUpDto.role;
+    return this.authService.adminSignup(
+      adminSignUpDto,
       getOriginHeader(req),
-      'support_admin',
+      role,
     );
   }
-
-  // @Post('signup-kindred')
-  // @ApiResponse({ type: AuthenticatedUser })
-  // async signupAgent(@Body() signUpDto: SigUpKindredDto, @Req() req: Request) {
-  //   return this.authService.signUpKindred(signUpDto, getOriginHeader(req));
-  // }
 
   @UseGuards(AuthGuard('local'))
   @Post('login')
@@ -167,35 +162,45 @@ export class AuthController {
   async verifyNIN(@Body() { nin }: { nin: string }) {
     const fakeDB = {
       '12345678901': {
-        fullName: 'Godfrey Ejeh',
+        firstname: 'Godfrey',
+        lastname: 'Ejeh',
+        middlename: 'Akor',
         dob: '1990-01-01',
         phone: '08079710658',
         stateOfOrigin: 'Benue',
         lga: 'Ogbadibo',
       },
       '98765432109': {
-        fullName: 'John Doe',
+        firstname: 'John',
+        lastname: 'Doe',
+        middlename: 'Smith',
         dob: '1990-01-01',
         phone: '08039710658',
         stateOfOrigin: 'Benue',
         lga: 'Buruku',
       },
       '98765432102': {
-        fullName: 'Simon Iber',
+        firstname: 'Simon',
+        lastname: 'Iber',
+        middlename: 'Akper',
         dob: '1990-01-01',
         phone: '08033710658',
         stateOfOrigin: 'Benue',
         lga: 'Buruku',
       },
       '98765432162': {
-        fullName: 'Sheyi shay',
+        firstname: 'Sheyi',
+        lastname: 'Shay',
+        middlename: 'Oladele',
         dob: '1990-01-01',
         phone: '08133710658',
         stateOfOrigin: 'Ogun',
         lga: 'Ifo',
       },
       '88765432102': {
-        fullName: 'Arome Mbur',
+        firstname: 'Arome',
+        lastname: 'Mbur',
+        middlename: 'Idris',
         dob: '1990-01-01',
         phone: '08030710658',
         stateOfOrigin: 'Kogi',
@@ -203,7 +208,9 @@ export class AuthController {
       },
 
       '88765432105': {
-        fullName: 'Derick Gbaden',
+        firstname: 'Derick',
+        lastname: 'Gbaden',
+        middlename: 'Godwin',
         dob: '1990-01-01',
         phone: '08043710650',
         stateOfOrigin: 'Benue',
@@ -211,7 +218,9 @@ export class AuthController {
       },
 
       '88765432103': {
-        fullName: 'James Gbaden',
+        firstname: 'James',
+        lastname: 'Gbaden',
+        middlename: 'Derick',
         dob: '1967-01-01',
         phone: '08043710689',
         stateOfOrigin: 'Benue',
@@ -219,7 +228,9 @@ export class AuthController {
       },
 
       '88765432101': {
-        fullName: 'Charles Luper',
+        firstname: 'Charles',
+        lastname: 'Luper',
+        middlename: 'Tersoo',
         dob: '1990-01-01',
         phone: '08043710555',
         stateOfOrigin: 'Benue',
@@ -227,14 +238,18 @@ export class AuthController {
       },
 
       '88765432131': {
-        fullName: 'Victor Atir',
+        firstname: 'Victor',
+        lastname: 'Atir',
+        middlename: 'James',
         dob: '1990-01-01',
         phone: '08043710666',
         stateOfOrigin: 'Benue',
         lga: 'Gboko',
       },
       '88765432133': {
-        fullName: 'Akor Ejeh',
+        firstname: 'Akor',
+        lastname: 'Ejeh',
+        middlename: 'Godfrey',
         dob: '1990-01-01',
         phone: '08043710667',
         stateOfOrigin: 'Benue',
@@ -242,11 +257,22 @@ export class AuthController {
       },
 
       '88765432111': {
-        fullName: 'Gabriel Nwaje',
+        firstname: 'Gabriel ',
+        lastname: 'Nwaje',
+        middlename: 'Sunday',
         dob: '1987-01-01',
         phone: '08043710633',
         stateOfOrigin: 'Enugu',
-        lga: 'Nsuka',
+        lga: 'Nsukka',
+      },
+
+      '88765432456': {
+        firstname: 'Adrian',
+        lastname: 'Idoko',
+        dob: '1987-01-01',
+        phone: '08043710536',
+        stateOfOrigin: 'Delta',
+        lga: 'Ughelli North',
       },
     };
 

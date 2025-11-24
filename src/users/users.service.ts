@@ -58,14 +58,15 @@ export class UsersService {
 
   async create(
     firstname: string,
+    middlename: string,
     lastname: string,
+    DOB: string,
     email: string,
     password: string,
     phone: number,
     stateOfOrigin: string,
     lgaOfOrigin: string,
     NIN: number,
-    kindred: string,
     role: string,
     origin: string,
   ): Promise<UserDocument> {
@@ -73,13 +74,14 @@ export class UsersService {
       const user = await this.userModel.create({
         email: email.toLocaleLowerCase(),
         firstname,
+        middlename,
         lastname,
+        DOB,
         phone,
         stateOfOrigin,
         lgaOfOrigin,
         NIN,
         role,
-        kindred,
         origin,
         password: await hashPassword(password),
         activationToken: uuid(),
@@ -92,6 +94,45 @@ export class UsersService {
         user.activationToken,
         'activate-account',
       );
+
+      return user;
+    } catch (error) {
+      throw EmailAlreadyUsedException();
+    }
+  }
+
+  async createUser(
+    firstname: string,
+    middlename: string,
+    lastname: string,
+    DOB: string,
+    email: string,
+    password: string,
+    phone: number,
+    stateOfOrigin: string,
+    lgaOfOrigin: string,
+    NIN: number,
+    role: string,
+    origin: string,
+  ): Promise<UserDocument> {
+    try {
+      const user = await this.userModel.create({
+        email: email.toLowerCase(),
+        firstname,
+        middlename,
+        lastname,
+        DOB,
+        phone,
+        stateOfOrigin,
+        lgaOfOrigin,
+        NIN,
+        role,
+        origin,
+        password: await hashPassword(password),
+        activationToken: uuid(),
+        activationExpires: Date.now() + config.auth.activationExpireInMs,
+        isActive: true,
+      });
 
       return user;
     } catch (error) {
@@ -253,7 +294,6 @@ export class UsersService {
       .populate('lga', 'name headquaters')
       .exec();
     const totalCount = await this.userModel.countDocuments().exec();
-    console.log('data', data);
     return {
       data,
       hasNextPage: skip + limit < totalCount,

@@ -406,4 +406,41 @@ export class MailService {
   //     };
   //   }
   // }
+
+  async sendWelcomePasswordEmail(email: string, password: string) {
+    // if (!config.isTest) {
+    if (config.isTest) {
+      console.log(
+        `[Mailgun] Test mode: Pretending to send password reset to ${email}`,
+      );
+      return { success: true, dev: true };
+    }
+    try {
+      if (config.isDev) {
+        console.warn(
+          `[Mailgun Sandbox] Only authorized recipients can receive emails. Check Mailgun dashboard for ${email}`,
+        );
+      }
+
+      const message = `Welcome to Benue Resident ID!\n\nYour account has been created successfully. Here are your login details:\n\nEmail: ${email}\nPassword: ${password}\n\nPlease log in and change your password immediately for security reasons.\n\nThank you for joining us!\n\nBest regards,\nBenue Resident ID Team`;
+
+      const response = await this.mg.messages.create(this.domain, {
+        from: `Benue Resident ID <noreply@${this.domain}>`,
+        to: email,
+        subject: 'Your New Account Login Details',
+        text: message,
+      });
+      return { success: true, response };
+    } catch (error) {
+      console.error('Mailgun Error:', error);
+      return {
+        success: false,
+        message:
+          error?.details ||
+          error?.message ||
+          'Failed to send welcome password email',
+        status: error?.status || 500,
+      };
+    }
+  }
 }

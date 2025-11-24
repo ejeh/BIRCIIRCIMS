@@ -21,6 +21,14 @@ export class SignUpDto {
   @ApiProperty({})
   readonly lastname!: string;
 
+  @MaxLength(255)
+  @ApiProperty({})
+  readonly middlename!: string;
+
+  @IsNotEmpty()
+  @ApiProperty({})
+  readonly DOB!: string;
+
   @IsNotEmpty()
   @MaxLength(11)
   @ApiProperty({})
@@ -35,6 +43,7 @@ export class SignUpDto {
     example: 'email@gmail.com',
     maxLength: 255,
   })
+  @IsNotEmpty()
   @IsEmail()
   readonly email!: string;
 
@@ -51,10 +60,58 @@ export class SignUpDto {
   @MaxLength(255)
   @ApiProperty({})
   readonly lgaOfOrigin!: string;
+}
+
+export class AdminSignUpDto {
+  @IsNotEmpty()
+  @MaxLength(255)
+  @ApiProperty({})
+  readonly firstname!: string;
+
+  @IsNotEmpty()
+  @MaxLength(255)
+  @ApiProperty({})
+  readonly lastname!: string;
+
+  @MaxLength(255)
+  @ApiProperty({})
+  readonly middlename!: string;
+
+  @IsNotEmpty()
+  @ApiProperty({})
+  readonly DOB!: string;
+
+  @IsNotEmpty()
+  @MaxLength(11)
+  @ApiProperty({})
+  readonly phone!: number;
+
+  @IsNotEmpty()
+  @MaxLength(11)
+  @ApiProperty({})
+  readonly NIN!: number;
+
+  @ApiProperty({
+    example: 'email@gmail.com',
+    maxLength: 255,
+  })
+  @IsNotEmpty()
+  @IsEmail()
+  readonly email!: string;
+
+  @IsNotEmpty()
+  @MaxLength(255)
+  @ApiProperty({})
+  readonly stateOfOrigin!: string;
+
+  @IsNotEmpty()
+  @MaxLength(255)
+  @ApiProperty({})
+  readonly lgaOfOrigin!: string;
 
   @IsOptional()
   @ApiProperty({})
-  readonly kindred;
+  readonly role?: string;
 }
 
 export class ActivateParams {
