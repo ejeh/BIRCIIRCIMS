@@ -112,7 +112,7 @@ export class User {
   identification?: string;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, unique: true })
+  @Prop({ type: mongoose.SchemaTypes.String })
   id_number?: string;
 
   @ApiProperty()
@@ -161,7 +161,7 @@ export class User {
     required: true,
     unique: true,
   })
-  phone: string;
+  phone: number;
 
   @ApiProperty()
   @Prop({ type: mongoose.SchemaTypes.String, required: true, unique: true })
