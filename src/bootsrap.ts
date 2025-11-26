@@ -95,16 +95,16 @@ async function seedPermissions() {
         role,
         permissions: getDefaultPermissions(role),
       });
-      console.log(`✅ Created permissions for role: ${role}`);
+      console.log(` Created permissions for role: ${role}`);
     } else if (existingRolePermission.permissions.length === 0) {
       // Update if it exists but is empty
       await RolePermissionModel.updateOne(
         { role },
         { $set: { permissions: getDefaultPermissions(role) } },
       );
-      console.log(`✅ Updated empty permissions for role: ${role}`);
+      console.log(` Updated empty permissions for role: ${role}`);
     } else {
-      console.log(`ℹ️ Permissions already exist for role: ${role}`);
+      console.log(` Permissions already exist for role: ${role}`);
     }
   }
   console.log('🔑 Permissions seeding completed.');
@@ -142,15 +142,15 @@ export async function bootstrap() {
       isActive: true,
     });
 
-    console.log('✅ Global admin created successfully');
+    console.log('Global admin created successfully');
   } else if (existingUser.role !== UserRole.GLOBAL_ADMIN) {
     await UserModel.updateOne(
       { email },
       { $set: { role: UserRole.GLOBAL_ADMIN } },
     );
-    console.log('✅ Global admin role assigned to existing user');
+    console.log('Global admin role assigned to existing user');
   } else {
-    console.log('ℹ️ Global admin already exists');
+    console.log('Global admin already exists');
   }
 
   // 3. Seed permissions after user creation
