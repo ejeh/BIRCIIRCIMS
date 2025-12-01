@@ -9,7 +9,12 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import {
   ActivateParams,
@@ -279,5 +284,25 @@ export class AuthController {
     const data = fakeDB[nin];
     if (!data) throw new BadRequestException('NIN not found');
     return { success: true, data };
+  }
+
+  @Post('check-existence')
+  @ApiOperation({
+    summary: 'Check if email, phone, or NIN already exists for a user',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Returns an object indicating which identifiers already exist (e.g., { email: true, phone: false, nin: false })',
+  })
+  async checkUserExistence(
+    @Body() body: { email?: string; phone?: string; nin?: string },
+  ) {
+    if (!body.email && !body.phone && !body.nin) {
+      throw new BadRequestException(
+        'At least one identifier (email, phone, or NIN) must be provided.',
+      );
+    }
+    return this.authService.checkUserExistence(body);
   }
 }

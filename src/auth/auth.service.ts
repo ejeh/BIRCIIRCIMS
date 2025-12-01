@@ -31,7 +31,8 @@ import { MailService } from 'src/mail/mail.service';
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectModel(User.name) public readonly userModel: Model<User>,
+    // @InjectModel(User.name) public readonly userModel: Model<User>,
+    @InjectModel(User.name) public readonly userModel: Model<UserDocument>,
     private readonly userMailer: UserMailerService,
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
@@ -525,5 +526,53 @@ export class AuthService {
     }
 
     return false;
+  }
+
+  /**
+   * Checks for the existence of a user based on provided identifiers (email, phone, NIN).
+   * @param identifiers An object containing one or more identifiers to check.
+   * @returns An object indicating the existence status for each provided identifier.
+   */
+  async checkUserExistence(identifiers: {
+    email?: string;
+    phone?: string;
+    nin?: string;
+  }): Promise<{ email?: boolean; phone?: boolean; nin?: boolean }> {
+    const results: { email?: boolean; phone?: boolean; nin?: boolean } = {};
+    const promises: Promise<UserDocument | null>[] = [];
+    const fields: ('email' | 'phone' | 'nin')[] = [];
+
+    if (identifiers.email) {
+      promises.push(
+        this.userModel.findOne({ email: identifiers.email }).exec(),
+      );
+      fields.push('email');
+    }
+    // Assuming the 'phone' field exists in the User model
+    if (identifiers.phone) {
+      promises.push(
+        this.userModel.findOne({ phone: identifiers.phone }).exec(),
+      );
+      fields.push('phone');
+    }
+    // Assuming the 'NIN' field exists in the User model
+    if (identifiers.nin) {
+      promises.push(this.userModel.findOne({ NIN: identifiers.nin }).exec());
+      fields.push('nin');
+    }
+
+    if (promises.length === 0) {
+      return {}; // Should be caught by controller's BadRequestException, but for safety
+    }
+
+    const dbResults = await Promise.all(promises);
+
+    // Map the database results back to the original fields
+    dbResults.forEach((user, index) => {
+      const field = fields[index];
+      results[field] = !!user;
+    });
+
+    return results;
   }
 }
