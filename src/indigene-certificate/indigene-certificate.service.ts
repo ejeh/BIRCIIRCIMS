@@ -2,8 +2,6 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
-  HttpException,
-  HttpStatus,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';

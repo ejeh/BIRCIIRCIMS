@@ -263,7 +263,6 @@ export class UsersController {
       totalWeight += 30;
 
       // --- OPTIONAL INFO (10%) ---
-      console.log(user);
       const optionalFields = [
         user.religion,
         user.community,

@@ -140,6 +140,51 @@ export class AuthService {
       lga: 'Ughelli North',
       status: 'verified',
     },
+
+    '18765432103': {
+      firstname: 'Mary',
+      lastname: 'Jane',
+      middlename: 'Doe',
+      stateOfOrigin: 'Benue',
+      lga: 'Buruku',
+      status: 'verified',
+    },
+
+    '33765432103': {
+      firstname: 'Japheth',
+      lastname: 'Kor',
+      middlename: 'Tersoo',
+      stateOfOrigin: 'Benue',
+      lga: 'Gwer East',
+      status: 'verified',
+    },
+
+    '33765432155': {
+      firstname: 'Steven',
+      lastname: 'Ajiga',
+      middlename: 'Ajene',
+      stateOfOrigin: 'Benue',
+      lga: 'Oju',
+      status: 'verified',
+    },
+
+    '24765432155': {
+      firstname: 'Joseph',
+      lastname: 'Agbo',
+      middlename: 'Suleman',
+      stateOfOrigin: 'Benue',
+      lga: 'Apa',
+      status: 'verified',
+    },
+
+    '24768432155': {
+      firstname: 'Terrence',
+      lastname: 'Terkula',
+      middlename: 'Terkimbi',
+      stateOfOrigin: 'Benue',
+      lga: 'Gwer West',
+      status: 'verified',
+    },
   };
 
   async validateUser(email: string, password: string): Promise<UserDocument> {

@@ -171,7 +171,7 @@ export class AuthController {
         lastname: 'Ejeh',
         middlename: 'Akor',
         dob: '1990-01-01',
-        phone: '08079710658',
+        phone: '08079710659',
         stateOfOrigin: 'Benue',
         lga: 'Ogbadibo',
       },
@@ -278,6 +278,56 @@ export class AuthController {
         phone: '08043710536',
         stateOfOrigin: 'Delta',
         lga: 'Ughelli North',
+      },
+
+      '18765432103': {
+        firstname: 'Mary',
+        lastname: 'Jane',
+        middlename: 'Doe',
+        dob: '1985-07-15',
+        phone: '08049710668',
+        stateOfOrigin: 'Benue',
+        lga: 'Buruku',
+      },
+
+      '33765432103': {
+        firstname: 'Japheth',
+        lastname: 'Kor',
+        middlename: 'Tersoo',
+        dob: '1988-08-20',
+        phone: '08078710659',
+        stateOfOrigin: 'Benue',
+        lga: 'Gwer East',
+      },
+
+      '33765432155': {
+        firstname: 'Steven',
+        lastname: 'Ajiga',
+        middlename: 'Ajene',
+        dob: '1991-02-25',
+        phone: '08053710658',
+        stateOfOrigin: 'Benue',
+        lga: 'Oju',
+      },
+
+      '24765432155': {
+        firstname: 'Joseph',
+        lastname: 'Agbo',
+        middlename: 'Suleman',
+        dob: '1975-07-15',
+        phone: '08039710648',
+        stateOfOrigin: 'Benue',
+        lga: 'Apa',
+      },
+
+      '24768432155': {
+        firstname: 'Terrence',
+        lastname: 'Terkula',
+        middlename: 'Terkimbi',
+        dob: '1989-07-15',
+        phone: '08033710656',
+        stateOfOrigin: 'Benue',
+        lga: 'Gwer West',
       },
     };
 
