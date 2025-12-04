@@ -90,12 +90,12 @@ export class AuthController {
     return this.authService.login(req?.user);
   }
 
-  @UseGuards(AuthGuard('local'))
-  @Post('login-kindred')
-  @ApiResponse({ type: AuthenticatedUser })
-  loginAgent(@Req() req: AppRequest, @Body() loginDto: LoginDto) {
-    return this.authService.loginKindred(req?.user);
-  }
+  // @UseGuards(AuthGuard('local'))
+  // @Post('login-kindred')
+  // @ApiResponse({ type: AuthenticatedUser })
+  // loginAgent(@Req() req: AppRequest, @Body() loginDto: LoginDto) {
+  //   return this.authService.loginKindred(req?.user);
+  // }
 
   @Post('forgot-password')
   forgotPassword(@Body() body: ForgottenPasswordDto, @Req() req: Request) {

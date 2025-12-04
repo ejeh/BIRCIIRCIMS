@@ -347,24 +347,24 @@ export class AuthService {
     };
   }
 
-  async loginKindred(user?: User) {
-    if (user.role == 'kindred_head') {
-      return {
-        token: this.jwtService.sign(
-          //@ts-ignore
-          { ...user?.getPublicData() },
-          //@ts-ignore
-          { subject: `${user?.id}` },
-        ),
-        //@ts-ignore
-        user: user?.getPublicData(),
-      };
-    }
+  // async loginKindred(user?: User) {
+  //   if (user.role == 'kindred_head') {
+  //     return {
+  //       token: this.jwtService.sign(
+  //         //@ts-ignore
+  //         { ...user?.getPublicData() },
+  //         //@ts-ignore
+  //         { subject: `${user?.id}` },
+  //       ),
+  //       //@ts-ignore
+  //       user: user?.getPublicData(),
+  //     };
+  //   }
 
-    throw new UnauthorizedException(
-      'Account does not support kindred activities.',
-    );
-  }
+  //   throw new UnauthorizedException(
+  //     'Account does not support kindred activities.',
+  //   );
+  // }
 
   async forgottenPassword({ email }: ForgottenPasswordDto, origin: string) {
     return await this.usersService.forgottenPassword(email, origin);

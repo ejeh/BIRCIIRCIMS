@@ -19,10 +19,7 @@ import {
 import { NotFoundException } from '@nestjs/common';
 import { IdcardService } from './idcard.service';
 import { UsersService } from 'src/users/users.service';
-import {
-  AnyFilesInterceptor,
-  FilesInterceptor,
-} from '@nestjs/platform-express';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import path, { extname, join } from 'path';
 import { Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -42,12 +39,9 @@ import QRCode from 'qrcode';
 import config from 'src/config';
 import * as crypto from 'crypto';
 import axios, { AxiosResponse } from 'axios';
-import { MailService } from 'src/mail/mail.service';
-import { SmsService } from 'src/sms/sms.service';
 import { FileSizeValidationPipe } from 'src/common/pipes/file-size-validation.pipe';
 import { UpdateIdCardDto } from './dto/update-idcard.dto';
 import { PassportPhotoQualityPipe } from 'src/common/pipes/passport-photo-quality.pipes';
-import { GenericImageValidationPipe } from 'src/common/pipes/generic-image-validation.pipe';
 
 @ApiTags('idCard.controller')
 @UseGuards(JwtAuthGuard)
@@ -86,8 +80,6 @@ export class IdcardController {
         const rules = fieldTypeRules[file.fieldname];
         const ext = extname(file.originalname).toLowerCase();
 
-        console.log(rules);
-
         if (!rules) {
           return cb(
             new BadRequestException(`Unexpected file field: ${file.fieldname}`),
@@ -110,10 +102,9 @@ export class IdcardController {
     @Body() body: any,
     @Req() req,
     @UploadedFiles(
-      // new GenericImageValidationPipe(),
       new PassportPhotoQualityPipe(),
       new FileSizeValidationPipe({
-        passportPhoto: { maxSize: 2 * 1024 * 1024 },
+        passportPhoto: { maxSize: 2 * 1024 * 1024 }, // 2MB
         ref_letter: { maxSize: 5 * 1024 * 1024 }, // 3MB
         utilityBill: { maxSize: 5 * 1024 * 1024 }, // 5MB
       }),
@@ -178,7 +169,7 @@ export class IdcardController {
   @Get('card-request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: IdCard, isArray: true })
-  @Roles(UserRole.SUPPORT_ADMIN, UserRole.KINDRED_HEAD, UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN)
   async getRequestsByStatuses(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
@@ -603,7 +594,6 @@ export class IdcardController {
     @Param('id') id: string,
     @Body() updatedData: UpdateIdCardDto,
     @UploadedFiles(
-      // new GenericImageValidationPipe(),
       new PassportPhotoQualityPipe({ isOptional: true }),
       new FileSizeValidationPipe({
         passportPhoto: { maxSize: 2 * 1024 * 1024 },

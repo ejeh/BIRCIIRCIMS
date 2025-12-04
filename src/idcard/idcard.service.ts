@@ -1,8 +1,6 @@
 import {
   BadRequestException,
   ConflictException,
-  HttpException,
-  HttpStatus,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -13,9 +11,7 @@ import { UserNotFoundException } from 'src/common/exception';
 import puppeteer from 'puppeteer';
 import path from 'path';
 import * as fs from 'fs';
-import * as crypto from 'crypto';
 import { Types } from 'mongoose';
-import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { UserDocument } from 'src/users/users.schema';
 import { ResubmissionService } from '../common/services/resubmission.service';
@@ -244,6 +240,11 @@ export class IdcardService {
     reason: string,
     rejectedBy: string,
   ): Promise<IdCard> {
+    if (!reason || reason.trim() === '') {
+      throw new BadRequestException(
+        'Rejection reason is required. Please provide a reason for rejecting this ID card request.',
+      );
+    }
     const request = await this.idCardModel
       .findByIdAndUpdate(
         id,

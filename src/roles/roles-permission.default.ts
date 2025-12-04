@@ -42,7 +42,7 @@ export function getDefaultPermissions(role: string): Permission[] {
         Permission.REPORTS_VIEW,
         Permission.ROLE_READ,
       ];
-    case UserRole.KINDRED_HEAD:
+      // case UserRole.KINDRED_HEAD:
       return [
         Permission.USER_READ,
         Permission.KINDRED_READ,

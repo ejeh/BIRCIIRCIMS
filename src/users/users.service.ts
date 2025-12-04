@@ -2044,6 +2044,11 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
+    // 🚫 Prevent changes if role is global-admin
+    if (user.role === UserRole.GLOBAL_ADMIN) {
+      throw new BadRequestException('Global Admin role cannot be changed');
+    }
+
     const previousRole = user.role;
 
     // Create role assignment record

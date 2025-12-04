@@ -77,7 +77,7 @@ export class PassportPhotoQualityPipe implements PipeTransform {
     }
     if (metadata.width < this.MIN_WIDTH || metadata.height < this.MIN_HEIGHT) {
       throw new BadRequestException(
-        `Image is too small. Minimum size is ${this.MIN_WIDTH}×${this.MIN_HEIGHT}px.`,
+        `Passport photo is too small. Minimum size is ${this.MIN_WIDTH}×${this.MIN_HEIGHT}px.`,
       );
     }
   }
@@ -98,7 +98,7 @@ export class PassportPhotoQualityPipe implements PipeTransform {
 
     if (variance < this.SHARPNESS_THRESHOLD) {
       throw new BadRequestException(
-        'Image is too blurry. Please upload a sharper photo.',
+        'Passport photo is too blurry. Please upload a sharper photo.',
       );
     }
   }

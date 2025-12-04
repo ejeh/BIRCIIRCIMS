@@ -48,7 +48,6 @@ import {
   CreateCertificateDto,
   UpdateCertificateDto,
 } from './dto/update-certificate.dto';
-import { GenericImageValidationPipe } from 'src/common/pipes/generic-image-validation.pipe';
 
 @ApiTags('indigene-certificate.controller')
 @UseGuards(JwtAuthGuard)
@@ -524,7 +523,7 @@ export class IndigeneCertificateController {
 
   @Patch(':id/verify')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.KINDRED_HEAD)
+  // @Roles(UserRole.KINDRED_HEAD)
   @ApiResponse({ type: Certificate, isArray: false })
   async verifyRequest(@Param('id') id: string, @Body() Body: any) {
     return await this.indigeneCertificateService.verifyRequest(id);
@@ -600,7 +599,6 @@ export class IndigeneCertificateController {
     @Param('id') id: string,
     @Body() updatedData: UpdateCertificateDto,
     @UploadedFiles(
-      // new GenericImageValidationPipe(),
       new PassportPhotoQualityPipe({ isOptional: true }),
       new FileSizeValidationPipe({
         passportPhoto: { maxSize: 2 * 1024 * 1024 },
@@ -690,7 +688,7 @@ export class IndigeneCertificateController {
   @Get('request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: Certificate, isArray: true })
-  @Roles(UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN, UserRole.KINDRED_HEAD)
+  @Roles(UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN)
   async getRequestsByStatuses(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
