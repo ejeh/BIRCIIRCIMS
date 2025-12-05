@@ -185,6 +185,14 @@ export class AuthService {
       lga: 'Gwer West',
       status: 'verified',
     },
+    '34768432156': {
+      firstname: 'Luke',
+      lastname: 'Terkula',
+      middlename: 'Terkimbi',
+      stateOfOrigin: 'Benue',
+      lga: 'Buruku',
+      status: 'verified',
+    },
   };
 
   async validateUser(email: string, password: string): Promise<UserDocument> {

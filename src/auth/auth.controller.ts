@@ -329,6 +329,16 @@ export class AuthController {
         stateOfOrigin: 'Benue',
         lga: 'Gwer West',
       },
+
+      '34768432156': {
+        firstname: 'Luke',
+        lastname: 'Terkula',
+        middlename: 'Terkimbi',
+        dob: '1989-07-15',
+        phone: '08033710622',
+        stateOfOrigin: 'Benue',
+        lga: 'Buruku',
+      },
     };
 
     const data = fakeDB[nin];
