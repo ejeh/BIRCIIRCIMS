@@ -1271,16 +1271,97 @@ export class UsersService {
   }
 
   /** 👥 DEMOGRAPHICS (gender, age, and combined gender-age groups) */
+  // async getDemographics(
+  //   lgaOfOrigin: string,
+  //   startDate?: string,
+  //   endDate?: string,
+  // ) {
+  //   // ====== START: ADD DATE FILTERING LOGIC ======
+  //   // Create a filter object to be used in the database query.
+  //   const dateFilter: any = {};
+  //   if (startDate || endDate) {
+  //     dateFilter.created_at = {}; // Assuming you have a `createdAt` field
+  //     if (startDate) dateFilter.created_at.$gte = new Date(startDate);
+  //     if (endDate) dateFilter.created_at.$lte = new Date(endDate);
+  //   }
+  //   // ====== END: DATE FILTERING LOGIC ======
+
+  //   // Find users, applying both the LGA and date filters
+  //   const users = await this.userModel
+  //     .find({ lgaOfOrigin, ...dateFilter }) // Spread the dateFilter into the query
+  //     .select('gender DOB createdAt') // Select createdAt for debugging if needed
+  //     .lean();
+
+  //   // ====== COMBINED AGE+GENDER GROUPS ======
+  //   const combinedGroups = {
+  //     'Male 18-35': 0,
+  //     'Female 18-35': 0,
+  //     'Male 36+': 0,
+  //     'Female 36+': 0,
+  //   };
+
+  //   // ====== GENDER DISTRIBUTION ======
+  //   const genderDist = {
+  //     Male: 0,
+  //     Female: 0,
+  //   };
+
+  //   // ====== AGE DISTRIBUTION ======
+  //   const ageDist = {
+  //     'Under 18': 0,
+  //     '18-25': 0,
+  //     '26-35': 0,
+  //     '36-50': 0,
+  //     '51+': 0,
+  //   };
+
+  //   users.forEach((u) => {
+  //     if (!u.gender || !u.DOB) return;
+
+  //     const dob = new Date(u.DOB);
+  //     const age = new Date().getFullYear() - dob.getFullYear();
+
+  //     // Gender distribution
+  //     if (u.gender.toLowerCase() === 'male') genderDist.Male++;
+  //     else if (u.gender.toLowerCase() === 'female') genderDist.Female++;
+
+  //     // Age distribution
+  //     if (age < 18) ageDist['Under 18']++;
+  //     else if (age <= 25) ageDist['18-25']++;
+  //     else if (age <= 35) ageDist['26-35']++;
+  //     else if (age <= 50) ageDist['36-50']++;
+  //     else ageDist['51+']++;
+
+  //     // Combined gender-age grouping
+  //     if (u.gender === 'male' && age <= 35) combinedGroups['Male 18-35']++;
+  //     else if (u.gender === 'female' && age <= 35)
+  //       combinedGroups['Female 18-35']++;
+  //     else if (u.gender === 'male' && age > 35) combinedGroups['Male 36+']++;
+  //     else if (u.gender === 'female' && age > 35)
+  //       combinedGroups['Female 36+']++;
+  //   });
+
+  //   return {
+  //     genderDistribution: {
+  //       labels: Object.keys(genderDist),
+  //       values: Object.values(genderDist),
+  //     },
+  //     ageDistribution: {
+  //       labels: Object.keys(ageDist),
+  //       values: Object.values(ageDist),
+  //     },
+  //     combinedGroups: {
+  //       labels: Object.keys(combinedGroups),
+  //       values: Object.values(combinedGroups),
+  //     },
+  //   };
+  // }
+  /** 👥 DEMOGRAPHICS (gender, age, and combined gender-age groups) */
   async getDemographics(
     lgaOfOrigin: string,
     startDate?: string,
     endDate?: string,
   ) {
-    // const users = await this.userModel
-    //   .find({ lgaOfOrigin })
-    //   .select('gender DOB')
-    //   .lean();
-
     // ====== START: ADD DATE FILTERING LOGIC ======
     // Create a filter object to be used in the database query.
     const dateFilter: any = {};
@@ -1296,6 +1377,12 @@ export class UsersService {
       .find({ lgaOfOrigin, ...dateFilter }) // Spread the dateFilter into the query
       .select('gender DOB createdAt') // Select createdAt for debugging if needed
       .lean();
+
+    // Count users with valid gender and DOB
+    let validUsersCount = 0;
+    users.forEach((u) => {
+      if (u.gender && u.DOB) validUsersCount++;
+    });
 
     // ====== COMBINED AGE+GENDER GROUPS ======
     const combinedGroups = {
@@ -1326,9 +1413,12 @@ export class UsersService {
       const dob = new Date(u.DOB);
       const age = new Date().getFullYear() - dob.getFullYear();
 
+      // Normalize gender to lowercase for consistent comparison
+      const gender = u.gender.toLowerCase();
+
       // Gender distribution
-      if (u.gender.toLowerCase() === 'male') genderDist.Male++;
-      else if (u.gender.toLowerCase() === 'female') genderDist.Female++;
+      if (gender === 'male') genderDist.Male++;
+      else if (gender === 'female') genderDist.Female++;
 
       // Age distribution
       if (age < 18) ageDist['Under 18']++;
@@ -1337,13 +1427,12 @@ export class UsersService {
       else if (age <= 50) ageDist['36-50']++;
       else ageDist['51+']++;
 
-      // Combined gender-age grouping
-      if (u.gender === 'male' && age <= 35) combinedGroups['Male 18-35']++;
-      else if (u.gender === 'female' && age <= 35)
+      // Combined gender-age grouping (FIXED: use normalized gender)
+      if (gender === 'male' && age <= 35) combinedGroups['Male 18-35']++;
+      else if (gender === 'female' && age <= 35)
         combinedGroups['Female 18-35']++;
-      else if (u.gender === 'male' && age > 35) combinedGroups['Male 36+']++;
-      else if (u.gender === 'female' && age > 35)
-        combinedGroups['Female 36+']++;
+      else if (gender === 'male' && age > 35) combinedGroups['Male 36+']++;
+      else if (gender === 'female' && age > 35) combinedGroups['Female 36+']++;
     });
 
     return {
@@ -1359,6 +1448,7 @@ export class UsersService {
         labels: Object.keys(combinedGroups),
         values: Object.values(combinedGroups),
       },
+      hasData: users.length > 0, // Add a flag to indicate if there's any data
     };
   }
 
