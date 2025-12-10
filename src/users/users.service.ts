@@ -284,19 +284,16 @@ export class UsersService {
     return user;
   }
 
-  async getPaginatedData(page: number, limit: number) {
-    const skip = (page - 1) * limit;
+  async getPaginatedData() {
     const data = await this.userModel
       .find()
+      .sort({ created_at: -1 })
+      .select('-password')
       .populate('assignedBy', 'firstname lastname email')
-      .skip(skip)
-      .limit(limit)
       .populate('lga', 'name headquaters')
       .exec();
-    const totalCount = await this.userModel.countDocuments().exec();
     return {
       data,
-      hasNextPage: skip + limit < totalCount,
     };
   }
 
@@ -416,11 +413,21 @@ export class UsersService {
 
     // FIX: Filter for references without verification tokens instead of pending status
     const neighborsWithoutToken = (user.neighbor || []).filter(
-      (ref) => ref.name && ref.phone && !ref.verificationToken,
+      (ref) =>
+        ref.name &&
+        ref.phone &&
+        !ref.verificationToken &&
+        ref.status !== VerificationStatus.VERIFIED &&
+        ref.status !== VerificationStatus.DENIED,
     );
 
     const familyWithoutToken = (user.family || []).filter(
-      (ref) => ref.name && ref.phone && !ref.verificationToken,
+      (ref) =>
+        (ref.name &&
+          ref.phone &&
+          !ref.verificationToken &&
+          ref.status !== VerificationStatus.VERIFIED) ||
+        ref.status !== VerificationStatus.DENIED,
     );
 
     if (neighborsWithoutToken.length === 0 && familyWithoutToken.length === 0) {
@@ -1095,9 +1102,9 @@ export class UsersService {
   }
 
   async findByLGA(lgaOfOrigin: string) {
-    // Adjust field name if your schema uses `lgaOfOrigin` or `lga`
     return this.userModel
       .find({ lgaOfOrigin: { $regex: new RegExp(`^${lgaOfOrigin}$`, 'i') } })
+      .sort({ created_at: -1 })
       .select('-password')
       .exec();
   }

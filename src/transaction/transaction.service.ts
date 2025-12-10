@@ -373,6 +373,7 @@ export class TransactionService {
   async findAll() {
     return this.transactionModel
       .find({})
+      .sort({ createdAt: -1 })
       .populate('userId', 'firstname lastname email')
       .exec();
   }

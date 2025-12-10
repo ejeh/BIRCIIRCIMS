@@ -474,6 +474,7 @@ export class IndigeneCertificateService {
   async findRequestsByUserId(userId: string): Promise<Certificate[]> {
     return await this.certificateModel
       .find({ userId })
+      .sort({ created_at: -1 })
       .populate('userId')
       .exec();
   }

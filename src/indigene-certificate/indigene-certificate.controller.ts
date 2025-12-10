@@ -219,9 +219,9 @@ export class IndigeneCertificateController {
           });
         }
       } else {
-        // First-time download → activate 10-minute window
+        // First-time download → activate 3 months window
         certificate.downloaded = true;
-        // certificate.downloadExpiryDate = new Date(Date.now() + 10 * 60 * 1000);
+        // certificate.downloadExpiryDate = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes for testing
         certificate.downloadExpiryDate = new Date(
           Date.now() + 3 * 30 * 24 * 60 * 60 * 1000, // 3 months
         );
@@ -503,7 +503,12 @@ export class IndigeneCertificateController {
   async getCertsRequest(@Req() req: Request) {
     return await this.indigeneCertificateService.certificateModel
       .find({})
+      .sort({ created_at: -1 })
       .populate('approvedBy', 'firstname lastname email')
+      .populate(
+        'userId',
+        'firstname lastname email stateOfOrigin lgaOfOrigin isProfileCompleted ',
+      )
       .exec();
   }
 

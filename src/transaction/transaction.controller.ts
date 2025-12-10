@@ -143,20 +143,9 @@ export class TransactionController {
   }
 
   @UseGuards(JwtAuthGuard)
-  // @Roles(UserRole.SUPER_ADMIN)
   @Get(':userId')
   async getUserTransactions(@Param('userId') userId: string) {
     return this.transactionService.getUserTransactions(userId);
-  }
-
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(UserRole.SUPER_ADMIN)
-  @Get()
-  async getPaginatedData(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-  ) {
-    return this.transactionService.getPaginatedData(page, limit);
   }
 
   @Get('export/pdf')

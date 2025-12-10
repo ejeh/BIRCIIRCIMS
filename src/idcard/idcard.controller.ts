@@ -158,11 +158,13 @@ export class IdcardController {
   async getCertsRequest() {
     return await this.idcardService.idCardModel
       .find({})
+      .sort({ created_at: -1 })
       .populate('approvedBy', 'firstname lastname email')
       .populate(
         'userId',
         'firstname lastname email stateOfOrigin lgaOfOrigin isProfileCompleted ',
       )
+
       .exec();
   }
 

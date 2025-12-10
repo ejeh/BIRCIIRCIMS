@@ -822,10 +822,7 @@ export class UsersController {
   @UseGuards(RolesGuard)
   @ApiResponse({ type: User, isArray: true })
   @Roles(UserRole.GLOBAL_ADMIN)
-  async getPaginatedData(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-  ) {
-    return this.userService.getPaginatedData(page, limit);
+  async getPaginatedData() {
+    return this.userService.getPaginatedData();
   }
 }

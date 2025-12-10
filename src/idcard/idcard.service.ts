@@ -105,7 +105,11 @@ export class IdcardService {
   }
 
   async findRequestsByUserId(userId: string): Promise<IdCard[]> {
-    return await this.idCardModel.find({ userId }).populate('userId').exec();
+    return await this.idCardModel
+      .find({ userId })
+      .sort({ created_at: -1 })
+      .populate('userId')
+      .exec();
   }
 
   async getLocationStats() {
