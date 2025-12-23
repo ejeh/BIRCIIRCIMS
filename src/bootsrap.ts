@@ -72,22 +72,22 @@ export const configureApp = (app: any) => {
     prefix: '/uploads/',
   });
 
-  app.use(
-    helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          frameAncestors: ["'self'", 'http://localhost:5501'], // Add your frontend origin here
-          scriptSrc: [
-            "'self'",
-            "'unsafe-inline'",
-            'https://cdnjs.cloudflare.com',
-          ], // allow PDF.js
-          connectSrc: ["'self'", 'http://localhost:5000'],
-        },
-      },
-    }),
-  );
+  // app.use(
+  //   helmet({
+  //     contentSecurityPolicy: {
+  //       directives: {
+  //         defaultSrc: ["'self'"],
+  //         frameAncestors: ["'self'", 'http://localhost:5501'], // Add your frontend origin here
+  //         scriptSrc: [
+  //           "'self'",
+  //           "'unsafe-inline'",
+  //           'https://cdnjs.cloudflare.com',
+  //         ], // allow PDF.js
+  //         connectSrc: ["'self'", 'http://localhost:5000'],
+  //       },
+  //     },
+  //   }),
+  // );
 };
 
 async function seedPermissions() {
