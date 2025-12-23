@@ -46,17 +46,17 @@ export const configureApp = (app: any) => {
 
   app.useWebSocketAdapter(new IoAdapter(app));
   // app.use(helmet());
-  app.use(
-    helmet({
-      contentSecurityPolicy: false,
-      frameguard: false,
-      hsts: false,
-      referrerPolicy: false,
-      noSniff: false,
-      crossOriginOpenerPolicy: false,
-      crossOriginResourcePolicy: false,
-    }),
-  );
+  // app.use(
+  //   helmet({
+  //     contentSecurityPolicy: false,
+  //     frameguard: false,
+  //     hsts: false,
+  //     referrerPolicy: false,
+  //     noSniff: false,
+  //     crossOriginOpenerPolicy: false,
+  //     crossOriginResourcePolicy: false,
+  //   }),
+  // );
 
   // app.use(compression());
   app.useGlobalPipes(
