@@ -21,7 +21,7 @@ import { KindredModule } from './kindred/kindred.module';
 
 import config, { dbUrl } from './config';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { HelmetMiddleware } from '@nest-middlewares/helmet';
+// import { HelmetMiddleware } from '@nest-middlewares/helmet';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SmsModule } from './sms/sms.module';
 import { TasksModule } from './task/tasks.module';
@@ -113,8 +113,8 @@ const DEV_TRANSPORTER = {
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    HelmetMiddleware.configure({});
-    consumer.apply(HelmetMiddleware).forRoutes('*');
+    // HelmetMiddleware.configure({});
+    // consumer.apply(HelmetMiddleware).forRoutes('*');
 
     ServeStaticMiddleware.configure(
       path.resolve(__dirname, '..', '..', 'public'),
