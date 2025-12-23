@@ -1,4 +1,4 @@
-// import helmet from 'helmet';
+import helmet from 'helmet';
 import * as compression from 'compression';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
@@ -45,18 +45,7 @@ export const configureApp = (app: any) => {
   }
 
   app.useWebSocketAdapter(new IoAdapter(app));
-  // app.use(helmet());
-  // app.use(
-  //   helmet({
-  //     contentSecurityPolicy: false,
-  //     frameguard: false,
-  //     hsts: false,
-  //     referrerPolicy: false,
-  //     noSniff: false,
-  //     crossOriginOpenerPolicy: false,
-  //     crossOriginResourcePolicy: false,
-  //   }),
-  // );
+  app.use(helmet());
 
   // app.use(compression());
   app.useGlobalPipes(
@@ -72,22 +61,22 @@ export const configureApp = (app: any) => {
     prefix: '/uploads/',
   });
 
-  // app.use(
-  //   helmet({
-  //     contentSecurityPolicy: {
-  //       directives: {
-  //         defaultSrc: ["'self'"],
-  //         frameAncestors: ["'self'", 'http://localhost:5501'], // Add your frontend origin here
-  //         scriptSrc: [
-  //           "'self'",
-  //           "'unsafe-inline'",
-  //           'https://cdnjs.cloudflare.com',
-  //         ], // allow PDF.js
-  //         connectSrc: ["'self'", 'http://localhost:5000'],
-  //       },
-  //     },
-  //   }),
-  // );
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          frameAncestors: ["'self'", 'http://localhost:5501'], // Add your frontend origin here
+          scriptSrc: [
+            "'self'",
+            "'unsafe-inline'",
+            'https://cdnjs.cloudflare.com',
+          ], // allow PDF.js
+          connectSrc: ["'self'", 'http://localhost:5000'],
+        },
+      },
+    }),
+  );
 };
 
 async function seedPermissions() {
