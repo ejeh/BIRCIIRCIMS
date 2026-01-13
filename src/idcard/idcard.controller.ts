@@ -121,9 +121,9 @@ export class IdcardController {
 
     // 3. Define required document fields and their Cloudinary folders
     const documentConfig = {
-      ref_letter: 'idcards/ref_letters',
-      utilityBill: 'idcards/utility_bills',
       passportPhoto: 'idcards/passportPhoto',
+      utilityBill: 'idcards/utility_bills',
+      ref_letter: 'idcards/ref_letters',
     };
 
     // 4. Dynamically upload all required files
@@ -136,16 +136,16 @@ export class IdcardController {
       },
     );
 
-    const [passportPhotoUrl, refLetterUrl, utilityBillUrl] =
+    const [passportPhotoUrl, utilityBillUrl, refLetterUrl] =
       await Promise.all(uploadPromises);
 
     // 5. Create the FINAL data object to save to the database
     const dataToSave = {
       ...body,
       bin: await this.idcardService.generateUniqueBIN(),
-      ref_letter: refLetterUrl,
-      utilityBill: utilityBillUrl,
       passportPhoto: passportPhotoUrl,
+      utilityBill: utilityBillUrl,
+      ref_letter: refLetterUrl,
     };
 
     return this.idcardService.createIdCard(dataToSave, req.user.id);
@@ -371,6 +371,7 @@ export class IdcardController {
   }
 
   private populateHtmlTemplate(html: string, data: any, user: any): string {
+    console.log('Populating HTML template with data:', data, user);
     const dob = new Date(user.DOB);
 
     const getBaseUrl = (): string =>
