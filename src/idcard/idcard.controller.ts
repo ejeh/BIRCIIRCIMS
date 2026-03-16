@@ -4,8 +4,10 @@ import {
   Controller,
   Delete,
   Get,
+  HttpException,
+  HttpStatus,
   InternalServerErrorException,
-  Options,
+  Logger,
   Param,
   Patch,
   Post,
@@ -42,44 +44,89 @@ import axios, { AxiosResponse } from 'axios';
 import { FileSizeValidationPipe } from 'src/common/pipes/file-size-validation.pipe';
 import { UpdateIdCardDto } from './dto/update-idcard.dto';
 import { PassportPhotoQualityPipe } from 'src/common/pipes/passport-photo-quality.pipes';
+import { TransactionService } from 'src/transaction/transaction.service';
+import {
+  ConfirmReprintPaymentDto,
+  ReprintResponseDto,
+} from 'src/indigene-certificate/dto/request-reprint.dto';
+import { CurrentUser } from 'src/common/decorators/current-user,decorator';
+
+// 1. SINGLE SOURCE OF TRUTH: Define all document rules here
+// Define this at the top of your controller file or in a separate config file
+const DOCUMENT_CONFIG = {
+  passportPhoto: {
+    mime: ['image/jpeg', 'image/png', 'image/jpg'],
+    ext: ['.jpeg', '.jpg', '.png'],
+    maxSize: 1024 * 1024,
+    folder: 'idcards/passportPhoto',
+    required: true, // Used for creation
+    message: 'Passport Photo must be an image (.jpg, .jpeg, .png)',
+  },
+  utilityBill: {
+    mime: ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'],
+    ext: ['.pdf', '.jpeg', '.jpg', '.png'],
+    maxSize: 1024 * 1024,
+    folder: 'idcards/utility_bills',
+    required: true,
+    message: 'Utility Bill must be an image or a PDF file',
+  },
+  ref_letter: {
+    mime: ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'],
+    ext: ['.pdf', '.jpeg', '.jpg', '.png'],
+    maxSize: 1024 * 1024,
+    folder: 'idcards/ref_letters',
+    required: true,
+    message: 'Reference Letter must be an image or a PDF file',
+  },
+};
+
+// Reusable File Filter
+const idCardFileFilter = (req, file, cb) => {
+  const rules = DOCUMENT_CONFIG[file.fieldname];
+  const ext = extname(file.originalname).toLowerCase();
+
+  if (!rules) {
+    return cb(
+      new BadRequestException(`Unexpected file field: ${file.fieldname}`),
+      false,
+    );
+  }
+
+  const isValidMime = rules.mime.includes(file.mimetype);
+  const isValidExt = rules.ext.includes(ext);
+
+  if (!isValidMime || !isValidExt) {
+    return cb(new BadRequestException(rules.message), false);
+  }
+
+  cb(null, true);
+};
 
 @ApiTags('idCard.controller')
 @UseGuards(JwtAuthGuard)
 @Controller('api/idcard')
 export class IdcardController {
+  private readonly logger = new Logger(IdcardController.name);
   constructor(
     private readonly idcardService: IdcardService,
     private readonly userService: UsersService,
     private readonly cloudinaryService: CloudinaryService,
     private readonly httpService: HttpService,
+    private readonly transactionService: TransactionService,
   ) {}
 
   @Post('create')
   @UseInterceptors(
     AnyFilesInterceptor({
-      limits: { fileSize: 5 * 1024 * 1024 },
+      limits: {
+        // Sum of all max sizes or a global limit
+        fileSize: 1024 * 1024, // Global limit (e.g., 5MB total)
+      },
       fileFilter: (req, file, cb) => {
-        const fieldTypeRules = {
-          passportPhoto: {
-            mime: ['image/jpeg', 'image/png', 'image/jpg'],
-            ext: ['.jpeg', '.jpg', '.png'],
-            message: 'Passport Photo must be an image (.jpg, .jpeg, .png)',
-          },
-          ref_letter: {
-            mime: ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'],
-            ext: ['.pdf', '.jpeg', '.jpg', '.png'],
-            message: 'ID Card must be an image or a PDF file',
-          },
-          utilityBill: {
-            mime: ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'],
-            ext: ['.pdf', '.jpeg', '.jpg', '.png'],
-            message: 'Birth Certificate must be an image or a PDF file',
-          },
-        };
-
-        const rules = fieldTypeRules[file.fieldname];
+        const rules = DOCUMENT_CONFIG[file.fieldname];
         const ext = extname(file.originalname).toLowerCase();
 
+        // Check if field is allowed
         if (!rules) {
           return cb(
             new BadRequestException(`Unexpected file field: ${file.fieldname}`),
@@ -87,6 +134,7 @@ export class IdcardController {
           );
         }
 
+        // Validate Mime and Extension
         const isValidMime = rules.mime.includes(file.mimetype);
         const isValidExt = rules.ext.includes(ext);
 
@@ -103,52 +151,142 @@ export class IdcardController {
     @Req() req,
     @UploadedFiles(
       new PassportPhotoQualityPipe(),
-      new FileSizeValidationPipe({
-        passportPhoto: { maxSize: 2 * 1024 * 1024 }, // 2MB
-        ref_letter: { maxSize: 5 * 1024 * 1024 }, // 3MB
-        utilityBill: { maxSize: 5 * 1024 * 1024 }, // 5MB
-      }),
+      // Dynamically generate validation options from config
+      new FileSizeValidationPipe(
+        Object.fromEntries(
+          Object.entries(DOCUMENT_CONFIG).map(([key, val]) => [
+            key,
+            { maxSize: val.maxSize },
+          ]),
+        ),
+      ),
     )
     files: Array<Express.Multer.File>,
   ) {
     await this.idcardService.canUserCreateIdcard(req.user.id);
 
-    // 2. Map files by fieldname
+    // 2. MAP FILES
     const fileMap = files.reduce(
       (acc, file) => ({ ...acc, [file.fieldname]: file }),
       {},
     );
 
-    // 3. Define required document fields and their Cloudinary folders
-    const documentConfig = {
-      passportPhoto: 'idcards/passportPhoto',
-      utilityBill: 'idcards/utility_bills',
-      ref_letter: 'idcards/ref_letters',
-    };
+    // 3. DYNAMIC UPLOAD PROCESS
+    // Iterate over the config, so you don't need to manually list fields
+    const uploadPromises = Object.entries(DOCUMENT_CONFIG).map(
+      async ([fieldName, config]) => {
+        const file = fileMap[fieldName];
 
-    // 4. Dynamically upload all required files
-    const uploadPromises = Object.entries(documentConfig).map(
-      async ([fieldName, folder]) => {
-        if (!fileMap[fieldName]) {
+        // Check required status dynamically
+        if (config.required && !file) {
           throw new BadRequestException(`${fieldName} file is required.`);
         }
-        return this.cloudinaryService.uploadFile(fileMap[fieldName], folder);
+
+        // Only upload if file exists (handles optional fields gracefully)
+        if (file) {
+          return {
+            fieldName,
+            url: await this.cloudinaryService.uploadFile(file, config.folder),
+          };
+        }
+        return null;
       },
     );
 
-    const [passportPhotoUrl, utilityBillUrl, refLetterUrl] =
-      await Promise.all(uploadPromises);
+    // Wait for all uploads to complete
+    const uploadResults = await Promise.all(uploadPromises);
 
-    // 5. Create the FINAL data object to save to the database
+    // 4. BUILD URL OBJECT DYNAMICALLY
+    const uploadedUrls = uploadResults.reduce((acc, result) => {
+      if (result) {
+        acc[result.fieldName] = result.url;
+      }
+      return acc;
+    }, {});
+
+    // 5. PREPARE DATA
+    const expirationDate = new Date();
+    expirationDate.setFullYear(expirationDate.getFullYear() + 4);
+
     const dataToSave = {
       ...body,
+      ...uploadedUrls, // Merges passportPhoto, utilityBill, ref_letter automatically
       bin: await this.idcardService.generateUniqueBIN(),
-      passportPhoto: passportPhotoUrl,
-      utilityBill: utilityBillUrl,
-      ref_letter: refLetterUrl,
+      dateOfExpiration: expirationDate,
     };
 
     return this.idcardService.createIdCard(dataToSave, req.user.id);
+  }
+
+  @Patch(':id')
+  @UseInterceptors(
+    AnyFilesInterceptor({
+      limits: { fileSize: 1024 * 1024 }, // Consistent limit
+      fileFilter: idCardFileFilter, // Reuse the filter
+    }),
+  )
+  async updateIdCard(
+    @Param('id') id: string,
+    @Body() body: any,
+    @Req() req,
+    @UploadedFiles() files: Array<Express.Multer.File>, // Note: Validation pipe is optional here as files are optional
+  ) {
+    // 1. Verify Ownership & Existence
+    const existingRequest = await this.idcardService.findOneCard(
+      id,
+      req.user.id,
+    );
+    if (!existingRequest) {
+      throw new NotFoundException('ID Card request not found.');
+    }
+
+    // 2. Check if status allows editing (e.g., only Pending or Rejected)
+    if (!['Pending', 'Rejected'].includes(existingRequest.status)) {
+      throw new BadRequestException(
+        'Cannot edit a request that is already approved or processed.',
+      );
+    }
+
+    // 3. Map uploaded files
+    const fileMap = files.reduce(
+      (acc, file) => ({ ...acc, [file.fieldname]: file }),
+      {},
+    );
+
+    // 4. Dynamically process and upload files
+    // We iterate over the config keys. If a file is in the request, upload it.
+    const uploadPromises = Object.entries(DOCUMENT_CONFIG).map(
+      async ([fieldName, config]) => {
+        const file = fileMap[fieldName];
+
+        if (file) {
+          // New file provided -> Upload to Cloudinary
+          return {
+            fieldName,
+            url: await this.cloudinaryService.uploadFile(file, config.folder),
+          };
+        }
+
+        // No new file -> Return null (we will keep the old one later)
+        return null;
+      },
+    );
+
+    const uploadResults = await Promise.all(uploadPromises);
+
+    // 5. Construct Update Payload
+    // Start with the text body fields
+    const updateData: any = { ...body };
+
+    // Merge in the NEW file URLs
+    uploadResults.forEach((result) => {
+      if (result) {
+        updateData[result.fieldName] = result.url;
+      }
+    });
+
+    // 6. Persist Changes
+    return this.idcardService.updateIdCard(id, updateData, req.user.id);
   }
 
   @Get('get-all-request')
@@ -265,11 +403,7 @@ export class IdcardController {
         return res.status(404).json({ message: 'Card not found' });
       }
 
-      // if (card.downloaded) {
-      //   return res
-      //     .status(400)
-      //     .json({ message: 'Card has already been downloaded.' });
-      // }
+      await this.idcardService.validateDownloadCount(id);
 
       // If already downloaded before → check expiry
       if (card.downloaded) {
@@ -283,10 +417,10 @@ export class IdcardController {
       } else {
         // First-time download → activate 10-minute window
         card.downloaded = true;
-        // card.downloadExpiryDate = new Date(Date.now() + 10 * 60 * 1000);
-        card.downloadExpiryDate = new Date(
-          Date.now() + 3 * 30 * 24 * 60 * 60 * 1000, // 3 months
-        );
+        card.downloadExpiryDate = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes for testing
+        // card.downloadExpiryDate = new Date(
+        //   Date.now() + 3 * 30 * 24 * 60 * 60 * 1000, // 3 months
+        // );
         await card.save();
       }
 
@@ -300,7 +434,7 @@ export class IdcardController {
         card.id,
         user.firstname,
         user.lastname,
-        dateOfIssue, // Or use your certificate's issue date
+        dateOfIssue, // Or use your id card's issue date
       );
 
       const getBaseUrl = (): string =>
@@ -371,7 +505,6 @@ export class IdcardController {
   }
 
   private populateHtmlTemplate(html: string, data: any, user: any): string {
-    console.log('Populating HTML template with data:', data, user);
     const dob = new Date(user.DOB);
 
     const getBaseUrl = (): string =>
@@ -478,21 +611,11 @@ export class IdcardController {
         throw new NotFoundException('ID Card not found');
       }
 
-      const dateOfIssue = new Date();
-
-      // Format as "February 20, 1991"
-      const formattedDateOfIssue = dateOfIssue.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-
       return {
         id: card.id,
         firstname: user.firstname,
         lastname: user.lastname,
         bin: card.bin,
-        issueDate: formattedDateOfIssue,
       };
     } catch (error) {
       throw new NotFoundException('ID Card not found');
@@ -557,7 +680,7 @@ export class IdcardController {
   @Post(':id/resubmit')
   @UseInterceptors(
     AnyFilesInterceptor({
-      limits: { fileSize: 5 * 1024 * 1024 },
+      limits: { fileSize: 1024 * 1024 },
       fileFilter: (req, file, cb) => {
         const fieldTypeRules = {
           passportPhoto: {
@@ -599,9 +722,9 @@ export class IdcardController {
     @UploadedFiles(
       new PassportPhotoQualityPipe({ isOptional: true }),
       new FileSizeValidationPipe({
-        passportPhoto: { maxSize: 2 * 1024 * 1024 },
-        ref_letter: { maxSize: 3 * 1024 * 1024 },
-        utilityBill: { maxSize: 5 * 1024 * 1024 },
+        passportPhoto: { maxSize: 1024 * 1024 },
+        ref_letter: { maxSize: 1024 * 1024 },
+        utilityBill: { maxSize: 1024 * 1024 },
       }),
     )
     files: Array<Express.Multer.File>,
@@ -769,5 +892,75 @@ export class IdcardController {
         layout: false,
       });
     }
+  }
+
+  @Post(':id/request-reprint')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  async requestReprint(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUser,
+    @Body()
+    data: {
+      documentId: string;
+      userId: string;
+      amount: number;
+      email: string;
+      documentAmount: number;
+      documentType: 'idcard';
+    },
+  ): Promise<ReprintResponseDto> {
+    return this.idcardService.requestReprint(id, data);
+  }
+
+  // New confirm payment endpoint
+  @Post(':id/confirm-reprint-payment')
+  async confirmReprintPayment(
+    @Param('id') id: string,
+    @Body() confirmPaymentDto: ConfirmReprintPaymentDto,
+  ) {
+    const { paymentReference, rrr } = confirmPaymentDto;
+
+    // Verify payment with provider
+    const paymentVerified = await this.transactionService.verifyReprintPayment(
+      paymentReference,
+      rrr,
+    );
+
+    if (!paymentVerified) {
+      throw new HttpException(
+        'Payment verification failed',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Update id card with paid status and new download window
+    const updatedCertificate = await this.idcardService.confirmReprintPayment(
+      id,
+      paymentReference,
+      rrr,
+    );
+
+    return {
+      success: true,
+      message: 'Payment confirmed. Reprint download available.',
+      downloadUrl: `/api/idcard/reprint/download/${id}`,
+      expiryDate: updatedCertificate.reprintDownloadExpiryDate,
+    };
+  }
+
+  @Get('reprint/download/:id')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  async downloadReprint(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUser,
+    @Res() res: Response,
+  ) {
+    const { buffer, filename } =
+      await this.idcardService.prepareReprintDownload(id, user.id);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    res.send(buffer);
   }
 }

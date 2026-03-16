@@ -557,17 +557,13 @@
         };
 
         const apiUrl = getBaseUrl();
-        console.log('Using API URL:', apiUrl);
 
         // Get ID card details
         function getIdCardDetails() {
-          console.log('Fetching ID card details for ID:', idCardId);
           const url = `${apiUrl}/api/idcard/idcard/${idCardId}`;
-          console.log('Fetch URL:', url);
 
           return fetch(url)
             .then((response) => {
-              console.log('Response status:', response.status);
               if (!response.ok) {
                 console.error(
                   'Network response was not ok:',
@@ -598,7 +594,36 @@
           // Update UI for ID card
           $('#idCardBadge').html('<i class="icon-id-card"></i> ID Card');
           $('#idCardTitle').text('Citizen/Resident Identity Card');
+
+          // RENDER THE PREVIEW
+          // renderDocumentPreview(response);
         }
+
+        // NEW: Function to render the streaming PDF
+        // function renderDocumentPreview(data) {
+        //   // Use the new /stream/ endpoint we created
+        //   const streamUrl = `${apiUrl}/api/idcard/download/${idCardId}`;
+
+        //   // Embed the PDF using an iframe
+        //   // The browser will stream the PDF and display it inside the box
+        //   const previewHtml = `
+        //       <div style="width: 100%; height: 100%; min-height: 300px; background-color: #f0f0f0; position: relative;">
+        //           <!-- Loading Text (Shows while PDF loads) -->
+        //           <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #666;">
+        //               Loading Document...
+        //           </div>
+
+        //           <!-- The IFrame that displays the PDF -->
+        //           <iframe
+        //               src="${streamUrl}"
+        //               style="width: 100%; height: 100%; min-height: 300px; border: none; position: relative; z-index: 1; background: transparent;"
+        //               title="Identity Card Preview"
+        //           ></iframe>
+        //       </div>
+        //     `;
+
+        //   $('.id-card-preview').html(previewHtml);
+        // }
 
         // Fetch ID card details
         function fetchIdCardDetails() {
@@ -649,12 +674,12 @@
 
           // Create a temporary link element to trigger download
           const downloadLink = document.createElement('a');
-          const downloadUrl = `${apiUrl}/api/idcard/download/${idCardId}`;
-          console.log('Download URL:', downloadUrl);
+          const downloadUrl = console.log('Download URL:', downloadUrl);
 
           downloadLink.href = downloadUrl;
           downloadLink.setAttribute('download', 'idcard.pdf');
-          document.body.appendChild(downloadLink);
+          document.body.appendC`${apiUrl}/api/idcard/download/${idCardId}`;
+          hild(downloadLink);
 
           // Add error handling for download
           downloadLink.onerror = function () {

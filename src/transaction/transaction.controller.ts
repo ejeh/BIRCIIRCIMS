@@ -19,6 +19,7 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 import * as crypto from 'crypto';
 import { Transaction } from './transaction.schema';
 import { GetTransactionsReportDto } from './src/transaction/dto/get-transactions-report.dto';
+import { VerifyPaymentDto } from 'src/auctioneer/dto/autioneer.dto';
 
 @Controller('api/transaction')
 export class TransactionController {
@@ -29,12 +30,14 @@ export class TransactionController {
   async initializePayment(
     @Body()
     data: {
+      auctioneerId: string;
       certificateId: string;
       cardId: string;
       userId: string;
       amount: number;
+      documentAmount: number;
       email: string;
-      paymentType: 'card' | 'certificate';
+      paymentType: 'card' | 'certificate' | 'auctioneer';
     },
   ) {
     return this.transactionService.initializePayment(data);
@@ -79,9 +82,6 @@ export class TransactionController {
         .update(signedContent)
         .digest('hex');
 
-      console.log('SHA-512 Generated Hash:', sha512Hash);
-      console.log('SHA-512 Received Signature:', sha512Signature);
-
       // Verify signatures
       const isValidSignature =
         sha256Signature === sha256Hash || sha512Signature === sha512Hash;
@@ -105,12 +105,20 @@ export class TransactionController {
   async getApprovedItems() {
     return this.transactionService.getApprovedItems();
   }
-  // @Roles(UserRole.SUPER_ADMIN)
-  @UseGuards(JwtAuthGuard, RolesGuard) // Protect endpoint
-  @Get('verify/:reference')
-  async verifyPayment(@Param('reference') reference: string) {
-    return this.transactionService.verifyPayment(reference);
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('verify')
+  async verifyPayment(@Body() verifyPaymentDto: VerifyPaymentDto) {
+    const { paymentReference, rrr } = verifyPaymentDto;
+
+    if (!paymentReference) {
+      throw new BadRequestException('Payment reference is required');
+    }
+
+    // Pass both to the service
+    return await this.transactionService.verifyPayment(paymentReference, rrr);
   }
+
   @Get('all')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.GLOBAL_ADMIN)
@@ -167,5 +175,21 @@ export class TransactionController {
       console.error('Error generating PDF report:', error);
       res.status(500).send('Error generating PDF report');
     }
+  }
+
+  @Post('remita')
+  async generateRrr(@Body() dto: any) {
+    return await this.transactionService.generateRRR(dto);
+  }
+
+  @Post('verify/:rrr')
+  async verify(@Param('rrr') rrr: string) {
+    const result = await this.transactionService.verifyRrr(rrr);
+    return { status: 200, data: result };
+  }
+
+  @Post('verify-credo')
+  async verifyCredo(@Body() dto: { paymentReference: string }) {
+    return this.transactionService.verifyCredo(dto.paymentReference);
   }
 }

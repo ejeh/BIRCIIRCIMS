@@ -90,13 +90,6 @@ export class AuthController {
     return this.authService.login(req?.user);
   }
 
-  // @UseGuards(AuthGuard('local'))
-  // @Post('login-kindred')
-  // @ApiResponse({ type: AuthenticatedUser })
-  // loginAgent(@Req() req: AppRequest, @Body() loginDto: LoginDto) {
-  //   return this.authService.loginKindred(req?.user);
-  // }
-
   @Post('forgot-password')
   forgotPassword(@Body() body: ForgottenPasswordDto, @Req() req: Request) {
     return this.authService.forgottenPassword(body, getOriginHeader(req));
@@ -165,185 +158,31 @@ export class AuthController {
 
   @Post('verify')
   async verifyNIN(@Body() { nin }: { nin: string }) {
-    const fakeDB = {
-      '12345678901': {
-        firstname: 'Godfrey',
-        lastname: 'Ejeh',
-        middlename: 'Akor',
-        dob: '1990-01-01',
-        phone: '08079710659',
-        stateOfOrigin: 'Benue',
-        lga: 'Ogbadibo',
-      },
-      '98765432109': {
-        firstname: 'John',
-        lastname: 'Doe',
-        middlename: 'Smith',
-        dob: '1990-01-01',
-        phone: '08039710658',
-        stateOfOrigin: 'Benue',
-        lga: 'Buruku',
-      },
-      '98765432102': {
-        firstname: 'Simon',
-        lastname: 'Iber',
-        middlename: 'Akper',
-        dob: '1990-01-01',
-        phone: '08033710658',
-        stateOfOrigin: 'Benue',
-        lga: 'Buruku',
-      },
-      '98765432162': {
-        firstname: 'Sheyi',
-        lastname: 'Shay',
-        middlename: 'Oladele',
-        dob: '1990-01-01',
-        phone: '08133710658',
-        stateOfOrigin: 'Ogun',
-        lga: 'Ifo',
-      },
-      '88765432102': {
-        firstname: 'Arome',
-        lastname: 'Mbur',
-        middlename: 'Idris',
-        dob: '1990-01-01',
-        phone: '08030710658',
-        stateOfOrigin: 'Kogi',
-        lga: 'Okene',
-      },
+    if (!nin || nin.length !== 11) {
+      throw new BadRequestException('Invalid NIN format');
+    }
 
-      '88765432105': {
-        firstname: 'Derick',
-        lastname: 'Gbaden',
-        middlename: 'Godwin',
-        dob: '1990-01-01',
-        phone: '08043710650',
-        stateOfOrigin: 'Benue',
-        lga: 'Gboko',
-      },
+    const result = await this.authService.verifyNIN(nin);
+    console.log('result', result);
 
-      '88765432103': {
-        firstname: 'James',
-        lastname: 'Gbaden',
-        middlename: 'Derick',
-        dob: '1967-01-01',
-        phone: '08043710689',
-        stateOfOrigin: 'Benue',
-        lga: 'Buruku',
-      },
+    if (!result || !result.status) {
+      throw new BadRequestException('NIN not found or invalid');
+    }
 
-      '88765432101': {
-        firstname: 'Charles',
-        lastname: 'Luper',
-        middlename: 'Tersoo',
-        dob: '1990-01-01',
-        phone: '08043710555',
-        stateOfOrigin: 'Benue',
-        lga: 'Gboko',
-      },
-
-      '88765432131': {
-        firstname: 'Victor',
-        lastname: 'Atir',
-        middlename: 'James',
-        dob: '1990-01-01',
-        phone: '08043710666',
-        stateOfOrigin: 'Benue',
-        lga: 'Gboko',
-      },
-      '88765432133': {
-        firstname: 'Akor',
-        lastname: 'Ejeh',
-        middlename: 'Godfrey',
-        dob: '1990-01-01',
-        phone: '08043710667',
-        stateOfOrigin: 'Benue',
-        lga: 'Gboko',
-      },
-
-      '88765432111': {
-        firstname: 'Gabriel ',
-        lastname: 'Nwaje',
-        middlename: 'Sunday',
-        dob: '1987-01-01',
-        phone: '08043710633',
-        stateOfOrigin: 'Enugu',
-        lga: 'Nsukka',
-      },
-
-      '88765432456': {
-        firstname: 'Adrian',
-        lastname: 'Idoko',
-        dob: '1987-01-01',
-        phone: '08043710536',
-        stateOfOrigin: 'Delta',
-        lga: 'Ughelli North',
-      },
-
-      '18765432103': {
-        firstname: 'Mary',
-        lastname: 'Jane',
-        middlename: 'Doe',
-        dob: '1985-07-15',
-        phone: '08049710668',
-        stateOfOrigin: 'Benue',
-        lga: 'Buruku',
-      },
-
-      '33765432103': {
-        firstname: 'Japheth',
-        lastname: 'Kor',
-        middlename: 'Tersoo',
-        dob: '1988-08-20',
-        phone: '08078710659',
-        stateOfOrigin: 'Benue',
-        lga: 'Gwer East',
-      },
-
-      '33765432155': {
-        firstname: 'Steven',
-        lastname: 'Ajiga',
-        middlename: 'Ajene',
-        dob: '1991-02-25',
-        phone: '08053710658',
-        stateOfOrigin: 'Benue',
-        lga: 'Oju',
-      },
-
-      '24765432155': {
-        firstname: 'Joseph',
-        lastname: 'Agbo',
-        middlename: 'Suleman',
-        dob: '1975-07-15',
-        phone: '08039710648',
-        stateOfOrigin: 'Benue',
-        lga: 'Apa',
-      },
-
-      '24768432155': {
-        firstname: 'Terrence',
-        lastname: 'Terkula',
-        middlename: 'Terkimbi',
-        dob: '1989-07-15',
-        phone: '08033710656',
-        stateOfOrigin: 'Benue',
-        lga: 'Gwer West',
-      },
-
-      '34768432156': {
-        firstname: 'Luke',
-        lastname: 'Terkula',
-        middlename: 'Terkimbi',
-        dob: '1989-07-15',
-        phone: '08033710622',
-        stateOfOrigin: 'Benue',
-        lga: 'Buruku',
+    return {
+      success: true,
+      message: 'NIN verified successfully',
+      data: {
+        firstname: result?.echoverify_response.data?.firstName,
+        lastname: result?.echoverify_response.data?.lastName,
+        middlename: result?.echoverify_response.data?.middleName,
+        dob: result?.echoverify_response.data?.dateOfBirth,
+        phone: result?.echoverify_response?.data?.mobile,
+        stateOfOrigin: result?.echoverify_response.data?.birthState,
+        lga: result?.echoverify_response.data?.birthLGA,
+        NIN: result?.echoverify_response.data?.nin,
       },
     };
-
-    const data = fakeDB[nin];
-    if (!data) throw new BadRequestException('NIN not found');
-    return { success: true, data };
   }
 
   @Post('check-existence')

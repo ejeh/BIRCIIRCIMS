@@ -164,7 +164,12 @@ export class User {
   phone: number;
 
   @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: true, unique: true })
+  @Prop({
+    type: mongoose.SchemaTypes.String,
+    required: true,
+    unique: true,
+    index: true,
+  })
   NIN: string;
 
   @ApiProperty()

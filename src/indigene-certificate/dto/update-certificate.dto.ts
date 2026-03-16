@@ -1,30 +1,10 @@
-import {
-  IsString,
-  IsNotEmpty,
-  IsEmail,
-  IsEnum,
-  IsDateString,
-  IsOptional,
-  IsIn,
-} from 'class-validator';
+import { IsString, IsNotEmpty, IsEnum, IsOptional } from 'class-validator';
 
 export enum Gender {
   MALE = 'Male',
   FEMALE = 'Female',
 }
 export class UpdateCertificateDto {
-  @IsOptional()
-  @IsString()
-  @IsIn(['idCard', 'birthCertificate', 'passportPhoto'], {
-    message:
-      'documentTypeToUpdate must be one of: idCard, birthCertificate, passportPhoto',
-  })
-  documentTypeToUpdate?: 'idCard' | 'birthCertificate' | 'passportPhoto';
-
-  @IsOptional()
-  @IsString()
-  address?: string;
-
   @IsOptional()
   @IsString()
   userId?: string;
@@ -42,20 +22,8 @@ export class UpdateCertificateDto {
   middlename?: string;
 
   @IsOptional()
-  @IsDateString()
-  DOB?: Date;
-
-  @IsOptional()
   @IsEnum(Gender)
   gender?: Gender;
-
-  @IsOptional()
-  @IsString()
-  maritalStatus?: string;
-
-  @IsOptional()
-  @IsString()
-  stateOfOrigin?: string;
 
   @IsOptional()
   @IsString()
@@ -75,38 +43,10 @@ export class UpdateCertificateDto {
 
   @IsOptional()
   @IsString()
-  fathersName?: string;
-
-  @IsOptional()
-  @IsString()
-  fathersStateOfOrigin?: string;
-
-  @IsOptional()
-  @IsString()
-  mothersName?: string;
-
-  @IsOptional()
-  @IsString()
-  mothersStateOfOrigin?: string;
-
-  @IsOptional()
-  @IsEmail()
-  email?: string;
-
-  @IsOptional()
-  @IsString()
-  guardian?: string;
-
-  @IsOptional()
-  @IsString()
-  relationshipToguardian?: string;
+  village?: string;
 }
 
 export class CreateCertificateDto {
-  @IsString()
-  @IsNotEmpty()
-  userId: string;
-
   @IsString()
   @IsNotEmpty()
   firstname: string;
@@ -119,22 +59,9 @@ export class CreateCertificateDto {
   @IsOptional() // Middlename is often optional
   middlename: string;
 
-  @IsDateString()
-  @IsNotEmpty()
-  DOB: Date;
-
   @IsEnum(Gender)
   @IsNotEmpty()
   gender: Gender;
-
-  @IsString()
-  @IsNotEmpty()
-  maritalStatus: string;
-
-  @IsString()
-  @IsNotEmpty()
-  stateOfOrigin: string;
-
   @IsString()
   @IsNotEmpty()
   lgaOfOrigin: string;
@@ -142,10 +69,6 @@ export class CreateCertificateDto {
   @IsString()
   @IsNotEmpty()
   ward: string;
-
-  @IsString()
-  @IsNotEmpty()
-  address: string;
 
   @IsString()
   @IsNotEmpty()
@@ -157,29 +80,5 @@ export class CreateCertificateDto {
 
   @IsString()
   @IsNotEmpty()
-  fathersName: string;
-
-  @IsString()
-  @IsNotEmpty()
-  fathersStateOfOrigin: string;
-
-  @IsString()
-  @IsNotEmpty()
-  mothersName: string;
-
-  @IsString()
-  @IsNotEmpty()
-  mothersStateOfOrigin: string;
-
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
-
-  @IsString()
-  @IsOptional() // Guardian is often optional
-  guardian?: string;
-
-  @IsString()
-  @IsOptional()
-  relationshipToguardian?: string;
+  village: string;
 }

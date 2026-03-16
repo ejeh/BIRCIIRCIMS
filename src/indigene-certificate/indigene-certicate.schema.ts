@@ -2,7 +2,7 @@ import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { ApiProperty } from '@nestjs/swagger';
 import { Document } from 'mongoose';
-// import { Family, FamilySchema } from './indegene-family-schema';
+import { UserDocument } from 'src/users/users.schema';
 
 @Schema({
   timestamps: {
@@ -12,7 +12,7 @@ import { Document } from 'mongoose';
 })
 export class Certificate extends Document {
   @ApiProperty({
-    description: 'Certificate ID',
+    description: 'User ID',
     example: '1234567890',
   })
   @Prop({
@@ -20,9 +20,75 @@ export class Certificate extends Document {
     ref: 'User',
     required: true,
   })
-  userId: string;
+  userId: string | UserDocument;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: 'First Name',
+    example: 'John',
+  })
+  @Prop({ type: mongoose.SchemaTypes.String, required: true })
+  firstname: string;
+
+  @ApiProperty({
+    description: 'Last Name',
+    example: 'Doe',
+  })
+  @Prop({ type: mongoose.SchemaTypes.String, required: true })
+  lastname: string;
+
+  @ApiProperty({
+    description: 'Middle Name',
+    example: 'Doe',
+  })
+  @Prop({ type: mongoose.SchemaTypes.String })
+  middlename: string;
+
+  @ApiProperty({
+    description: 'Gender',
+    example: 'Male',
+  })
+  @Prop({ type: mongoose.SchemaTypes.String })
+  gender: string;
+
+  @ApiProperty({
+    description: 'Ward',
+    example: 'Ward',
+  })
+  @Prop({ type: mongoose.SchemaTypes.String, required: true })
+  ward: string;
+
+  @ApiProperty({
+    description: 'Phone',
+    example: '1234567890',
+  })
+  @Prop({
+    type: mongoose.SchemaTypes.String,
+    required: true,
+    unique: true,
+  })
+  phone: string;
+
+  @ApiProperty({
+    description: 'Kindred',
+    example: 'Kindred',
+  })
+  @Prop({ type: mongoose.SchemaTypes.String, required: true })
+  kindred: string;
+
+  @ApiProperty({
+    description: 'Village',
+    example: 'Village',
+  })
+  @Prop({
+    type: mongoose.SchemaTypes.String,
+    required: true,
+  })
+  village: string;
+
+  @ApiProperty({
+    description: 'Status',
+    example: 'Pending',
+  })
   @Prop({
     type: mongoose.SchemaTypes.String,
     enum: ['Pending', 'Approved', 'Rejected'],
@@ -30,148 +96,102 @@ export class Certificate extends Document {
   })
   status: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Rejection Reason',
+    example: 'Rejection Reason',
+  })
   @Prop({ type: mongoose.SchemaTypes.String })
   rejectionReason?: string;
 
+  @ApiProperty({
+    description: 'Resubmission Allowed',
+    example: 'true',
+  })
   @Prop({ default: true })
   resubmissionAllowed: boolean;
 
   @Prop({ default: 0 })
   resubmissionAttempts: number;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Downloaded',
+    example: 'false',
+  })
   @Prop({ default: false })
   downloaded: Boolean;
 
-  @ApiProperty({ required: false, nullable: true })
+  @ApiProperty({
+    description: 'Download Expiry Date',
+    example: '2023-01-01T00:00:00.000Z',
+  })
   @Prop({ type: mongoose.SchemaTypes.Date, default: null })
   downloadExpiryDate: Date;
 
-  @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: true })
-  email: string;
-
-  @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: true })
-  firstname: string;
-
-  @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: true })
-  lastname: string;
-
-  @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, require: true })
-  middlename: string;
-
-  @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.Date, required: true })
-  DOB: Date;
-
-  @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: true })
-  maritalStatus: string;
-
-  @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: true })
-  gender: string;
-
-  @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: true })
-  stateOfOrigin: string;
-
-  @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: true })
+  @ApiProperty({
+    description: 'LGA of Origin',
+    example: 'LGA of Origin',
+  })
+  @Prop({ type: mongoose.SchemaTypes.String })
   lgaOfOrigin: string;
 
-  @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: true })
-  ward: string;
-
-  @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: true })
-  address: string;
-
-  @ApiProperty()
-  @Prop({
-    type: mongoose.SchemaTypes.String,
-    required: true,
+  @ApiProperty({
+    description: 'Reference Number',
+    example: 'Reference Number',
   })
-  phone: string;
-
-  @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: true })
-  kindred: string;
-
-  @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: true })
-  fathersName: string;
-
-  @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: true })
-  fathersStateOfOrigin: string;
-
-  @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: true })
-  mothersName: string;
-
-  @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: true })
-  mothersStateOfOrigin: string;
-
-  @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: false })
-  guardian?: string;
-
-  @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String, required: false })
-  relationshionToguardian?: string;
-
-  @ApiProperty()
-  @Prop({ type: mongoose.SchemaTypes.String })
-  purpose?: string;
-
-  @ApiProperty()
   @Prop({ type: mongoose.SchemaTypes.String })
   refNumber: String;
 
-  @ApiProperty()
-  @Prop({ required: true })
-  passportPhoto: string; // File path or URL
-
-  @ApiProperty()
-  @Prop({ required: true })
-  idCard: string; // File path or URL
-
-  @ApiProperty()
-  @Prop({ required: true })
-  birthCertificate: string; // File path or URL
-
-  @ApiProperty()
-  @Prop({ required: false })
-  parentGuardianIndigeneCert: string; // File path or URL
-
-  @Prop({ required: false, default: null })
-  uploadedAttestationUrl: string; // URL for the signed attestation letter
-
+  @ApiProperty({
+    description: 'QR Code URL',
+    example: 'QR Code URL',
+  })
   @Prop({ required: false, default: null })
   qrCodeUrl?: string; // URL for the QR code
 
+  @ApiProperty({
+    description: 'Is Valid',
+    example: 'true',
+  })
   @Prop({ default: true })
   isValid: boolean;
 
+  @ApiProperty({
+    description: 'Is Verified',
+    example: 'false',
+  })
   @Prop({ default: false })
   isVerified: boolean;
 
+  @ApiProperty({
+    description: 'Verification Hash',
+    example: 'Verification Hash',
+  })
   @Prop({ type: mongoose.SchemaTypes.String })
   verificationHash: string; // Hash for verification
 
+  @ApiProperty({
+    description: 'Created At',
+    example: '2023-01-01T00:00:00.000Z',
+  })
   created_at?: Date;
+
+  @ApiProperty({
+    description: 'Updated At',
+    example: '2023-01-01T00:00:00.000Z',
+  })
   updated_at?: Date;
 
+  @ApiProperty({
+    description: 'Approval Date',
+    example: '2023-01-01T00:00:00.000Z',
+  })
   @Prop({ type: mongoose.SchemaTypes.Date, default: null })
   approvalDate: Date;
 
+  @ApiProperty({
+    description: 'Approved By',
+    example: 'Approved By',
+  })
   @Prop({
     type: mongoose.Types.ObjectId,
     ref: 'User',
@@ -179,11 +199,73 @@ export class Certificate extends Document {
   })
   approvedBy: mongoose.Types.ObjectId;
 
+  @ApiProperty({
+    description: 'Payment Status',
+    example: 'pending',
+  })
   @Prop({ type: mongoose.SchemaTypes.String, default: 'pending' })
   paymentStatus: string; // Can be 'pending' or 'paid'
 
+  @ApiProperty({
+    description: 'Last Resubmitted At',
+    example: '2023-01-01T00:00:00.000Z',
+  })
   @Prop()
   lastResubmittedAt?: Date;
+
+  @ApiProperty({
+    description: 'Reprint Count',
+    example: 0,
+  })
+  @Prop({ type: Number, default: 0 })
+  reprintCount: number;
+
+  @ApiProperty({
+    description: 'Certificate Number',
+    example: 0,
+  })
+  @ApiProperty({
+    description: 'Certificate Number',
+    example: 0,
+  })
+  @Prop({ type: Number, default: 0 })
+  certificateNumber: number;
+
+  @ApiProperty({
+    description: 'Reprint Payment Status',
+    example: 'NotRequired',
+  })
+  @Prop({
+    type: String,
+    enum: ['Pending', 'Paid', 'NotRequired'],
+    default: 'NotRequired',
+  })
+  reprintPaymentStatus: string;
+
+  @ApiProperty({
+    description: 'Last Reprint Date',
+    example: '2023-01-01T00:00:00.000Z',
+  })
+  @Prop({ type: Date })
+  lastReprintDate: Date;
+
+  @ApiProperty({
+    description: 'Reprint Download Expiry Date',
+    example: '2023-01-01T00:00:00.000Z',
+  })
+  @Prop({ type: Date })
+  reprintDownloadExpiryDate: Date;
+
+  @ApiProperty({
+    description: 'Requires Reprint Payment',
+    example: false,
+  })
+  @Prop({ type: Boolean, default: false })
+  requiresReprintPayment: boolean;
+
+  // auctioneer.schema.ts
+  @Prop({ default: 0 })
+  downloadCount: number;
 }
 
 export const CertificateSchema = SchemaFactory.createForClass(Certificate);

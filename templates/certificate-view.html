@@ -476,195 +476,6 @@
     </footer>
 
     <!-- Simplified jQuery-like functionality -->
-    <!-- <script>
-      // Simple implementation of jQuery-like functionality
-      const $ = function (selector) {
-        const elements = document.querySelectorAll(selector);
-        return {
-          text: function (text) {
-            if (text !== undefined) {
-              elements.forEach((el) => (el.textContent = text));
-              return this;
-            }
-            return elements.length > 0 ? elements[0].textContent : '';
-          },
-          html: function (html) {
-            if (html !== undefined) {
-              elements.forEach((el) => (el.innerHTML = html));
-              return this;
-            }
-            return elements.length > 0 ? elements[0].innerHTML : '';
-          },
-          attr: function (attr, value) {
-            if (value !== undefined) {
-              elements.forEach((el) => el.setAttribute(attr, value));
-              return this;
-            }
-            return elements.length > 0 ? elements[0].getAttribute(attr) : null;
-          },
-          addClass: function (className) {
-            elements.forEach((el) => el.classList.add(className));
-            return this;
-          },
-          removeClass: function (className) {
-            elements.forEach((el) => el.classList.remove(className));
-            return this;
-          },
-          show: function () {
-            elements.forEach((el) => (el.style.display = ''));
-            return this;
-          },
-          hide: function () {
-            elements.forEach((el) => (el.style.display = 'none'));
-            return this;
-          },
-          prop: function (prop, value) {
-            if (value !== undefined) {
-              elements.forEach((el) => (el[prop] = value));
-              return this;
-            }
-            return elements.length > 0 ? elements[0][prop] : null;
-          },
-          click: function (handler) {
-            elements.forEach((el) => el.addEventListener('click', handler));
-            return this;
-          },
-          fadeOut: function () {
-            elements.forEach((el) => {
-              el.style.opacity = '0';
-              el.style.transition = 'opacity 0.5s';
-              setTimeout(() => (el.style.display = 'none'), 500);
-            });
-            return this;
-          },
-        };
-      };
-
-      // Document ready function
-      document.addEventListener('DOMContentLoaded', function () {
-        // Extract certificate ID from URL
-        const urlParts = window.location.pathname.split('/');
-        const certificateId = urlParts[urlParts.length - 1];
-
-        // Set current date for verification
-        const currentDate = new Date().toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
-        $('#verificationDate').text(currentDate);
-
-        // API base URL
-        const getBaseUrl = () => {
-          // Determine if we're in development or production
-          return window.location.hostname === 'localhost'
-            ? 'http://localhost:5000'
-            : 'https://api.citizenship.benuestate.gov.ng';
-        };
-
-        const apiUrl = getBaseUrl();
-
-        // Get certificate details
-        function getCertificateDetails() {
-          return fetch(
-            `${apiUrl}/api/indigene/certificate/certificate/${certificateId}`,
-          ).then((response) => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-          });
-        }
-
-        // Update UI with certificate details
-        function updateCertificateDetails(response) {
-          $('#certificateId').text(response.id || certificateId);
-          $('#fullName').text(response.name || 'Victor Akor Atir');
-          $('#localGovernment').text(response.lga || 'Makurdi');
-          $('#familyOf').text(response.family || 'Mr & Mrs Atir');
-          $('#councilWard').text(response.ward || 'North Bank');
-          $('#kindred').text(response.kindred || 'Ikyurav');
-          $('#dateOfBirth').text(response.dob || '21 February 1971');
-          $('#dateOfIssue').text(response.issueDate || '01 January 2023');
-
-          // Update UI for certificate
-          $('#certificateBadge').html(
-            '<i class="icon-certificate"></i> Certificate',
-          );
-          $('#certificateTitle').text('Certificate of Origin');
-        }
-
-        // Fetch certificate details
-        function fetchCertificateDetails() {
-          getCertificateDetails()
-            .then(function (response) {
-              // Update certificate details
-              updateCertificateDetails(response);
-            })
-            .catch(function () {
-              // If API fails, use sample data
-              $('#certificateId').text(certificateId);
-              $('#fullName').text('Victor Akor Atir');
-              $('#localGovernment').text('Makurdi');
-              $('#familyOf').text('Mr & Mrs Atir');
-              $('#councilWard').text('North Bank');
-              $('#kindred').text('Ikyurav');
-              $('#dateOfBirth').text('21 February 1971');
-              $('#dateOfIssue').text('01 January 2023');
-
-              // Show error status
-              $('#verificationStatus')
-                .removeClass('status-valid')
-                .addClass('status-invalid')
-                .html(
-                  '<i class="icon-exclamation-circle"></i> Verification Failed',
-                );
-            });
-        }
-
-        // Download certificate
-        function downloadCertificate() {
-          // Show loading state
-          $('#downloadBtn').prop('disabled', true);
-          $('#loadingSpinner').show();
-          $('#infoAlert').show();
-          $('#infoMessage').text('Preparing your certificate for download...');
-
-          // Create a temporary link element to trigger download
-          const downloadLink = document.createElement('a');
-          downloadLink.href = `${apiUrl}/api/indigene/certificate/download/${certificateId}`;
-          downloadLink.setAttribute('download', 'certificate.pdf');
-          document.body.appendChild(downloadLink);
-          downloadLink.click();
-          document.body.removeChild(downloadLink);
-
-          // Simulate download completion
-          setTimeout(function () {
-            $('#loadingSpinner').hide();
-            $('#infoAlert').hide();
-            $('#successAlert').show();
-
-            // Update button text
-            $('#downloadBtn').html(
-              '<i class="icon-check-circle"></i> Downloaded',
-            );
-
-            // Hide success message after 5 seconds
-            setTimeout(function () {
-              $('#successAlert').fadeOut();
-            }, 5000);
-          }, 3000);
-        }
-
-        // Initialize
-        fetchCertificateDetails();
-
-        // Handle download button click
-        $('#downloadBtn').click(function () {
-          downloadCertificate();
-        });
-      });
-    </script> -->
-
-    <!-- Simplified jQuery-like functionality -->
     <script>
       // Simple implementation of jQuery-like functionality
       const $ = function (selector) {
@@ -758,17 +569,13 @@
         };
 
         const apiUrl = getBaseUrl();
-        console.log('Using API URL:', apiUrl);
 
         // Get certificate details
         function getCertificateDetails() {
-          console.log('Fetching certificate details for ID:', certificateId);
           const url = `${apiUrl}/api/indigene/certificate/certificate/${certificateId}`;
-          console.log('Fetch URL:', url);
 
           return fetch(url)
             .then((response) => {
-              console.log('Response status:', response.status);
               if (!response.ok) {
                 console.error(
                   'Network response was not ok:',
@@ -786,7 +593,6 @@
 
         // Update UI with certificate details
         function updateCertificateDetails(response) {
-          console.log('Certificate data received:', response);
           $('#certificateId').text(response.id || certificateId);
           $('#fullName').text(response.name || 'Victor Akor Atir');
           $('#localGovernment').text(response.lga || 'Makurdi');
@@ -801,6 +607,35 @@
             '<i class="icon-certificate"></i> Certificate',
           );
           $('#certificateTitle').text('Certificate of Origin');
+
+          // RENDER THE PREVIEW
+          renderDocumentPreview(response);
+        }
+
+        // NEW: Function to render the streaming PDF
+        function renderDocumentPreview(data) {
+          // Use the new /stream/ endpoint we created
+          const streamUrl = `${apiUrl}/api/indigene/certificate/stream/${certificateId}`;
+
+          // Embed the PDF using an iframe
+          // The browser will stream the PDF and display it inside the box
+          const previewHtml = `
+              <div style="width: 100%; height: 100%; min-height: 300px; background-color: #f0f0f0; position: relative;">
+                  <!-- Loading Text (Shows while PDF loads) -->
+                  <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #666;">
+                      Loading Document...
+                  </div>
+                  
+                  <!-- The IFrame that displays the PDF -->
+                  <iframe 
+                      src="${streamUrl}" 
+                      style="width: 100%; height: 100%; min-height: 300px; border: none; position: relative; z-index: 1; background: transparent;"
+                      title="Certificate Of Origin Preview"
+                  ></iframe>
+              </div>
+            `;
+
+          $('.certificate-preview').html(previewHtml);
         }
 
         // Fetch certificate details
@@ -855,7 +690,6 @@
           // Create a temporary link element to trigger download
           const downloadLink = document.createElement('a');
           const downloadUrl = `${apiUrl}/api/indigene/certificate/download/${certificateId}`;
-          console.log('Download URL:', downloadUrl);
 
           downloadLink.href = downloadUrl;
           downloadLink.setAttribute('download', 'certificate.pdf');

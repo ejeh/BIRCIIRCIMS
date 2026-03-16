@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   Injectable,
-  InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -27,6 +26,7 @@ import { UserPublicData } from 'src/users/users.dto';
 import * as bcrypt from 'bcryptjs';
 import { authenticator } from 'otplib';
 import { MailService } from 'src/mail/mail.service';
+import axios from 'axios';
 
 @Injectable()
 export class AuthService {
@@ -247,19 +247,74 @@ export class AuthService {
     return { success: true, message: 'Activation email sent successfully' };
   }
 
+  // async signupUser(userData: SignUpDto, origin: string, role: string) {
+  //   const { NIN, firstname, lastname, stateOfOrigin } = userData;
+
+  //   if (!this.fakeDatabase[NIN]) {
+  //     throw new BadRequestException('NIN not found');
+  //   }
+
+  //   const storedData = this.fakeDatabase[NIN];
+  //   if (
+  //     storedData.firstname !== firstname ||
+  //     storedData.lastname !== lastname ||
+  //     storedData.stateOfOrigin.toLocaleLowerCase() !==
+  //       stateOfOrigin.toLocaleLowerCase()
+  //   ) {
+  //     throw new BadRequestException('User details do not match the NIN record');
+  //   }
+  //   const user = await this.usersService.create(
+  //     userData.firstname,
+  //     userData.middlename,
+  //     userData.lastname,
+  //     userData.DOB,
+  //     userData.email,
+  //     userData.password,
+  //     userData.phone,
+  //     userData.stateOfOrigin,
+  //     userData.lgaOfOrigin,
+  //     userData.NIN,
+  //     role,
+  //     origin,
+  //   );
+  //   return {
+  //     token: this.jwtService.sign(
+  //       { ...user.getPublicData() },
+  //       { subject: `${user.id}` },
+  //     ),
+  //     user: user.getPublicData(),
+  //     success: true,
+  //     message: 'NIN Verified Successfully',
+  //   };
+  // }
+
   async signupUser(userData: SignUpDto, origin: string, role: string) {
     const { NIN, firstname, lastname, stateOfOrigin } = userData;
 
-    if (!this.fakeDatabase[NIN]) {
-      throw new BadRequestException('NIN not found');
+    // 1️⃣ Basic NIN format validation
+    if (!NIN || NIN.length !== 11) {
+      throw new BadRequestException('Invalid NIN format');
     }
 
-    const storedData = this.fakeDatabase[NIN];
+    // 2️⃣ Prevent duplicate NIN registration
+    const existingUser = await this.usersService.findByNIN(NIN);
+    if (existingUser) {
+      throw new BadRequestException('This NIN is already registered');
+    }
+
+    // 3️⃣ Verify NIN with Prembly
+    const verification = await this.verifyNIN(NIN);
+    if (!verification || !verification.status) {
+      throw new BadRequestException('NIN verification failed');
+    }
+
+    console.log('Verification result:', verification.echoverify_response.data);
+    const verifiedData = verification.echoverify_response.data;
+    // 4️⃣ Match user-submitted data with verified record
     if (
-      storedData.firstname !== firstname ||
-      storedData.lastname !== lastname ||
-      storedData.stateOfOrigin.toLocaleLowerCase() !==
-        stateOfOrigin.toLocaleLowerCase()
+      verifiedData?.firstName?.toLowerCase() !== firstname.toLowerCase() ||
+      verifiedData?.lastName?.toLowerCase() !== lastname.toLowerCase() ||
+      verifiedData?.birthState?.toLowerCase() !== stateOfOrigin.toLowerCase()
     ) {
       throw new BadRequestException('User details do not match the NIN record');
     }
@@ -289,7 +344,6 @@ export class AuthService {
   }
 
   async adminSignup(userData: AdminSignUpDto, origin: string, role: string) {
-    console.log('Admin Signup Role:', role);
     const { NIN, firstname, lastname, stateOfOrigin, phone, email } = userData;
 
     if (!this.fakeDatabase[NIN]) {
@@ -355,25 +409,6 @@ export class AuthService {
     };
   }
 
-  // async loginKindred(user?: User) {
-  //   if (user.role == 'kindred_head') {
-  //     return {
-  //       token: this.jwtService.sign(
-  //         //@ts-ignore
-  //         { ...user?.getPublicData() },
-  //         //@ts-ignore
-  //         { subject: `${user?.id}` },
-  //       ),
-  //       //@ts-ignore
-  //       user: user?.getPublicData(),
-  //     };
-  //   }
-
-  //   throw new UnauthorizedException(
-  //     'Account does not support kindred activities.',
-  //   );
-  // }
-
   async forgottenPassword({ email }: ForgottenPasswordDto, origin: string) {
     return await this.usersService.forgottenPassword(email, origin);
   }
@@ -433,28 +468,6 @@ export class AuthService {
     }
   }
 
-  // async generate2FASecret(
-  //   userId: string,
-  // ): Promise<{ secret: string; qrCodeUrl: string }> {
-  //   const user = await this.userModel.findById(userId);
-  //   if (!user) {
-  //     throw new UnauthorizedException('User not found');
-  //   }
-
-  //   const secret = authenticator.generateSecret();
-  //   const appName = 'YourAppName';
-  //   const qrCodeUrl = authenticator.keyuri(user.email, appName, secret);
-
-  //   // Store the secret temporarily (not enabled yet)
-  //   await this.userModel.updateOne(
-  //     { _id: userId },
-  //     { $set: { twoFactorSecret: secret } },
-  //   );
-
-  //   return { secret, qrCodeUrl };
-  // }
-
-  // src/auth/auth.service.ts
   async generate2FASecret(
     userId: string,
   ): Promise<{ secret: string; qrCodeUrl: string }> {
@@ -627,5 +640,39 @@ export class AuthService {
     });
 
     return results;
+  }
+
+  async verifyNIN(nin: string) {
+    try {
+      const response = await axios.post(
+        'https://echoverify.ng/api/v1/verify',
+        {
+          product_slug: 'nin-verification',
+          payload: {
+            id: nin, // EchoVerify expects `id`, not `nin`
+            isSubjectConsent: true, // true if you have consent
+          },
+        },
+        {
+          headers: {
+            'X-API-Key': process.env.ECHOVERIFY_API_KEY, // EchoVerify API key
+            'X-Environment': 'test', // or "test"
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      return response.data;
+    } catch (error: any) {
+      console.error(
+        'EchoVerify NIN verification error:',
+        error.response?.data || error.message,
+      );
+
+      throw new BadRequestException(
+        error.response?.data?.message ||
+          'NIN verification failed. Please check the NIN and try again.',
+      );
+    }
   }
 }

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TransactionController } from './transaction.controller';
 import { TransactionService } from './transaction.service';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -14,12 +14,34 @@ import { JwtService } from '@nestjs/jwt';
 import { IdcardService } from 'src/idcard/idcard.service';
 import { IdCard } from 'src/idcard/idcard.schema';
 import { ResubmissionService } from 'src/common/services/resubmission.service';
+import { CounterSchema } from 'src/indigene-certificate/counter.schema';
+import { UsersService } from 'src/users/users.service';
+import { RoleAssignmentService } from 'src/roles/role-assignment.service';
+import { RolePermissionSchema } from 'src/roles/role-permission.schema';
+import {
+  RoleAssignment,
+  RoleAssignmentSchema,
+} from 'src/users/users.role-assiggnment.schema';
+import { SmsService } from 'src/sms/sms.service';
+import { MailService } from 'src/mail/mail.service';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { ConfigService } from '@nestjs/config';
+import { IndigeneCertificateModule } from 'src/indigene-certificate/indigene-certificate.module';
+import { IdcardModule } from 'src/idcard/idcard.module';
+import { AuctioneerModule } from 'src/auctioneer/auctioneer.module';
+import { AuctioneerSchema } from 'src/auctioneer/auctioneer.schema';
 
 @Module({
   imports: [
     KindredModel,
     UserModel,
-    MongooseModule.forFeature([{ name: 'Certificate', schema: Certificate }]),
+    MongooseModule.forFeature([
+      { name: 'Certificate', schema: Certificate },
+      { name: 'Auctioneer', schema: AuctioneerSchema },
+      { name: 'Counter', schema: CounterSchema },
+      { name: 'RolePermission', schema: RolePermissionSchema },
+      { name: RoleAssignment.name, schema: RoleAssignmentSchema },
+    ]),
     MongooseModule.forFeature([{ name: 'IdCard', schema: IdCard }]),
 
     MongooseModule.forFeature([
@@ -28,16 +50,23 @@ import { ResubmissionService } from 'src/common/services/resubmission.service';
     MongooseModule.forFeature([
       { name: 'Notification', schema: NotificationSchema },
     ]),
+    forwardRef(() => IndigeneCertificateModule),
+    forwardRef(() => IdcardModule),
+    forwardRef(() => AuctioneerModule),
   ],
   controllers: [TransactionController],
   providers: [
     TransactionService,
-    IndigeneCertificateService,
     NotificationsService,
     NotificationsGateway,
     JwtService,
-    IdcardService,
     ResubmissionService,
+    UsersService,
+    RoleAssignmentService,
+    SmsService,
+    MailService,
+    CloudinaryService,
+    ConfigService,
   ],
   exports: [TransactionService, MongooseModule],
 })

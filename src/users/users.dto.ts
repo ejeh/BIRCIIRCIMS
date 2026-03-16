@@ -4,6 +4,9 @@ import {
   IsBoolean,
   IsMongoId,
   IsEmail,
+  Max,
+  Length,
+  Matches,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -62,8 +65,10 @@ export class UserPublicData {
   @ApiProperty({})
   role: string;
 
-  @ApiProperty({})
-  NIN: number;
+  @IsString()
+  @Length(11, 11)
+  @Matches(/^\d+$/, { message: 'NIN must contain only digits' })
+  NIN: string;
 
   @ApiProperty({})
   house_number: string;
@@ -318,4 +323,23 @@ export class UpdateUserAdminDto {
   @IsOptional()
   @IsString()
   phoneNumber?: string;
+}
+
+// NIN Verification Response Types
+export interface NINVerificationData {
+  firstname: string;
+  lastname: string;
+  middlename?: string;
+  stateOfOrigin: string;
+  lga?: string;
+  phone?: string;
+  dob?: string;
+  status: string;
+}
+
+export interface PremblyNINResponse {
+  success: boolean;
+  data?: NINVerificationData;
+  message?: string;
+  error?: string;
 }

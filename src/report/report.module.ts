@@ -7,11 +7,7 @@ import { ScheduledReportSchema } from './schemas/scheduled-report.schema';
 import { User } from 'src/users/users.schema';
 import { UsersService } from 'src/users/users.service';
 import { UserModel } from 'src/users/users.model';
-import {
-  Certificate,
-  CertificateSchema,
-} from 'src/indigene-certificate/indigene-certicate.schema';
-import { IdCardSchema } from 'src/idcard/idcard.schema';
+import { CertificateSchema } from 'src/indigene-certificate/indigene-certicate.schema';
 import { IdcardModule } from 'src/idcard/idcard.module';
 import { TransactionModule } from 'src/transaction/transaction.module';
 import { NotificationsService } from 'src/notifications/notifications.service';
@@ -21,6 +17,7 @@ import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { RolesModule } from 'src/roles/roles.module';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Module({
   imports: [
@@ -32,6 +29,7 @@ import { RolesModule } from 'src/roles/roles.module';
     MongooseModule.forFeature([
       { name: 'Certificate', schema: CertificateSchema },
     ]),
+
     forwardRef(() => IdcardModule),
     forwardRef(() => TransactionModule),
     RolesModule,
@@ -47,6 +45,7 @@ import { RolesModule } from 'src/roles/roles.module';
     NotificationsGateway,
     ConfigService,
     JwtService,
+    CloudinaryService,
   ],
 })
 export class ReportModule {}

@@ -1,7 +1,13 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
+  forwardRef,
+  HttpException,
+  HttpStatus,
+  Inject,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -15,15 +21,32 @@ import { Types } from 'mongoose';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { UserDocument } from 'src/users/users.schema';
 import { ResubmissionService } from '../common/services/resubmission.service';
+import { ReprintResponseDto } from 'src/indigene-certificate/dto/request-reprint.dto';
+import { CurrentUser } from 'src/common/decorators/current-user,decorator';
+import { TransactionService } from 'src/transaction/transaction.service';
+import { Logger } from '@nestjs/common';
+import { UsersService } from 'src/users/users.service';
+import * as crypto from 'crypto';
+import QRCode from 'qrcode';
+import config from 'src/config';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { Transaction } from 'src/transaction/transaction.schema';
 
 @Injectable()
 export class IdcardService {
+  private readonly logger = new Logger(IdcardService.name);
   constructor(
     @InjectModel(IdCard.name)
     public readonly idCardModel: Model<IdCard>,
+    private readonly userService: UsersService,
+    private readonly cloudinaryService: CloudinaryService,
+
     @InjectModel('User') public readonly userModel: Model<UserDocument>,
     private readonly notificationsService: NotificationsService,
     private resubmissionService: ResubmissionService,
+    @Inject(forwardRef(() => TransactionService))
+    private readonly transactionService: TransactionService,
+    @InjectModel('Transaction') private transactionModel: Model<Transaction>,
   ) {}
 
   async generateUniqueNumber(): Promise<string> {
@@ -98,6 +121,30 @@ export class IdcardService {
         error.message || 'Failed to create certificate.',
       );
     }
+  }
+
+  // Inside IdCardService
+
+  async findOneCard(id: string, userId: string) {
+    return this.idCardModel.findOne({ _id: id, userId: userId }).exec();
+  }
+
+  async updateIdCard(id: string, updateData: any, userId: string) {
+    // Optionally verify ownership again inside transaction
+    const updated = await this.idCardModel
+      .findOneAndUpdate(
+        { _id: id, userId: userId },
+        updateData,
+        { new: true }, // Return updated doc
+      )
+      .exec();
+
+    if (!updated) {
+      throw new NotFoundException(
+        'Failed to update request or request not found.',
+      );
+    }
+    return updated;
   }
 
   async findCardById(id: string): Promise<IdCard> {
@@ -275,26 +322,14 @@ export class IdcardService {
     return request;
   }
 
-  // Delete Certificate
-  deleteItem = async (item_id: string): Promise<any> => {
-    return await this.idCardModel.deleteOne({ _id: item_id });
-  };
-
   async findCertificateById(id: string): Promise<IdCard> {
     return this.idCardModel.findById(id);
   }
 
-  // async markAsDownloaded(id: string): Promise<void> {
-  //   await this.idCardModel.updateOne(
-  //     { _id: id },
-  //     { $set: { downloaded: true } },
-  //   );
-  // }
-
   async markAsDownloadedForThreeMonths(id: string): Promise<void> {
     const expiry = new Date();
-    expiry.setMonth(expiry.getMonth() + 3); // +3 months
-    // expiry.setMinutes(expiry.getMinutes() + 10); // +10 minutes
+    // expiry.setMonth(expiry.getMonth() + 3); // +3 months
+    expiry.setMinutes(expiry.getMinutes() + 10); // +10 minutes
 
     await this.idCardModel.updateOne(
       { _id: id },
@@ -305,6 +340,29 @@ export class IdcardService {
         },
       },
     );
+  }
+
+  async validateDownloadCount(id: string): Promise<IdCard> {
+    // 3. ATOMIC INCREMENT WITH LIMIT CHECK
+    // We try to increment. The query condition ensures we only increment if under the limit.
+    const MAX_DOWNLOADS = 3;
+    const result = await this.idCardModel.findOneAndUpdate(
+      {
+        _id: id,
+        downloadCount: { $lt: MAX_DOWNLOADS }, // Only update if count < 3
+      },
+      { $inc: { downloadCount: 1 } },
+      { new: true }, // Return the updated document
+    );
+
+    // 4. If result is null, it means the condition failed (Limit reached)
+    if (!result) {
+      throw new HttpException(
+        `Download limit of ${MAX_DOWNLOADS} reached for this window. Please request a reprint.`,
+        HttpStatus.FORBIDDEN,
+      );
+    }
+    return result;
   }
 
   async generateIDCardPDF(id: string, html: string): Promise<string> {
@@ -427,4 +485,452 @@ export class IdcardService {
     }
     return updatedCard;
   }
+
+  private async initializePayment(data: {
+    documentId: string;
+    userId: string;
+    amount: number;
+    email: string;
+    currency?: string;
+    reference?: string;
+    documentAmount: number;
+    documentType: 'idcard';
+  }) {
+    try {
+      return await this.transactionService.initializeReprintPayment({
+        ...data,
+      });
+    } catch (error) {
+      this.logger.error('Reprint payment initialization failed', error?.stack);
+      throw new InternalServerErrorException(
+        'Failed to initialize payment. Try again later.',
+      );
+    }
+  }
+
+  private buildResponse(paymentResult: any): ReprintResponseDto {
+    return {
+      success: true,
+      message: 'Reprint request received. Complete payment to proceed.',
+      data: {
+        paymentReference: paymentResult.data.reference,
+        amount: paymentResult.data.amount,
+        skipCredo: paymentResult.data.skipCredo,
+      },
+    };
+  }
+  async updateReprintPaymentStatus(
+    id: string,
+    status: 'Pending' | 'Paid' | 'NotRequired',
+  ): Promise<IdCard> {
+    return this.idCardModel
+      .findByIdAndUpdate(
+        id,
+        {
+          reprintPaymentStatus: status,
+          requiresReprintPayment: status !== 'NotRequired',
+        },
+        { new: true },
+      )
+      .exec();
+  }
+
+  async confirmReprintPayment(
+    id: string,
+    paymentReference: string,
+    rrr: string,
+  ): Promise<IdCard> {
+    const now = new Date();
+    // const thirtyDaysFromNow = new Date(
+    //   now.getTime() + 30 * 24 * 60 * 60 * 1000,
+    // );
+    const thirtyDaysFromNow = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes for testing
+
+    const updatedIdcard = await this.idCardModel
+      .findByIdAndUpdate(
+        id,
+        {
+          reprintPaymentStatus: 'Paid',
+          $inc: { reprintCount: 1 },
+          lastReprintDate: now,
+          reprintDownloadExpiryDate: thirtyDaysFromNow,
+          requiresReprintPayment: false,
+          downloadCount: 0,
+        },
+        { new: true },
+      )
+      .exec();
+
+    if (!updatedIdcard) {
+      throw new NotFoundException('Auctioneer request not found.');
+    }
+    // This ensures the transaction record moves from 'service_paid' to 'success'
+    if (paymentReference) {
+      await this.transactionModel
+        .updateOne(
+          { reference: paymentReference },
+          {
+            $set: {
+              status: 'success',
+              rrr: rrr,
+              verified: true,
+              verifiedAt: new Date(),
+            },
+          },
+        )
+        .exec();
+    }
+
+    return updatedIdcard;
+  }
+  async incrementReprintCount(cardId: string): Promise<void> {
+    await this.idCardModel.findByIdAndUpdate(cardId, {
+      $inc: { reprintCount: 1 },
+    });
+  }
+
+  private async getAndAuthorizeIdCard(id: string, userId: string) {
+    const idCard = await this.idCardModel.findById(id);
+
+    if (!idCard) {
+      throw new NotFoundException('Id Card not found');
+    }
+
+    const ownerId = this.extractOwnerId(idCard);
+    if (ownerId !== userId) {
+      this.logger.warn(`User ${userId} unauthorized access to idCard ${id}`);
+      throw new ForbiddenException(
+        'Not authorized to request reprint for this idCard',
+      );
+    }
+
+    return idCard;
+  }
+
+  private extractOwnerId(idcard: any): string {
+    return typeof idcard.userId === 'string'
+      ? idcard.userId
+      : idcard.userId._id.toString();
+  }
+
+  private validateDownloadWindowExpired(auctioneer: any): void {
+    const MAX_DOWNLOADS = 3;
+    const now = new Date();
+
+    // 1. Check Time Window
+    const isTimeExpired =
+      auctioneer.downloadExpiryDate &&
+      new Date(auctioneer.downloadExpiryDate) < now;
+
+    // 2. Check Download Limit
+    const isLimitReached = (auctioneer.downloadCount || 0) >= MAX_DOWNLOADS;
+
+    // 3. Decision Logic
+    // If time is NOT expired AND limit is NOT reached -> Block request
+    if (!isTimeExpired && !isLimitReached) {
+      throw new BadRequestException(
+        'Download window is still active and you have downloads remaining. Please download from your dashboard.',
+      );
+    }
+
+    // If we reach here: Time is expired OR Limit is reached -> Allow Reprint
+  }
+
+  async requestReprint(
+    cardId: string,
+    data: {
+      documentId: string;
+      userId: string;
+      amount: number;
+      email: string;
+      currency?: string;
+      reference?: string;
+      documentAmount: number;
+      documentType: 'idcard';
+    },
+  ): Promise<ReprintResponseDto> {
+    const idcard = await this.getAndAuthorizeIdCard(cardId, data.userId);
+    this.validateDownloadWindowExpired(idcard);
+
+    const paymentResult = await this.initializePayment(data);
+    await this.updateReprintPaymentStatus(cardId, 'Pending');
+
+    return this.buildResponse(paymentResult);
+  }
+
+  private validatePaymentStatus(idcard: any): void {
+    if (idcard.reprintPaymentStatus !== 'Paid') {
+      throw new HttpException(
+        'Reprint payment is required to download this ID Card.',
+        HttpStatus.PAYMENT_REQUIRED,
+      );
+    }
+  }
+
+  private validateDownloadWindow(idcard: any): void {
+    if (
+      !idcard.reprintDownloadExpiryDate ||
+      idcard.reprintDownloadExpiryDate < new Date()
+    ) {
+      throw new HttpException(
+        'The reprint download window has expired. Please request a new reprint.',
+        HttpStatus.GONE,
+      );
+    }
+  }
+
+  private generateSecureHash(
+    id: string,
+    firstname: string,
+    lastname: string,
+    dateOfIssue: Date,
+  ): string {
+    const secret = process.env.HASH_SECRET; // Store in .env
+    const data = `${id}:${firstname}:${lastname}:${dateOfIssue.toISOString()}`;
+    return crypto
+      .createHmac('sha256', secret)
+      .update(data)
+      .digest('hex')
+      .substring(0, 12); // First 12 chars for QR code
+  }
+
+  private async generateVerificationData(idcard: any, owner: any) {
+    const dateOfReprint = new Date();
+    const hash = this.generateSecureHash(
+      idcard.id,
+      owner.firstname,
+      owner.lastname,
+      dateOfReprint,
+    );
+
+    const baseUrl = this.getBaseUrl();
+    const qrCodeData = `${baseUrl}/api/idard/view/${idcard.id}`;
+    const qrCodeUrl = await this.generateQrCode(qrCodeData);
+
+    return { hash, qrCodeUrl };
+  }
+
+  private async generateQrCode(data: string): Promise<string> {
+    try {
+      if (!data) {
+        throw new Error('Input data is required');
+      }
+      const qrCodeUrl = await QRCode.toDataURL(data);
+      return qrCodeUrl;
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+      throw new Error('Failed to generate QR code');
+    }
+  }
+
+  private getBaseUrl(): string {
+    return config.isDev
+      ? process.env.BASE_URL || 'http://localhost:5000'
+      : 'https://api.citizenship.benuestate.gov.ng';
+  }
+
+  private async generatePdf(auctioneer: any, owner: any): Promise<Buffer> {
+    const htmlTemplate = await this.loadHtmlTemplate('card-template.html');
+    const populatedHtml = this.populateHtmlTemplate(
+      htmlTemplate,
+      auctioneer,
+      owner,
+    );
+
+    const filePath = await this.generateIdCardPDF(
+      `reprint-${auctioneer.id}`,
+      populatedHtml,
+    );
+    return fs.promises.readFile(filePath);
+  }
+
+  private async loadHtmlTemplate(templateName: string): Promise<string> {
+    const templatePath = path.join(
+      __dirname,
+      '..',
+      '..',
+      'templates',
+      templateName,
+    );
+    return fs.promises.readFile(templatePath, 'utf8');
+  }
+
+  private populateHtmlTemplate(html: string, data: any, user: any): string {
+    console.log('Populating HTML template with data:', data, user);
+    const dob = new Date(user.DOB);
+
+    const getBaseUrl = (): string =>
+      config.isDev
+        ? process.env.BASE_URL || 'http://localhost:5000'
+        : 'https://api.citizenship.benuestate.gov.ng';
+
+    const formattedDOB = dob
+      .toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+      .replace(',', '');
+
+    const dateOfIssue = new Date();
+    const formattedDateOfIssue = dateOfIssue
+      .toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+      .replace(',', '');
+
+    return html
+      .replace(/{{baseUrl}}/g, getBaseUrl())
+      .replace(/{{name}}/g, user.firstname + ' ' + user.middlename)
+      .replace(/{{surname}}/g, data.lastname)
+      .replace(/{{dob}}/g, formattedDOB)
+      .replace(/{{bin}}/g, data.bin)
+      .replace(/{{passportPhoto}}/g, data.passportPhoto)
+      .replace(/{{qrCodeUrl}}/g, data.qrCodeUrl)
+      .replace(/{{issueDate}}/g, formattedDateOfIssue)
+      .replace(/{{gender}}/g, user.gender);
+  }
+
+  async generateIdCardPDF(id: string, html: string): Promise<string> {
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      timeout: 60000, // Increase the timeout to 60 seconds
+    });
+
+    const page = await browser.newPage();
+
+    // Debugging
+    page.on('requestfailed', (request) => {
+      console.error('❌ Request failed:', request.url(), request.failure());
+    });
+
+    page.on('console', (msg) => {
+      console.log('📄 PAGE LOG:', msg.text());
+    });
+
+    // More lenient wait
+    await page.setContent(html, {
+      waitUntil: 'networkidle0',
+      timeout: 60000,
+    });
+
+    const pdfBuffer = await page.pdf({
+      printBackground: true,
+      margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' },
+      preferCSSPageSize: true,
+      scale: 1,
+    });
+
+    await browser.close();
+
+    const tempDir = path.join(__dirname, '..', 'temp');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    const tempFilePath = path.join(tempDir, `id_card_${id}.pdf`);
+    await fs.promises.writeFile(tempFilePath, pdfBuffer);
+
+    return tempFilePath;
+  }
+
+  async prepareReprintDownload(
+    cardId: string,
+    userId: string,
+  ): Promise<{ buffer: Buffer; filename: string }> {
+    const idcard = await this.getAndAuthorizeIdCard(cardId, userId);
+
+    this.validatePaymentStatus(idcard);
+    this.validateDownloadWindow(idcard);
+
+    const owner = await this.userService.findById(this.extractOwnerId(idcard));
+    const { hash, qrCodeUrl } = await this.generateVerificationData(
+      idcard,
+      owner,
+    );
+
+    await this.incrementReprintCount(cardId);
+
+    await this.saveVerificationHash(cardId, hash);
+
+    // 3. ATOMIC INCREMENT WITH LIMIT CHECK
+    // We try to increment. The query condition ensures we only increment if under the limit.
+    const MAX_DOWNLOADS = 3;
+    const result = await this.idCardModel.findOneAndUpdate(
+      {
+        _id: cardId,
+        downloadCount: { $lt: MAX_DOWNLOADS }, // Only update if count < 3
+      },
+      { $inc: { downloadCount: 1 } },
+      { new: true }, // Return the updated document
+    );
+
+    // 4. If result is null, it means the condition failed (Limit reached)
+    if (!result) {
+      throw new HttpException(
+        `Download limit of ${MAX_DOWNLOADS} reached for this window. Please request a reprint.`,
+        HttpStatus.FORBIDDEN,
+      );
+    }
+    // Attach qrCodeUrl to idcard object for PDF generation
+    idcard.qrCodeUrl = qrCodeUrl;
+
+    const pdfBuffer = await this.generatePdf(idcard, owner);
+
+    return {
+      buffer: pdfBuffer,
+      filename: 'auctioneer-lincence-reprint.pdf',
+    };
+  }
+
+  deleteItem = async (item_id: string): Promise<any> => {
+    // 1️⃣ Find record first
+    const record = await this.idCardModel.findById(item_id);
+
+    if (!record) {
+      throw new NotFoundException('ID Card record not found');
+    }
+
+    // Helper function to safely delete from Cloudinary
+    const deleteFromCloudinary = async (url: string) => {
+      if (url) {
+        const publicId = this.cloudinaryService.getFullPublicIdFromUrl(url);
+        if (publicId) {
+          try {
+            await this.cloudinaryService.deleteFile(publicId);
+          } catch (err) {
+            console.error(`Failed to delete file ${publicId}:`, err);
+            // We usually continue even if file deletion fails to ensure the DB record is removed
+          }
+        }
+      }
+    };
+
+    // 2️⃣ Delete all associated files from Cloudinary
+    // Delete Passport Photo
+    if (record.passportPhoto) {
+      await deleteFromCloudinary(record.passportPhoto);
+    }
+
+    // Delete Reference Letter
+    if (record.ref_letter) {
+      await deleteFromCloudinary(record.ref_letter);
+    }
+
+    // Delete Utility Bill
+    if (record.utilityBill) {
+      await deleteFromCloudinary(record.utilityBill);
+    }
+
+    // 3️⃣ Delete from database
+    await this.idCardModel.deleteOne({ _id: item_id });
+
+    return {
+      success: true,
+      message: 'ID Card request deleted successfully',
+    };
+  };
 }

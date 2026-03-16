@@ -37,7 +37,7 @@ export class SignUpDto {
   @IsNotEmpty()
   @MaxLength(11)
   @ApiProperty({})
-  readonly NIN!: number;
+  readonly NIN!: string;
 
   @ApiProperty({
     example: 'email@gmail.com',

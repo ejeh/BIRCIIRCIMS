@@ -4,7 +4,6 @@ import { IndigeneCertificateController } from './indigene-certificate.controller
 import { IndigeneCertificateService } from './indigene-certificate.service';
 import { Certificate, CertificateSchema } from './indigene-certicate.schema';
 import setupSwagger from '../users/users.swagger';
-import { UsersService } from 'src/users/users.service';
 import { UserMailerService } from 'src/users/users.mailer.service';
 import { UserModel } from 'src/users/users.model';
 import { KindredModel } from 'src/kindred/kindred.model';
@@ -22,14 +21,19 @@ import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 import { JwtService } from '@nestjs/jwt';
 import { ResubmissionService } from 'src/common/services/resubmission.service';
 
+import { Counter, CounterSchema } from './counter.schema';
+import { TransactionModule } from 'src/transaction/transaction.module';
+import { User, UserSchema } from 'src/users/users.schema';
+
 @Module({
   imports: [
     HttpModule,
-    UserModel,
     KindredModel,
     LgaModel,
     MongooseModule.forFeature([
       { name: Certificate.name, schema: CertificateSchema },
+      { name: Counter.name, schema: CounterSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     MongooseModule.forFeature([
       { name: 'Notification', schema: NotificationSchema },
@@ -37,6 +41,7 @@ import { ResubmissionService } from 'src/common/services/resubmission.service';
 
     forwardRef(() => UsersModule),
     forwardRef(() => IdcardModule),
+    forwardRef(() => TransactionModule),
   ],
   controllers: [IndigeneCertificateController],
 

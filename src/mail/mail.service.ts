@@ -184,6 +184,7 @@ export class MailService {
   }
 
   async sendMailRequest(email: string, subject: string, body: string) {
+    console.log('email', email);
     // if (!config.isTest) {
     if (config.isTest) {
       console.log(
@@ -329,7 +330,6 @@ export class MailService {
       };
     }
   }
-
 
   async sendWelcomePasswordEmail(email: string, password: string) {
     // if (!config.isTest) {

@@ -34,6 +34,7 @@ import { ReportModule } from './report/report.module';
 import { VerificationLimitsModule } from './verification-limits/verification-limits.module';
 import { RolesController } from './roles/roles.controller';
 import { RolesModule } from './roles/roles.module';
+import { AuctioneerModule } from './auctioneer/auctioneer.module';
 
 // console.log(config.isProd); // boolean
 // console.log(dbUrl); // string | undefined
@@ -107,6 +108,7 @@ const DEV_TRANSPORTER = {
     ReportModule,
     VerificationLimitsModule,
     RolesModule,
+    AuctioneerModule,
   ],
   controllers: [AppController, RolesController],
   providers: [AppService, CloudinaryService],

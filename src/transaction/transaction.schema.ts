@@ -4,13 +4,18 @@ export interface Transaction extends Document {
   userId: Types.ObjectId;
   certificateId: Types.ObjectId;
   cardId: Types.ObjectId;
+  auctioneerId: Types.ObjectId;
   reference: string;
+  rrr: string;
   amount: number;
+  documentAmount: number;
+  totalAmount: number;
   email: string;
   status: string;
   currency: string;
   createdAt: Date;
-  paymentType: 'card' | 'certificate';
+  verifiedAt: Date;
+  paymentType: 'card' | 'certificate' | 'reprint' | 'auctioneer';
   customer?: {
     firstname?: string;
     lastname?: string;
@@ -45,13 +50,24 @@ export const TransactionSchema = new Schema<Transaction>(
       },
     }, // Link to Certificate model, required if paymentType is 'certificate'
 
-    reference: { type: String, unique: true },
+    auctioneerId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Auctioneer',
+      required: function () {
+        return this.paymentType === 'auctioneer';
+      },
+    }, // Link to Auctioneer model, required if paymentType is 'auctioneer'
+
+    reference: { type: String, unique: true, required: true },
     amount: { type: Number, required: true },
+    documentAmount: { type: Number, required: true },
+    totalAmount: { type: Number, required: true },
+
     email: { type: String, required: true },
     status: {
       type: String,
       required: true,
-      enum: ['pending', 'success', 'failed'],
+      enum: ['pending', 'service_paid', 'success', 'failed', 'expired'],
       default: 'pending',
     },
 
@@ -60,7 +76,7 @@ export const TransactionSchema = new Schema<Transaction>(
     paymentType: {
       type: String,
       required: true,
-      enum: ['card', 'certificate'],
+      enum: ['card', 'certificate', 'reprint', 'auctioneer'],
     }, // ✅ New field to determine payment type
 
     customer: {
@@ -71,7 +87,17 @@ export const TransactionSchema = new Schema<Transaction>(
     },
     verified: { type: Boolean, default: false },
 
+    rrr: { type: String, unique: true, sparse: true },
+
     createdAt: { type: Date, default: Date.now },
+    verifiedAt: { type: Date, default: Date.now },
   },
   { timestamps: true },
 );
+TransactionSchema.index({
+  userId: 1,
+  documentId: 1,
+  documentType: 1,
+  paymentType: 1,
+  status: 1,
+});

@@ -18,15 +18,20 @@ import { UsersModule } from 'src/users/users.module';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { JwtService } from '@nestjs/jwt';
 import { ResubmissionService } from 'src/common/services/resubmission.service';
+import { TransactionSchema } from 'src/transaction/transaction.schema';
+import { TransactionService } from 'src/transaction/transaction.service';
+import { TransactionModule } from 'src/transaction/transaction.module';
 
 @Module({
   imports: [
     HttpModule,
     UserModel,
     LgaModel,
+
     MongooseModule.forFeature([{ name: IdCard.name, schema: IdCardSchema }]),
     forwardRef(() => UsersModule),
     forwardRef(() => IndigeneCertificateModule),
+    forwardRef(() => TransactionModule),
   ],
   controllers: [IdcardController],
   providers: [

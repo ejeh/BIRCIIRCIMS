@@ -7,7 +7,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { UserDocument } from './users.schema';
+import { User, UserDocument } from './users.schema';
 import { Model } from 'mongoose';
 import { hashPassword } from 'src/auth/auth';
 import { v4 as uuid } from 'uuid';
@@ -21,7 +21,11 @@ import { SmsService } from 'src/sms/sms.service';
 import { VerificationStatus } from './users.neigbour.schema';
 import axios from 'axios';
 import { MailService } from '../mail/mail.service';
-import { UpdateUserAdminDto, UpdateUserRoleDto } from './users.dto';
+import {
+  UpdateProfileDto,
+  UpdateUserAdminDto,
+  UpdateUserRoleDto,
+} from './users.dto';
 import { Certificate } from 'src/indigene-certificate/indigene-certicate.schema';
 import { IdCard } from 'src/idcard/idcard.schema';
 import { Transaction } from 'src/transaction/transaction.schema';
@@ -32,6 +36,8 @@ import { RoleAssignmentService } from 'src/roles/role-assignment.service';
 import { UserRole } from './users.role.enum';
 import { Types } from 'mongoose';
 import PDFDocument from 'pdfkit';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { Auctioneer } from 'src/auctioneer/auctioneer.schema';
 
 @Injectable()
 export class UsersService {
@@ -43,12 +49,15 @@ export class UsersService {
     @InjectModel('IdCard') private readonly idCardModel: Model<IdCard>,
     @InjectModel('Transaction') private readonly transModel: Model<Transaction>,
     @InjectModel('Kindred') private kindredModel: Model<Kindred>,
+    @InjectModel('Auctioneer') private auctioneerModel: Model<Auctioneer>,
+
     @InjectModel(RolePermission.name)
     private rolePermissionModel: Model<RolePermission>,
     private readonly notificationsService: NotificationsService,
     private readonly roleAssignmentService: RoleAssignmentService,
     private readonly smsService: SmsService,
     private readonly mailService: MailService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   /**
@@ -66,7 +75,7 @@ export class UsersService {
     phone: number,
     stateOfOrigin: string,
     lgaOfOrigin: string,
-    NIN: number,
+    NIN: string,
     role: string,
     origin: string,
   ): Promise<UserDocument> {
@@ -99,6 +108,233 @@ export class UsersService {
     } catch (error) {
       throw EmailAlreadyUsedException();
     }
+  }
+
+  async updateUserProfile(
+    id: string,
+    body: UpdateProfileDto,
+    file?: Express.Multer.File,
+  ) {
+    const parsedBody = this.parseStringifiedFields(body);
+    const currentUser = await this.userModel.findById(id);
+
+    if (!currentUser) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+
+    const passportUrl = await this.handleFileUpload(
+      file,
+      currentUser.passportPhoto,
+    );
+
+    const updatedData: any = {
+      ...parsedBody,
+      passportPhoto: passportUrl || currentUser.passportPhoto,
+    };
+
+    // Preserve verification data for neighbors and family
+    this.mergeVerificationData(updatedData, currentUser);
+
+    // Calculate profile completion
+    const mergedUser = { ...currentUser.toObject(), ...updatedData };
+    const completion = this.calculateProfileCompletion(mergedUser);
+
+    updatedData.isProfileCompleted = completion >= 100;
+    updatedData.profileCompletionPercentage = completion;
+
+    const updatedUser = await this.userModel.findByIdAndUpdate(
+      id,
+      updatedData,
+      { new: true },
+    );
+
+    if (!updatedUser) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+
+    return updatedUser;
+  }
+
+  private parseStringifiedFields(body: any): any {
+    const parsedBody = { ...body };
+
+    if (typeof parsedBody.educationalHistory === 'string') {
+      try {
+        parsedBody.educationalHistory = JSON.parse(
+          parsedBody.educationalHistory,
+        );
+      } catch (error) {
+        throw new BadRequestException('Invalid educationalHistory format.');
+      }
+    }
+
+    if (typeof parsedBody.employmentHistory === 'string') {
+      try {
+        parsedBody.employmentHistory = JSON.parse(parsedBody.employmentHistory);
+      } catch (error) {
+        throw new BadRequestException('Invalid employmentHistory format.');
+      }
+    }
+
+    return parsedBody;
+  }
+
+  private async handleFileUpload(
+    file?: Express.Multer.File,
+    oldUrl?: string,
+  ): Promise<string | null> {
+    if (!file) return null;
+
+    if (oldUrl) {
+      const publicId = this.cloudinaryService.getFullPublicIdFromUrl(oldUrl);
+      if (publicId) {
+        try {
+          await this.cloudinaryService.deleteFile(publicId);
+        } catch (err) {
+          console.warn(`Failed to delete old passport: ${err.message}`);
+        }
+      }
+    }
+
+    try {
+      return await this.cloudinaryService.uploadFile(
+        file,
+        'users/passports',
+        ['image/jpeg', 'image/png', 'image/jpg'],
+        5,
+      );
+    } catch (error) {
+      throw new HttpException(
+        `Passport upload failed: ${error.message}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  private mergeVerificationData(updatedData: any, currentUser: User): void {
+    if (updatedData.neighbor && Array.isArray(updatedData.neighbor)) {
+      updatedData.neighbor = updatedData.neighbor.map((newNeighbor) => {
+        const existing = currentUser.neighbor.find(
+          (n) => n.phone === newNeighbor.phone,
+        );
+        return existing
+          ? { ...newNeighbor, ...this.getVerificationProps(existing) }
+          : newNeighbor;
+      });
+    }
+
+    if (updatedData.family && Array.isArray(updatedData.family)) {
+      updatedData.family = updatedData.family.map((newFamily) => {
+        const existing = currentUser.family.find(
+          (f) => f.phone === newFamily.phone,
+        );
+        return existing
+          ? { ...newFamily, ...this.getVerificationProps(existing) }
+          : newFamily;
+      });
+    }
+  }
+
+  private getVerificationProps(entity: any): any {
+    return {
+      verificationLink: entity.verificationLink,
+      verificationToken: entity.verificationToken,
+      status: entity.status,
+      isFollowUpSent: entity.isFollowUpSent,
+      verificationExpiresAt: entity.verificationExpiresAt,
+      isResident: entity.isResident,
+      knownDuration: entity.knownDuration,
+      knowsApplicant: entity.knowsApplicant,
+      verifiedAt: entity.verifiedAt,
+    };
+  }
+
+  private calculateProfileCompletion(user: Partial<User>): number {
+    let score = 0;
+
+    // --- ESSENTIAL (60%) ---
+    const essentialFields = [
+      user.firstname,
+      user.lastname,
+      user.phone,
+      user.NIN,
+      user.DOB,
+      user.gender,
+      user.passportPhoto,
+      user.stateOfOrigin,
+      user.lgaOfOrigin,
+      user.nationality,
+      user.stateOfResidence,
+      user.lgaOfResidence,
+      user.house_number,
+      user.countryOfResidence,
+      user.city_town,
+      user.nearest_bus_stop_landmark,
+      user.street_name,
+    ];
+    const essentialFilled = essentialFields.filter(
+      (val) => val !== undefined && val !== null && String(val).trim() !== '',
+    ).length;
+    score += (essentialFilled / essentialFields.length) * 70;
+
+    // --- BACKGROUND INFO (30%) ---
+    const backgroundChecks = [
+      this.isEducationalHistoryComplete(user.educationalHistory) ? 1 : 0,
+      this.isNextOfKinComplete(user.nextOfKin) ? 1 : 0,
+    ];
+    const backgroundScore =
+      (backgroundChecks.reduce((a, b) => a + b, 0) / backgroundChecks.length) *
+      30;
+    score += backgroundScore;
+
+    // --- OPTIONAL INFO (10%) ---
+    // const optionalFields = [
+    //   user.religion,
+    //   user.community,
+    //   // user.business?.length ? 'filled' : '',
+    //   user.healthInfo ? 'filled' : '',
+    // ];
+    // const optionalFilled = optionalFields.filter(
+    //   (val) => val !== undefined && val !== null && String(val).trim() !== '',
+    // ).length;
+    // score += (optionalFilled / optionalFields.length) * 10;
+
+    return Math.round(score);
+  }
+
+  private isEducationalHistoryComplete(education: any[]): boolean {
+    if (!Array.isArray(education) || education.length === 0) return false;
+
+    return education.every((edu) => {
+      const isStringFilled = (val: any) =>
+        typeof val === 'string' && val.trim() !== '';
+      const isDateFilled = (val: any) =>
+        val instanceof Date || (typeof val === 'string' && val.trim() !== '');
+
+      return (
+        isStringFilled(edu.institution) &&
+        isStringFilled(edu.qualification) &&
+        isDateFilled(edu.startDate) &&
+        isDateFilled(edu.endDate)
+      );
+    });
+  }
+
+  private isNextOfKinComplete(nextOfKin: any[]): boolean {
+    if (!Array.isArray(nextOfKin) || nextOfKin.length === 0) return false;
+
+    return nextOfKin.every((nok) => {
+      const isStringFilled = (val: any) =>
+        typeof val === 'string' && val.trim() !== '';
+
+      return (
+        isStringFilled(nok.nok_name) &&
+        isStringFilled(nok.nok_relationship) &&
+        isStringFilled(nok.nok_phone) &&
+        isStringFilled(nok.nok_address) &&
+        isStringFilled(nok.nok_email)
+      );
+    });
   }
 
   async createUser(
@@ -898,12 +1134,18 @@ export class UsersService {
       { $match: dateMatch }, // Apply date filter
       { $group: { _id: '$status', count: { $sum: 1 } } },
     ]);
+
+    // NEW: Aggregate Auctioneer Statuses
+    const auctioneerStatuses = await this.auctioneerModel.aggregate([
+      { $match: dateMatch },
+      { $group: { _id: '$status', count: { $sum: 1 } } },
+    ]);
     const statusMap: Record<string, number> = {
       Approved: 0,
       Pending: 0,
       Rejected: 0,
     };
-    [...certStatuses, ...idcardStatuses].forEach((s) => {
+    [...certStatuses, ...idcardStatuses, ...auctioneerStatuses].forEach((s) => {
       if (s._id) statusMap[s._id] = (statusMap[s._id] || 0) + s.count;
     });
 
@@ -945,21 +1187,27 @@ export class UsersService {
 
     // --- Recent Activity ---
     // Fetch recent items with the date filter applied
-    const [certificates, idcards, recentUsers, recentTransactions] =
-      await Promise.all([
-        this.certModel.find(dateMatch).sort({ created_at: -1 }).limit(5).lean(),
-        this.idCardModel
-          .find(dateMatch)
-          .sort({ created_at: -1 })
-          .limit(5)
-          .lean(),
-        this.userModel.find(dateMatch).sort({ created_at: -1 }).limit(5).lean(),
-        this.transModel
-          .find(dateMatch)
-          .sort({ createdAt: -1 })
-          .limit(5)
-          .select('amount status paymentType reference createdAt'),
-      ]);
+    const [
+      certificates,
+      idcards,
+      auctioneers,
+      recentUsers,
+      recentTransactions,
+    ] = await Promise.all([
+      this.certModel.find(dateMatch).sort({ created_at: -1 }).limit(5).lean(),
+      this.idCardModel.find(dateMatch).sort({ created_at: -1 }).limit(5).lean(),
+      this.auctioneerModel
+        .find(dateMatch)
+        .sort({ created_at: -1 })
+        .limit(5)
+        .lean(),
+      this.userModel.find(dateMatch).sort({ created_at: -1 }).limit(5).lean(),
+      this.transModel
+        .find(dateMatch)
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select('amount status paymentType reference createdAt'),
+    ]);
 
     // Combine and normalize recent activities
     const recentActivities = [
@@ -974,6 +1222,12 @@ export class UsersService {
         type: 'idcard',
         status: id.status,
         createdAt: id.created_at,
+      })),
+      ...auctioneers.map((a) => ({
+        name: a.name || 'Unknown',
+        type: 'auctioneer',
+        status: a.status,
+        createdAt: a.created_at,
       })),
       ...recentUsers.map((u) => ({
         name: `${u.firstname} ${u.lastname}`,
@@ -1004,6 +1258,7 @@ export class UsersService {
       totals: {
         certificates: await this.certModel.countDocuments(dateMatch), // Apply filter
         idcards: await this.idCardModel.countDocuments(dateMatch), // Apply filter
+        auctioneers: await this.auctioneerModel.countDocuments(dateMatch),
         transactions: payments.total,
       },
       totalUsers,
@@ -1017,39 +1272,77 @@ export class UsersService {
   }
 
   async getAnalytics() {
-    // Fetch all collections
+    // Helper function to calculate average processing time in hours
+    const calculateAverageHours = (docs: any[]): number => {
+      // Filter for documents that have timestamps and are not pending
+      const validDocs = docs.filter(
+        (d) => d.status !== 'Pending' && d.created_at && d.updated_at,
+      );
+
+      if (validDocs.length === 0) return 0;
+
+      const totalHours = validDocs.reduce((acc, doc) => {
+        const created = new Date(doc.created_at).getTime();
+        const updated = new Date(doc.updated_at).getTime();
+        // Convert milliseconds to hours
+        return acc + (updated - created) / (1000 * 60 * 60);
+      }, 0);
+
+      return Math.round(totalHours / validDocs.length);
+    };
+
+    // 1. Fetch data for Growth & Distribution (Existing Logic)
     const users = await this.userModel.find({}, 'created_at').lean();
-    const idCards = await this.idCardModel.find({}, 'created_at').lean();
-    const certificates = await this.certModel.find({}, 'created_at').lean();
+    const idCards = await this.idCardModel.find({}, 'created_at status').lean();
+    const certificates = await this.certModel
+      .find({}, 'created_at status')
+      .lean();
+    const auctioneer = await this.auctioneerModel
+      .find({}, 'created_at status')
+      .lean();
 
     // Group monthly
     const monthlyUserGrowth = this.aggregateByMonth(users, 'created_at');
     const monthlyRequestVolume = this.aggregateByMonth(
-      [...idCards, ...certificates],
+      [...idCards, ...certificates, ...auctioneer],
       'created_at',
     );
 
     // Real dynamic request type distribution
     const requestTypeDistribution: Record<string, number> = {};
-
-    if (idCards.length > 0) {
+    if (idCards.length > 0)
       requestTypeDistribution['Identity Card'] = idCards.length;
-    }
-
-    if (certificates.length > 0) {
+    if (certificates.length > 0)
       requestTypeDistribution['Certificate of Origin'] = certificates.length;
-    }
 
-    // Add optional other categories if needed
+    // FIXED: Was pointing to certificates.length in your original code
+    if (auctioneer.length > 0)
+      requestTypeDistribution['Auctioneers Licence'] = auctioneer.length;
+
     requestTypeDistribution['Verification'] = 0;
     requestTypeDistribution['Renewal'] = 0;
 
-    // Compute sample processing time (for now still static)
+    // 2. Dynamic Processing Time Calculation
+    // Fetch only processed requests (Approved or Rejected) with timestamps
+    const [processedIdCards, processedCerts, processedAuctioneers] =
+      await Promise.all([
+        this.idCardModel
+          .find({ status: { $ne: 'Pending' } }, 'created_at updated_at status')
+          .lean(),
+        this.certModel
+          .find({ status: { $ne: 'Pending' } }, 'created_at updated_at status')
+          .lean(),
+        this.auctioneerModel
+          .find({ status: { $ne: 'Pending' } }, 'created_at updated_at status')
+          .lean(),
+      ]);
+
     const averageProcessingTime = {
-      'Identity Card': 24,
-      Certificate: 48,
-      Verification: 12,
-      Approval: 6,
+      'Identity Card': calculateAverageHours(processedIdCards),
+      Certificate: calculateAverageHours(processedCerts),
+      'Auctioneer Lincence': calculateAverageHours(processedAuctioneers),
+      Verification: 0, // No model provided for this
+      Approval: 0, // No model provided for this
     };
 
     return {
@@ -1110,16 +1403,185 @@ export class UsersService {
   }
 
   /** 📈 TREND DATA (ID card + certificate per month) */
+  // async getTrends(lgaOfOrigin: string, startDate?: string, endDate?: string) {
+  //   // ====== START: ADD DATE FILTERING LOGIC ======
+  //   // Create a filter object to be used in the database queries.
+  //   const dateMatch: any = {};
+  //   if (startDate || endDate) {
+  //     dateMatch.createdAt = {}; // Assuming you have a `createdAt` field
+  //     if (startDate) dateMatch.createdAt.$gte = new Date(startDate);
+  //     if (endDate) dateMatch.createdAt.$lte = new Date(endDate);
+  //   }
+  //   // ====== END: DATE FILTERING LOGIC ======
+  //   const months = [
+  //     'Jan',
+  //     'Feb',
+  //     'Mar',
+  //     'Apr',
+  //     'May',
+  //     'Jun',
+  //     'Jul',
+  //     'Aug',
+  //     'Sep',
+  //     'Oct',
+  //     'Nov',
+  //     'Dec',
+  //   ];
+
+  //   // --- MONTHLY TREND (No changes needed here) ---
+  //   const idCardData = await this.idCardModel.aggregate([
+  //     { $addFields: { userIdObjectId: { $toObjectId: '$userId' } } },
+  //     {
+  //       $lookup: {
+  //         from: 'users',
+  //         localField: 'userIdObjectId',
+  //         foreignField: '_id',
+  //         as: 'user',
+  //       },
+  //     },
+  //     { $unwind: { path: '$user', preserveNullAndEmptyArrays: false } },
+  //     { $match: { 'user.lgaOfOrigin': lgaOfOrigin, ...dateMatch } },
+  //     { $group: { _id: { $month: '$created_at' }, count: { $sum: 1 } } },
+  //   ]);
+
+  //   const certData = await this.certModel.aggregate([
+  //     { $match: { lgaOfOrigin, ...dateMatch } },
+  //     { $group: { _id: { $month: '$created_at' }, count: { $sum: 1 } } },
+  //   ]);
+
+  //   const idCardRequests = months.map((_, i) => {
+  //     const monthNumber = i + 1;
+  //     const found = idCardData.find((x) => x._id === monthNumber);
+  //     return found ? found.count : 0;
+  //   });
+
+  //   const certificateRequests = months.map((_, i) => {
+  //     const monthNumber = i + 1;
+  //     const found = certData.find((x) => x._id === monthNumber);
+  //     return found ? found.count : 0;
+  //   });
+
+  //   // ====== DAILY TREND (LAST 7 DAYS) - REFACTORED ======
+  //   const idCardDaily = await this.idCardModel.aggregate([
+  //     { $addFields: { userIdObjectId: { $toObjectId: '$userId' } } },
+  //     {
+  //       $lookup: {
+  //         from: 'users',
+  //         localField: 'userIdObjectId',
+  //         foreignField: '_id',
+  //         as: 'user',
+  //       },
+  //     },
+  //     { $unwind: '$user' },
+  //     { $match: { 'user.lgaOfOrigin': lgaOfOrigin, ...dateMatch } },
+  //     {
+  //       $group: {
+  //         _id: { $dateToString: { format: '%Y-%m-%d', date: '$created_at' } },
+  //         count: { $sum: 1 },
+  //       },
+  //     },
+  //     { $sort: { _id: -1 } },
+  //     { $limit: 7 },
+  //     { $sort: { _id: 1 } }, // re-sort chronologically
+  //   ]);
+
+  //   const certDaily = await this.certModel.aggregate([
+  //     { $match: { lgaOfOrigin, ...dateMatch } },
+  //     {
+  //       $group: {
+  //         _id: { $dateToString: { format: '%Y-%m-%d', date: '$created_at' } },
+  //         count: { $sum: 1 },
+  //       },
+  //     },
+  //     { $sort: { _id: -1 } },
+  //     { $limit: 7 },
+  //     { $sort: { _id: 1 } },
+  //   ]);
+
+  //   // --- NEW LOGIC: Align daily data correctly ---
+  //   // 1. Combine all unique dates from both ID cards and certificates
+  //   const allDates = [
+  //     ...idCardDaily.map((d) => d._id),
+  //     ...certDaily.map((d) => d._id),
+  //   ];
+
+  //   // 2. Create a sorted, unique list of labels. This is our source of truth.
+  //   const dailyLabels = [...new Set(allDates)].sort();
+
+  //   // 3. Create maps for fast lookups of counts by date
+  //   const idCardMap = new Map(idCardDaily.map((d) => [d._id, d.count]));
+  //   const certMap = new Map(certDaily.map((d) => [d._id, d.count]));
+
+  //   // 4. Build the final, perfectly aligned data arrays
+  //   const dailyIdCardRequests = dailyLabels.map(
+  //     (label) => idCardMap.get(label) || 0,
+  //   );
+  //   const dailyCertificateRequests = dailyLabels.map(
+  //     (label) => certMap.get(label) || 0,
+  //   );
+
+  //   // ====== TIME TREND (HOURS OF DAY) - No changes needed here ======
+  //   const idCardTime = await this.idCardModel.aggregate([
+  //     { $addFields: { userIdObjectId: { $toObjectId: '$userId' } } },
+  //     {
+  //       $lookup: {
+  //         from: 'users',
+  //         localField: 'userIdObjectId',
+  //         foreignField: '_id',
+  //         as: 'user',
+  //       },
+  //     },
+  //     { $unwind: '$user' },
+  //     { $match: { 'user.lgaOfOrigin': lgaOfOrigin, ...dateMatch } },
+  //     { $group: { _id: { $hour: '$created_at' }, count: { $sum: 1 } } },
+  //     { $sort: { _id: 1 } },
+  //   ]);
+
+  //   const certTime = await this.certModel.aggregate([
+  //     { $match: { lgaOfOrigin, ...dateMatch } },
+  //     { $group: { _id: { $hour: '$created_at' }, count: { $sum: 1 } } },
+  //     { $sort: { _id: 1 } },
+  //   ]);
+
+  //   const hourLabels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+  //   const idCardByHour = hourLabels.map((_, h) => {
+  //     const found = idCardTime.find((x) => x._id === h);
+  //     return found ? found.count : 0;
+  //   });
+  //   const certByHour = hourLabels.map((_, h) => {
+  //     const found = certTime.find((x) => x._id === h);
+  //     return found ? found.count : 0;
+  //   });
+
+  //   // --- FINAL RETURN OBJECT ---
+  //   return {
+  //     monthly: { labels: months, idCardRequests, certificateRequests },
+  //     daily: {
+  //       // Use the new, correctly aligned data
+  //       labels: dailyLabels,
+  //       idCardRequests: dailyIdCardRequests,
+  //       certificateRequests: dailyCertificateRequests,
+  //     },
+  //     hourly: {
+  //       labels: hourLabels,
+  //       idCardRequests: idCardByHour,
+  //       certificateRequests: certByHour,
+  //     },
+  //   };
+  // }
+
+  /** 📈 TREND DATA (ID card + certificate + auctioneer per month) */
   async getTrends(lgaOfOrigin: string, startDate?: string, endDate?: string) {
-    // ====== START: ADD DATE FILTERING LOGIC ======
-    // Create a filter object to be used in the database queries.
+    // ====== START: DATE FILTERING LOGIC ======
+    // Create a filter object. Using 'created_at' to match your schema.
     const dateMatch: any = {};
     if (startDate || endDate) {
-      dateMatch.createdAt = {}; // Assuming you have a `createdAt` field
-      if (startDate) dateMatch.createdAt.$gte = new Date(startDate);
-      if (endDate) dateMatch.createdAt.$lte = new Date(endDate);
+      dateMatch.created_at = {};
+      if (startDate) dateMatch.created_at.$gte = new Date(startDate);
+      if (endDate) dateMatch.created_at.$lte = new Date(endDate);
     }
     // ====== END: DATE FILTERING LOGIC ======
+
     const months = [
       'Jan',
       'Feb',
@@ -1135,7 +1597,9 @@ export class UsersService {
       'Dec',
     ];
 
-    // --- MONTHLY TREND (No changes needed here) ---
+    // --- 1. MONTHLY TREND ---
+
+    // ID Card Aggregation
     const idCardData = await this.idCardModel.aggregate([
       { $addFields: { userIdObjectId: { $toObjectId: '$userId' } } },
       {
@@ -1151,24 +1615,47 @@ export class UsersService {
       { $group: { _id: { $month: '$created_at' }, count: { $sum: 1 } } },
     ]);
 
+    // Certificate Aggregation
     const certData = await this.certModel.aggregate([
       { $match: { lgaOfOrigin, ...dateMatch } },
       { $group: { _id: { $month: '$created_at' }, count: { $sum: 1 } } },
     ]);
 
+    // NEW: Auctioneer Aggregation
+    const auctioneerData = await this.auctioneerModel.aggregate([
+      { $addFields: { userIdObjectId: { $toObjectId: '$userId' } } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userIdObjectId',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: false } },
+      { $match: { 'user.lgaOfOrigin': lgaOfOrigin, ...dateMatch } },
+      { $group: { _id: { $month: '$created_at' }, count: { $sum: 1 } } },
+    ]);
+
+    // Map results to month arrays
     const idCardRequests = months.map((_, i) => {
-      const monthNumber = i + 1;
-      const found = idCardData.find((x) => x._id === monthNumber);
+      const found = idCardData.find((x) => x._id === i + 1);
       return found ? found.count : 0;
     });
 
     const certificateRequests = months.map((_, i) => {
-      const monthNumber = i + 1;
-      const found = certData.find((x) => x._id === monthNumber);
+      const found = certData.find((x) => x._id === i + 1);
       return found ? found.count : 0;
     });
 
-    // ====== DAILY TREND (LAST 7 DAYS) - REFACTORED ======
+    const auctioneerRequests = months.map((_, i) => {
+      const found = auctioneerData.find((x) => x._id === i + 1);
+      return found ? found.count : 0;
+    });
+
+    // --- 2. DAILY TREND (LAST 7 DAYS) ---
+
+    // ID Card Daily
     const idCardDaily = await this.idCardModel.aggregate([
       { $addFields: { userIdObjectId: { $toObjectId: '$userId' } } },
       {
@@ -1189,9 +1676,10 @@ export class UsersService {
       },
       { $sort: { _id: -1 } },
       { $limit: 7 },
-      { $sort: { _id: 1 } }, // re-sort chronologically
+      { $sort: { _id: 1 } },
     ]);
 
+    // Certificate Daily
     const certDaily = await this.certModel.aggregate([
       { $match: { lgaOfOrigin, ...dateMatch } },
       {
@@ -1205,29 +1693,56 @@ export class UsersService {
       { $sort: { _id: 1 } },
     ]);
 
-    // --- NEW LOGIC: Align daily data correctly ---
-    // 1. Combine all unique dates from both ID cards and certificates
+    // NEW: Auctioneer Daily
+    const auctioneerDaily = await this.auctioneerModel.aggregate([
+      { $addFields: { userIdObjectId: { $toObjectId: '$userId' } } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userIdObjectId',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      { $unwind: '$user' },
+      { $match: { 'user.lgaOfOrigin': lgaOfOrigin, ...dateMatch } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$created_at' } },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: -1 } },
+      { $limit: 7 },
+      { $sort: { _id: 1 } },
+    ]);
+
+    // Align daily data
     const allDates = [
       ...idCardDaily.map((d) => d._id),
       ...certDaily.map((d) => d._id),
+      ...auctioneerDaily.map((d) => d._id), // Include Auctioneer dates
     ];
 
-    // 2. Create a sorted, unique list of labels. This is our source of truth.
     const dailyLabels = [...new Set(allDates)].sort();
 
-    // 3. Create maps for fast lookups of counts by date
     const idCardMap = new Map(idCardDaily.map((d) => [d._id, d.count]));
     const certMap = new Map(certDaily.map((d) => [d._id, d.count]));
+    const auctioneerMap = new Map(auctioneerDaily.map((d) => [d._id, d.count])); // NEW
 
-    // 4. Build the final, perfectly aligned data arrays
     const dailyIdCardRequests = dailyLabels.map(
       (label) => idCardMap.get(label) || 0,
     );
     const dailyCertificateRequests = dailyLabels.map(
       (label) => certMap.get(label) || 0,
     );
+    const dailyAuctioneerRequests = dailyLabels.map(
+      (label) => auctioneerMap.get(label) || 0,
+    ); // NEW
 
-    // ====== TIME TREND (HOURS OF DAY) - No changes needed here ======
+    // --- 3. TIME TREND (HOURS OF DAY) ---
+
+    // ID Card Hourly
     const idCardTime = await this.idCardModel.aggregate([
       { $addFields: { userIdObjectId: { $toObjectId: '$userId' } } },
       {
@@ -1244,125 +1759,70 @@ export class UsersService {
       { $sort: { _id: 1 } },
     ]);
 
+    // Certificate Hourly
     const certTime = await this.certModel.aggregate([
       { $match: { lgaOfOrigin, ...dateMatch } },
       { $group: { _id: { $hour: '$created_at' }, count: { $sum: 1 } } },
       { $sort: { _id: 1 } },
     ]);
 
+    // NEW: Auctioneer Hourly
+    const auctioneerTime = await this.auctioneerModel.aggregate([
+      { $addFields: { userIdObjectId: { $toObjectId: '$userId' } } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userIdObjectId',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      { $unwind: '$user' },
+      { $match: { 'user.lgaOfOrigin': lgaOfOrigin, ...dateMatch } },
+      { $group: { _id: { $hour: '$created_at' }, count: { $sum: 1 } } },
+      { $sort: { _id: 1 } },
+    ]);
+
     const hourLabels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+
     const idCardByHour = hourLabels.map((_, h) => {
       const found = idCardTime.find((x) => x._id === h);
       return found ? found.count : 0;
     });
+
     const certByHour = hourLabels.map((_, h) => {
       const found = certTime.find((x) => x._id === h);
       return found ? found.count : 0;
     });
 
+    const auctioneerByHour = hourLabels.map((_, h) => {
+      const found = auctioneerTime.find((x) => x._id === h);
+      return found ? found.count : 0;
+    });
+
     // --- FINAL RETURN OBJECT ---
     return {
-      monthly: { labels: months, idCardRequests, certificateRequests },
+      monthly: {
+        labels: months,
+        idCardRequests,
+        certificateRequests,
+        auctioneerRequests,
+      },
       daily: {
-        // Use the new, correctly aligned data
         labels: dailyLabels,
         idCardRequests: dailyIdCardRequests,
         certificateRequests: dailyCertificateRequests,
+        auctioneerRequests: dailyAuctioneerRequests,
       },
       hourly: {
         labels: hourLabels,
         idCardRequests: idCardByHour,
         certificateRequests: certByHour,
+        auctioneerRequests: auctioneerByHour,
       },
     };
   }
 
-  /** 👥 DEMOGRAPHICS (gender, age, and combined gender-age groups) */
-  // async getDemographics(
-  //   lgaOfOrigin: string,
-  //   startDate?: string,
-  //   endDate?: string,
-  // ) {
-  //   // ====== START: ADD DATE FILTERING LOGIC ======
-  //   // Create a filter object to be used in the database query.
-  //   const dateFilter: any = {};
-  //   if (startDate || endDate) {
-  //     dateFilter.created_at = {}; // Assuming you have a `createdAt` field
-  //     if (startDate) dateFilter.created_at.$gte = new Date(startDate);
-  //     if (endDate) dateFilter.created_at.$lte = new Date(endDate);
-  //   }
-  //   // ====== END: DATE FILTERING LOGIC ======
-
-  //   // Find users, applying both the LGA and date filters
-  //   const users = await this.userModel
-  //     .find({ lgaOfOrigin, ...dateFilter }) // Spread the dateFilter into the query
-  //     .select('gender DOB createdAt') // Select createdAt for debugging if needed
-  //     .lean();
-
-  //   // ====== COMBINED AGE+GENDER GROUPS ======
-  //   const combinedGroups = {
-  //     'Male 18-35': 0,
-  //     'Female 18-35': 0,
-  //     'Male 36+': 0,
-  //     'Female 36+': 0,
-  //   };
-
-  //   // ====== GENDER DISTRIBUTION ======
-  //   const genderDist = {
-  //     Male: 0,
-  //     Female: 0,
-  //   };
-
-  //   // ====== AGE DISTRIBUTION ======
-  //   const ageDist = {
-  //     'Under 18': 0,
-  //     '18-25': 0,
-  //     '26-35': 0,
-  //     '36-50': 0,
-  //     '51+': 0,
-  //   };
-
-  //   users.forEach((u) => {
-  //     if (!u.gender || !u.DOB) return;
-
-  //     const dob = new Date(u.DOB);
-  //     const age = new Date().getFullYear() - dob.getFullYear();
-
-  //     // Gender distribution
-  //     if (u.gender.toLowerCase() === 'male') genderDist.Male++;
-  //     else if (u.gender.toLowerCase() === 'female') genderDist.Female++;
-
-  //     // Age distribution
-  //     if (age < 18) ageDist['Under 18']++;
-  //     else if (age <= 25) ageDist['18-25']++;
-  //     else if (age <= 35) ageDist['26-35']++;
-  //     else if (age <= 50) ageDist['36-50']++;
-  //     else ageDist['51+']++;
-
-  //     // Combined gender-age grouping
-  //     if (u.gender === 'male' && age <= 35) combinedGroups['Male 18-35']++;
-  //     else if (u.gender === 'female' && age <= 35)
-  //       combinedGroups['Female 18-35']++;
-  //     else if (u.gender === 'male' && age > 35) combinedGroups['Male 36+']++;
-  //     else if (u.gender === 'female' && age > 35)
-  //       combinedGroups['Female 36+']++;
-  //   });
-
-  //   return {
-  //     genderDistribution: {
-  //       labels: Object.keys(genderDist),
-  //       values: Object.values(genderDist),
-  //     },
-  //     ageDistribution: {
-  //       labels: Object.keys(ageDist),
-  //       values: Object.values(ageDist),
-  //     },
-  //     combinedGroups: {
-  //       labels: Object.keys(combinedGroups),
-  //       values: Object.values(combinedGroups),
-  //     },
-  //   };
-  // }
   /** 👥 DEMOGRAPHICS (gender, age, and combined gender-age groups) */
   async getDemographics(
     lgaOfOrigin: string,
@@ -1625,6 +2085,11 @@ export class UsersService {
     // Fetch all ID card requests for this user (irrespective of state)
     const idcardRequests = await this.idCardModel.find({ userId }).lean();
 
+    // Fetch all Auctioneer requests for this user (irrespective of state)
+    const auctioneerRequests = await this.auctioneerModel
+      .find({ userId })
+      .lean();
+
     // Fetch certificate requests ONLY if user is a Benue State indigene
     let certificateRequests = [];
     if (
@@ -1638,18 +2103,25 @@ export class UsersService {
     const allRequests = [
       ...idcardRequests.map((r) => ({ ...r, created: r.created_at })),
       ...certificateRequests.map((r) => ({ ...r, created: r.createdAt })),
+      ...auctioneerRequests.map((r) => ({ ...r, created: r.created_at })),
     ];
 
     // Calculate statistics
-    const totalRequests = idcardRequests.length + certificateRequests.length;
+    const totalRequests =
+      idcardRequests.length +
+      certificateRequests.length +
+      auctioneerRequests.length;
     const approvedRequests =
       idcardRequests.filter((r) => r.status === 'Approved').length +
+      auctioneerRequests.filter((r) => r.status === 'Approved').length +
       certificateRequests.filter((r) => r.status === 'Approved').length;
     const pendingRequests =
       idcardRequests.filter((r) => r.status === 'Pending').length +
+      auctioneerRequests.filter((r) => r.status === 'Pending').length +
       certificateRequests.filter((r) => r.status === 'Pending').length;
     const rejectedRequests =
       idcardRequests.filter((r) => r.status === 'Rejected').length +
+      auctioneerRequests.filter((r) => r.status === 'Rejected').length +
       certificateRequests.filter((r) => r.status === 'Rejected').length;
 
     // ✅ Compute total ID card & certificate requests by month (for charts)
@@ -1708,6 +2180,7 @@ export class UsersService {
 
     const idcardByMonth = groupByMonth(idcardRequests, 'created_at');
     const certificateByMonth = groupByMonth(certificateRequests, 'created_at');
+    const auctioneerByMonth = groupByMonth(auctioneerRequests, 'created_at');
 
     // Activity timeline (recent actions)
     const activityData = [
@@ -1718,6 +2191,10 @@ export class UsersService {
       ...certificateRequests.map((r) => ({
         time: r.createdAt,
         content: `You submitted a certificate request for ${r.kindred || 'your household'}.`,
+      })),
+      ...auctioneerRequests.map((r) => ({
+        time: r.created_at,
+        content: `You submitted a auctioneer request for ${r.name || 'your household'}.`,
       })),
     ]
       .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
@@ -1739,12 +2216,13 @@ export class UsersService {
       requestFrequency: {
         IDCard: idcardRequests.length,
         Certificate: certificateRequests.length,
+        Auctioneer: auctioneerRequests.length,
       },
 
       // ✅ New monthly breakdowns for charts
       idcardRequests: idcardByMonth,
       certificateRequests: certificateByMonth,
-
+      auctioneerRequests: auctioneerByMonth,
       requestByDayAndHour: combinedFrequency,
     };
 
@@ -2164,5 +2642,9 @@ export class UsersService {
     await user.save();
 
     return user;
+  }
+
+  async findByNIN(nin: string) {
+    return this.userModel.findOne({ NIN: nin });
   }
 }

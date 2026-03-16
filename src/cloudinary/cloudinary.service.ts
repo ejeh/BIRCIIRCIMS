@@ -15,14 +15,12 @@ export class CloudinaryService {
   async uploadFile(
     file: Express.Multer.File,
     folder = 'uploads',
-    allowedTypes = [
-      'image/jpeg',
-      'image/png',
-      'application/pdf',
-      //   'application/msword',
-    ],
+    allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'],
     maxSizeMB = 5,
   ): Promise<string> {
+    if (!file) {
+      throw new Error('No file provided');
+    }
     if (!allowedTypes.includes(file.mimetype)) {
       throw new Error(`Invalid file type: ${file.mimetype}`);
     }
@@ -47,11 +45,14 @@ export class CloudinaryService {
     });
   }
 
-  async deleteFile(publicId: string): Promise<boolean> {
+  async deleteFile(
+    publicId: string,
+    resourceType: 'image' | 'raw' = 'image',
+  ): Promise<boolean> {
     return new Promise((resolve, reject) => {
       cloudinary.uploader.destroy(
         publicId,
-        { resource_type: 'image' },
+        { resource_type: resourceType },
         (error, result) => {
           if (error) return reject(error);
           resolve(result.result === 'ok');

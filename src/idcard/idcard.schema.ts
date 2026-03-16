@@ -117,6 +117,29 @@ export class IdCard extends Document {
   @ApiProperty({ required: false, nullable: true })
   @Prop({ type: mongoose.SchemaTypes.Date, default: null })
   downloadExpiryDate: Date;
+
+  @Prop({ type: Number, default: 0 })
+  reprintCount: number;
+
+  @Prop({
+    type: String,
+    enum: ['Pending', 'Paid', 'NotRequired'],
+    default: 'NotRequired',
+  })
+  reprintPaymentStatus: string;
+
+  @Prop({ type: Date })
+  lastReprintDate: Date;
+
+  @Prop({ type: Date })
+  reprintDownloadExpiryDate: Date;
+
+  @Prop({ type: Boolean, default: false })
+  requiresReprintPayment: boolean;
+
+  // auctioneer.schema.ts
+  @Prop({ default: 0 })
+  downloadCount: number;
 }
 
 export const IdCardSchema = SchemaFactory.createForClass(IdCard);
