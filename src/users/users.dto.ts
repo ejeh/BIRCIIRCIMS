@@ -272,6 +272,11 @@ export class UpdateUserRoleDto {
   @IsOptional()
   role: string;
 
+  @ApiProperty({})
+  @IsString()
+  @IsOptional()
+  reason: string;
+
   @ApiProperty({
     example: '64d2c3a1f2e8b9a7c0b1d123',
     description: 'Assign to LGA ID',
@@ -342,4 +347,22 @@ export interface PremblyNINResponse {
   data?: NINVerificationData;
   message?: string;
   error?: string;
+}
+
+export class ChangeUserRoleDto {
+  @IsString()
+  role: string;
+
+  @IsOptional()
+  @IsString()
+  reason?: string;
+
+  @IsOptional()
+  @IsMongoId() // 🔥 important for ObjectId
+  lga?: string;
+
+  // OPTIONAL: if you really want it
+  @IsOptional()
+  @IsMongoId()
+  approvedBy?: string;
 }

@@ -38,6 +38,7 @@ import { Types } from 'mongoose';
 import PDFDocument from 'pdfkit';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { Auctioneer } from 'src/auctioneer/auctioneer.schema';
+import { error } from 'console';
 
 @Injectable()
 export class UsersService {
@@ -190,7 +191,8 @@ export class UsersService {
       if (publicId) {
         try {
           await this.cloudinaryService.deleteFile(publicId);
-        } catch (err) {
+        } catch (error) {
+          const err = error as Error; // Assert type
           console.warn(`Failed to delete old passport: ${err.message}`);
         }
       }
@@ -204,8 +206,9 @@ export class UsersService {
         5,
       );
     } catch (error) {
+      const err = error as Error; // Assert type
       throw new HttpException(
-        `Passport upload failed: ${error.message}`,
+        `Passport upload failed: ${err.message}`,
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -1402,174 +1405,6 @@ export class UsersService {
       .exec();
   }
 
-  /** 📈 TREND DATA (ID card + certificate per month) */
-  // async getTrends(lgaOfOrigin: string, startDate?: string, endDate?: string) {
-  //   // ====== START: ADD DATE FILTERING LOGIC ======
-  //   // Create a filter object to be used in the database queries.
-  //   const dateMatch: any = {};
-  //   if (startDate || endDate) {
-  //     dateMatch.createdAt = {}; // Assuming you have a `createdAt` field
-  //     if (startDate) dateMatch.createdAt.$gte = new Date(startDate);
-  //     if (endDate) dateMatch.createdAt.$lte = new Date(endDate);
-  //   }
-  //   // ====== END: DATE FILTERING LOGIC ======
-  //   const months = [
-  //     'Jan',
-  //     'Feb',
-  //     'Mar',
-  //     'Apr',
-  //     'May',
-  //     'Jun',
-  //     'Jul',
-  //     'Aug',
-  //     'Sep',
-  //     'Oct',
-  //     'Nov',
-  //     'Dec',
-  //   ];
-
-  //   // --- MONTHLY TREND (No changes needed here) ---
-  //   const idCardData = await this.idCardModel.aggregate([
-  //     { $addFields: { userIdObjectId: { $toObjectId: '$userId' } } },
-  //     {
-  //       $lookup: {
-  //         from: 'users',
-  //         localField: 'userIdObjectId',
-  //         foreignField: '_id',
-  //         as: 'user',
-  //       },
-  //     },
-  //     { $unwind: { path: '$user', preserveNullAndEmptyArrays: false } },
-  //     { $match: { 'user.lgaOfOrigin': lgaOfOrigin, ...dateMatch } },
-  //     { $group: { _id: { $month: '$created_at' }, count: { $sum: 1 } } },
-  //   ]);
-
-  //   const certData = await this.certModel.aggregate([
-  //     { $match: { lgaOfOrigin, ...dateMatch } },
-  //     { $group: { _id: { $month: '$created_at' }, count: { $sum: 1 } } },
-  //   ]);
-
-  //   const idCardRequests = months.map((_, i) => {
-  //     const monthNumber = i + 1;
-  //     const found = idCardData.find((x) => x._id === monthNumber);
-  //     return found ? found.count : 0;
-  //   });
-
-  //   const certificateRequests = months.map((_, i) => {
-  //     const monthNumber = i + 1;
-  //     const found = certData.find((x) => x._id === monthNumber);
-  //     return found ? found.count : 0;
-  //   });
-
-  //   // ====== DAILY TREND (LAST 7 DAYS) - REFACTORED ======
-  //   const idCardDaily = await this.idCardModel.aggregate([
-  //     { $addFields: { userIdObjectId: { $toObjectId: '$userId' } } },
-  //     {
-  //       $lookup: {
-  //         from: 'users',
-  //         localField: 'userIdObjectId',
-  //         foreignField: '_id',
-  //         as: 'user',
-  //       },
-  //     },
-  //     { $unwind: '$user' },
-  //     { $match: { 'user.lgaOfOrigin': lgaOfOrigin, ...dateMatch } },
-  //     {
-  //       $group: {
-  //         _id: { $dateToString: { format: '%Y-%m-%d', date: '$created_at' } },
-  //         count: { $sum: 1 },
-  //       },
-  //     },
-  //     { $sort: { _id: -1 } },
-  //     { $limit: 7 },
-  //     { $sort: { _id: 1 } }, // re-sort chronologically
-  //   ]);
-
-  //   const certDaily = await this.certModel.aggregate([
-  //     { $match: { lgaOfOrigin, ...dateMatch } },
-  //     {
-  //       $group: {
-  //         _id: { $dateToString: { format: '%Y-%m-%d', date: '$created_at' } },
-  //         count: { $sum: 1 },
-  //       },
-  //     },
-  //     { $sort: { _id: -1 } },
-  //     { $limit: 7 },
-  //     { $sort: { _id: 1 } },
-  //   ]);
-
-  //   // --- NEW LOGIC: Align daily data correctly ---
-  //   // 1. Combine all unique dates from both ID cards and certificates
-  //   const allDates = [
-  //     ...idCardDaily.map((d) => d._id),
-  //     ...certDaily.map((d) => d._id),
-  //   ];
-
-  //   // 2. Create a sorted, unique list of labels. This is our source of truth.
-  //   const dailyLabels = [...new Set(allDates)].sort();
-
-  //   // 3. Create maps for fast lookups of counts by date
-  //   const idCardMap = new Map(idCardDaily.map((d) => [d._id, d.count]));
-  //   const certMap = new Map(certDaily.map((d) => [d._id, d.count]));
-
-  //   // 4. Build the final, perfectly aligned data arrays
-  //   const dailyIdCardRequests = dailyLabels.map(
-  //     (label) => idCardMap.get(label) || 0,
-  //   );
-  //   const dailyCertificateRequests = dailyLabels.map(
-  //     (label) => certMap.get(label) || 0,
-  //   );
-
-  //   // ====== TIME TREND (HOURS OF DAY) - No changes needed here ======
-  //   const idCardTime = await this.idCardModel.aggregate([
-  //     { $addFields: { userIdObjectId: { $toObjectId: '$userId' } } },
-  //     {
-  //       $lookup: {
-  //         from: 'users',
-  //         localField: 'userIdObjectId',
-  //         foreignField: '_id',
-  //         as: 'user',
-  //       },
-  //     },
-  //     { $unwind: '$user' },
-  //     { $match: { 'user.lgaOfOrigin': lgaOfOrigin, ...dateMatch } },
-  //     { $group: { _id: { $hour: '$created_at' }, count: { $sum: 1 } } },
-  //     { $sort: { _id: 1 } },
-  //   ]);
-
-  //   const certTime = await this.certModel.aggregate([
-  //     { $match: { lgaOfOrigin, ...dateMatch } },
-  //     { $group: { _id: { $hour: '$created_at' }, count: { $sum: 1 } } },
-  //     { $sort: { _id: 1 } },
-  //   ]);
-
-  //   const hourLabels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
-  //   const idCardByHour = hourLabels.map((_, h) => {
-  //     const found = idCardTime.find((x) => x._id === h);
-  //     return found ? found.count : 0;
-  //   });
-  //   const certByHour = hourLabels.map((_, h) => {
-  //     const found = certTime.find((x) => x._id === h);
-  //     return found ? found.count : 0;
-  //   });
-
-  //   // --- FINAL RETURN OBJECT ---
-  //   return {
-  //     monthly: { labels: months, idCardRequests, certificateRequests },
-  //     daily: {
-  //       // Use the new, correctly aligned data
-  //       labels: dailyLabels,
-  //       idCardRequests: dailyIdCardRequests,
-  //       certificateRequests: dailyCertificateRequests,
-  //     },
-  //     hourly: {
-  //       labels: hourLabels,
-  //       idCardRequests: idCardByHour,
-  //       certificateRequests: certByHour,
-  //     },
-  //   };
-  // }
-
   /** 📈 TREND DATA (ID card + certificate + auctioneer per month) */
   async getTrends(lgaOfOrigin: string, startDate?: string, endDate?: string) {
     // ====== START: DATE FILTERING LOGIC ======
@@ -2613,20 +2448,21 @@ export class UsersService {
     newRole: UserRole,
     assignedBy: string,
     reason: string,
+    lga?: string,
   ) {
+    console.log('lga:', lga);
+
     const user = await this.userModel.findById(userId).exec();
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    // 🚫 Prevent changes if role is global-admin
     if (user.role === UserRole.GLOBAL_ADMIN) {
       throw new BadRequestException('Global Admin role cannot be changed');
     }
 
     const previousRole = user.role;
 
-    // Create role assignment record
     await this.roleAssignmentService.createAssignment(
       userId,
       previousRole,
@@ -2635,10 +2471,14 @@ export class UsersService {
       reason,
     );
 
-    // Update user role
     user.role = newRole;
-    // Ensure assignedBy is stored as an ObjectId
     user.assignedBy = new Types.ObjectId(assignedBy);
+
+    // ✅ Only assign LGA if provided
+    if (lga) {
+      user.lga = new Types.ObjectId(lga);
+    }
+
     await user.save();
 
     return user;

@@ -67,7 +67,14 @@ export class NotificationsService {
     userId: string,
     title: string,
     message: string,
-    type: 'idcard' | 'certificate' | 'system' | 'alert' | 'auctioneer',
+    type:
+      | 'idcard'
+      | 'certificate'
+      | 'system'
+      | 'alert'
+      | 'auctioneer'
+      | 'payment'
+      | 'receipt',
     link?: string,
     lga?: string,
   ) {

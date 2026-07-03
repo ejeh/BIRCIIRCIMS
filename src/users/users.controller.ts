@@ -29,6 +29,7 @@ import {
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { User } from './users.schema';
 import {
+  ChangeUserRoleDto,
   UpdateProfileDto,
   UpdateUserAdminDto,
   VerifyReferenceDto,
@@ -73,7 +74,9 @@ export class UsersController {
   ) {
     try {
       return await this.userService.updateUserProfile(id, body, file);
-    } catch (error) {
+    } catch (err) {
+      const error = err as any;
+
       throw new HttpException(
         error.message || 'An error occurred while updating the profile',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
@@ -171,21 +174,24 @@ export class UsersController {
   }
 
   @Patch(':id/role')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.GLOBAL_ADMIN)
   @ApiOperation({ summary: 'Change user role' })
   @ApiResponse({ status: 200, description: 'User role updated successfully' })
   @UseGuards(JwtAuthGuard)
-  // @Permissions(Permission.ROLE_ASSIGN)
   async changeUserRole(
     @Param('id') id: string,
-    @Body('role') newRole: string,
-    @Body('reason') reason: string,
+    @Body() dto: ChangeUserRoleDto,
     @Req() req,
   ) {
-    return await this.userService.updateUserRole(
+    const { role, reason, lga } = dto;
+
+    return this.userService.updateUserRole(
       id,
-      newRole as UserRole,
+      role as UserRole,
       req.user.id,
       reason || 'Role updated by admin',
+      lga,
     );
   }
 
@@ -231,7 +237,7 @@ export class UsersController {
   // 📝 Update user details
   @Put(':id/user-details')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
   async updateUser(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserAdminDto,
@@ -242,7 +248,7 @@ export class UsersController {
   // 🚫 Toggle user active/inactive
   @Patch(':id/toggle-status')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.GLOBAL_ADMIN, UserRole.SUPPORT_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN)
   async toggleUserStatus(@Param('id') id: string) {
     return this.userService.toggleUserStatus(id);
   }
@@ -286,7 +292,7 @@ export class UsersController {
   }
 
   @Get('analytics-stats')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
   async getAnalytics() {
     return this.userService.getAnalytics();
   }
@@ -298,7 +304,7 @@ export class UsersController {
       'Returns membership statistics (age, gender, state distributions)',
     isArray: false,
   })
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
   async getStats() {
     return this.userService.getMemberStats();
   }
@@ -308,7 +314,7 @@ export class UsersController {
     status: 200,
     description: 'Returns dashboard statistics for users',
   })
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
   async getDashboardStats(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
@@ -427,7 +433,7 @@ export class UsersController {
   @Get()
   @UseGuards(RolesGuard)
   @ApiResponse({ type: User, isArray: true })
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
   async getPaginatedData() {
     return this.userService.getPaginatedData();
   }

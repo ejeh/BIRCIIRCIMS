@@ -3,5 +3,6 @@ export const fileUploadConfig = {
   allowedMimeTypes: ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'],
   folders: {
     taxClearance: 'certificates/tax_clearance',
+    paymentReceipts: 'transactions/payment_receipts',
   },
 };

@@ -1,5 +1,10 @@
 // src/transaction/dto/get-transactions-report.dto.ts
-import { IsOptional, IsString, IsDateString } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsDateString,
+  IsNotEmpty,
+} from 'class-validator';
 
 export class GetTransactionsReportDto {
   @IsOptional()
@@ -13,4 +18,10 @@ export class GetTransactionsReportDto {
   @IsOptional()
   @IsString()
   status?: string;
+}
+
+export class RejectReceiptDto {
+  @IsNotEmpty({ message: 'A rejection reason is required' })
+  @IsString()
+  reason: string;
 }

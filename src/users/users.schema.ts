@@ -221,7 +221,7 @@ export class User {
   profileCompletionPercentage: number;
 
   @Prop({ type: mongoose.Types.ObjectId, ref: 'Lga', required: false })
-  lga?: string; // which LGA this admin/manager is assigned to
+  lga?: mongoose.Types.ObjectId; // which LGA this admin/manager is assigned to
 
   @Prop({ default: false })
   twoFactorEnabled: boolean;
@@ -254,7 +254,6 @@ UserSchema.methods.getPublicData = function () {
     firstname,
     lastname,
     role,
-    LGA,
     address,
     phone,
     DOB,
@@ -277,7 +276,6 @@ UserSchema.methods.getPublicData = function () {
     DOB,
     nationality,
     phone,
-    LGA,
     address,
     created_at,
     lga,

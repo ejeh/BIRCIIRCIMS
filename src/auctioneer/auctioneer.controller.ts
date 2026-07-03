@@ -94,6 +94,7 @@ export class AuctioneerController {
     @Req() req,
     @UploadedFile() file?: Express.Multer.File,
   ) {
+    console.log('body', updateAuctioneerDto);
     return this.auctioneerService.updateAuctioneer(
       id,
       updateAuctioneerDto,
@@ -105,14 +106,14 @@ export class AuctioneerController {
   @Get()
   @UseGuards(RolesGuard)
   @ApiResponse({ type: Auctioneer, isArray: true })
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
   async getAuctRequest() {
     return await this.auctioneerService.getAuctRequest();
   }
 
   @Patch(':id/approve')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
   @ApiResponse({ type: Auctioneer, isArray: false })
   async approveCert(
     @Param('id') id: string,
@@ -123,7 +124,7 @@ export class AuctioneerController {
 
   @Patch(':id/reject')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
   @ApiResponse({ type: Auctioneer, isArray: false })
   async rejectCert(
     @Param('id') id: string,
@@ -172,41 +173,41 @@ export class AuctioneerController {
   }
 
   // New confirm payment endpoint
-  @Post(':id/confirm-reprint-payment')
-  async confirmReprintPayment(
-    @Param('id') id: string,
-    @Body() confirmPaymentDto: ConfirmReprintPaymentDto,
-  ) {
-    const { paymentReference, rrr } = confirmPaymentDto;
+  // @Post(':id/confirm-reprint-payment')
+  // async confirmReprintPayment(
+  //   @Param('id') id: string,
+  //   @Body() confirmPaymentDto: ConfirmReprintPaymentDto,
+  // ) {
+  //   const { paymentReference, rrr } = confirmPaymentDto;
 
-    // Verify payment with provider
-    const paymentVerified = await this.transactionService.verifyReprintPayment(
-      paymentReference,
-      rrr,
-    );
+  //   // Verify payment with provider
+  //   const paymentVerified = await this.transactionService.verifyReprintPayment(
+  //     paymentReference,
+  //     rrr,
+  //   );
 
-    if (!paymentVerified) {
-      throw new HttpException(
-        'Payment verification failed',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+  //   if (!paymentVerified) {
+  //     throw new HttpException(
+  //       'Payment verification failed',
+  //       HttpStatus.BAD_REQUEST,
+  //     );
+  //   }
 
-    // Update certificate with paid status and new download window
-    const updatedCertificate =
-      await this.auctioneerService.confirmReprintPayment(
-        id,
-        paymentReference,
-        rrr,
-      );
+  //   // Update certificate with paid status and new download window
+  //   const updatedCertificate =
+  //     await this.auctioneerService.confirmReprintPayment(
+  //       id,
+  //       paymentReference,
+  //       rrr,
+  //     );
 
-    return {
-      success: true,
-      message: 'Payment confirmed. Reprint download available.',
-      downloadUrl: `/api/auctioneer/reprint/download/${id}`,
-      expiryDate: updatedCertificate.reprintDownloadExpiryDate,
-    };
-  }
+  //   return {
+  //     success: true,
+  //     message: 'Payment confirmed. Reprint download available.',
+  //     downloadUrl: `/api/auctioneer/reprint/download/${id}`,
+  //     expiryDate: updatedCertificate.reprintDownloadExpiryDate,
+  //   };
+  // }
 
   @Get('reprint/download/:id')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
@@ -233,7 +234,7 @@ export class AuctioneerController {
   @Get(':id/request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: Auctioneer, isArray: false })
-  @Roles(UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
   async getUserProfile(@Param('id') id: string) {
     return await this.auctioneerService.findById(id);
   }
@@ -332,9 +333,10 @@ export class AuctioneerController {
       // Pipe the stream from Cloudinary to the client
       return cloudinaryRes.data.pipe(res);
     } catch (error) {
+      const err = error as Error; // Assert type
       console.log(
-        `Error streaming document from Cloudinary: ${error.message}`,
-        error.stack,
+        `Error streaming document from Cloudinary: ${err.message}`,
+        err.stack,
       );
       throw new InternalServerErrorException(
         'Could not retrieve the document. Please try again later.',

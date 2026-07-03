@@ -18,7 +18,7 @@ import {
 
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { IndigeneCertificateService } from './indigene-certificate.service';
-import { AnyFilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
+
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { Response } from 'express';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -199,7 +199,7 @@ export class IndigeneCertificateController {
   @Get('get-all-request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: Certificate, isArray: true })
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
   async getCertsRequest(@Req() req: Request) {
     return await this.indigeneCertificateService.certificateModel
       .find({})
@@ -214,7 +214,7 @@ export class IndigeneCertificateController {
 
   @Patch(':id/approve')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
   @ApiResponse({ type: Certificate, isArray: false })
   async approveCert(
     @Param('id') id: string,
@@ -228,7 +228,7 @@ export class IndigeneCertificateController {
 
   @Patch(':id/reject')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
   @ApiResponse({ type: Certificate, isArray: false })
   async rejectCert(
     @Param('id') id: string,
@@ -300,7 +300,7 @@ export class IndigeneCertificateController {
   @Get('request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: Certificate, isArray: true })
-  @Roles(UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
   async getRequestsByStatuses(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
@@ -336,7 +336,7 @@ export class IndigeneCertificateController {
   @Get(':id/request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: Certificate, isArray: false })
-  @Roles(UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
   async getUserProfile(@Param('id') id: string) {
     return await this.indigeneCertificateService.findById(id);
   }
@@ -432,9 +432,10 @@ export class IndigeneCertificateController {
       // Pipe the stream from Cloudinary to the client
       return cloudinaryRes.data.pipe(res);
     } catch (error) {
+      const err = error as any;
       console.log(
-        `Error streaming document from Cloudinary: ${error.message}`,
-        error.stack,
+        `Error streaming document from Cloudinary: ${err.message}`,
+        err.stack,
       );
       throw new InternalServerErrorException(
         'Could not retrieve the document. Please try again later.',
@@ -492,41 +493,41 @@ export class IndigeneCertificateController {
   }
 
   // New confirm payment endpoint
-  @Post(':id/confirm-reprint-payment')
-  async confirmReprintPayment(
-    @Param('id') id: string,
-    @Body() confirmPaymentDto: ConfirmReprintPaymentDto,
-  ) {
-    const { paymentReference, rrr } = confirmPaymentDto;
+  // @Post(':id/confirm-reprint-payment')
+  // async confirmReprintPayment(
+  //   @Param('id') id: string,
+  //   @Body() confirmPaymentDto: ConfirmReprintPaymentDto,
+  // ) {
+  //   const { paymentReference, rrr } = confirmPaymentDto;
 
-    // Verify payment with provider
-    const paymentVerified = await this.transactionService.verifyReprintPayment(
-      paymentReference,
-      rrr,
-    );
+  //   // Verify payment with provider
+  //   const paymentVerified = await this.transactionService.verifyReprintPayment(
+  //     paymentReference,
+  //     rrr,
+  //   );
 
-    if (!paymentVerified) {
-      throw new HttpException(
-        'Payment verification failed',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+  //   if (!paymentVerified) {
+  //     throw new HttpException(
+  //       'Payment verification failed',
+  //       HttpStatus.BAD_REQUEST,
+  //     );
+  //   }
 
-    // Update certificate with paid status and new download window
-    const updatedCertificate =
-      await this.indigeneCertificateService.confirmReprintPayment(
-        id,
-        paymentReference,
-        rrr,
-      );
+  //   // Update certificate with paid status and new download window
+  //   const updatedCertificate =
+  //     await this.indigeneCertificateService.confirmReprintPayment(
+  //       id,
+  //       paymentReference,
+  //       rrr,
+  //     );
 
-    return {
-      success: true,
-      message: 'Payment confirmed. Reprint download available.',
-      downloadUrl: `/api/indigene/certificate/reprint/download/${id}`,
-      expiryDate: updatedCertificate.reprintDownloadExpiryDate,
-    };
-  }
+  //   return {
+  //     success: true,
+  //     message: 'Payment confirmed. Reprint download available.',
+  //     downloadUrl: `/api/indigene/certificate/reprint/download/${id}`,
+  //     expiryDate: updatedCertificate.reprintDownloadExpiryDate,
+  //   };
+  // }
 
   @Get('reprint/download/:id')
   @Throttle({ default: { limit: 5, ttl: 60000 } })

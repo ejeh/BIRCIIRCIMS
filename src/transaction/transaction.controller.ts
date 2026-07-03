@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   Param,
+  Patch,
   Post,
   Query,
   Req,
@@ -18,8 +19,13 @@ import { UserRole } from 'src/users/users.role.enum';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import * as crypto from 'crypto';
 import { Transaction } from './transaction.schema';
-import { GetTransactionsReportDto } from './src/transaction/dto/get-transactions-report.dto';
+import {
+  GetTransactionsReportDto,
+  RejectReceiptDto,
+} from './src/transaction/dto/get-transactions-report.dto';
 import { VerifyPaymentDto } from 'src/auctioneer/dto/autioneer.dto';
+import { UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('api/transaction')
 export class TransactionController {
@@ -121,13 +127,13 @@ export class TransactionController {
 
   @Get('all')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
   getAllTransactions() {
     return this.transactionService.findAll();
   }
 
   @Get('stats')
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   async getTransactionStats() {
     return this.transactionService.getTransactionStats();
@@ -191,5 +197,54 @@ export class TransactionController {
   @Post('verify-credo')
   async verifyCredo(@Body() dto: { paymentReference: string }) {
     return this.transactionService.verifyCredo(dto.paymentReference);
+  }
+
+  @Post('upload-receipt')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('receipt'))
+  async uploadReceipt(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('reference') reference: string, // Extract directly when using Multer
+    @Req() req: any,
+  ) {
+    if (!file) throw new BadRequestException('No file uploaded.');
+    if (!reference)
+      throw new BadRequestException('Payment reference is missing.');
+
+    // DYNAMICALLY FIND THE USER ID FROM JWT
+    // Change this to match exactly what your JWT payload contains (id, sub, _id, or userId)
+    const userId =
+      req.user.userId || req.user.id || req.user.sub || req.user._id;
+
+    if (!userId) {
+      console.error('JWT Payload structure:', JSON.stringify(req.user));
+      throw new BadRequestException('Could not extract user ID from token.');
+    }
+
+    return this.transactionService.processReceiptUpload(
+      file,
+      reference,
+      userId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
+  @Patch('admin/approve-receipt/:transactionId')
+  async adminApproveReceipt(@Param('transactionId') transactionId: string) {
+    return this.transactionService.adminApproveReceipt(transactionId);
+  }
+
+  @Patch('admin/reject-receipt/:transactionId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
+  async adminRejectReceipt(
+    @Param('transactionId') transactionId: string,
+    @Body() rejectReceiptDto: RejectReceiptDto,
+  ) {
+    return this.transactionService.adminRejectReceipt(
+      transactionId,
+      rejectReceiptDto.reason,
+    );
   }
 }

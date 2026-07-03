@@ -6,7 +6,7 @@ export interface Transaction extends Document {
   cardId: Types.ObjectId;
   auctioneerId: Types.ObjectId;
   reference: string;
-  rrr: string;
+  // rrr: string;
   amount: number;
   documentAmount: number;
   totalAmount: number;
@@ -24,6 +24,8 @@ export interface Transaction extends Document {
   };
 
   verified?: boolean;
+  receiptUrl?: string;
+  receiptUploadedAt?: Date;
 }
 
 export const TransactionSchema = new Schema<Transaction>(
@@ -67,7 +69,14 @@ export const TransactionSchema = new Schema<Transaction>(
     status: {
       type: String,
       required: true,
-      enum: ['pending', 'service_paid', 'success', 'failed', 'expired'],
+      enum: [
+        'pending',
+        'service_paid',
+        'receipt_uploaded',
+        'success',
+        'failed',
+        'expired',
+      ],
       default: 'pending',
     },
 
@@ -87,7 +96,10 @@ export const TransactionSchema = new Schema<Transaction>(
     },
     verified: { type: Boolean, default: false },
 
-    rrr: { type: String, unique: true, sparse: true },
+    // rrr: { type: String, unique: true, sparse: true },
+    // ADDED FOR RECEIPT WORKFLOW
+    receiptUrl: { type: String, default: null },
+    receiptUploadedAt: { type: Date, default: null },
 
     createdAt: { type: Date, default: Date.now },
     verifiedAt: { type: Date, default: Date.now },

@@ -110,8 +110,9 @@ export class AuctioneerService {
         5,
       );
     } catch (error) {
+      const err = error as Error; // Assert type
       throw new BadRequestException(
-        `Tax Clearance upload failed: ${error.message}`,
+        `Tax Clearance upload failed: ${err.message}`,
       );
     }
   }
@@ -144,14 +145,15 @@ export class AuctioneerService {
 
       return auctioneer;
     } catch (error) {
-      if (error.code === 11000) {
+      const err = error as any; // Assert type
+      if (err.code === 11000) {
         // This is a final safeguard for race conditions.
         throw new ConflictException(
           'Auctioneer licence request already exists.',
         );
       }
       throw new BadRequestException(
-        error.message || 'Failed to Auctioneer licence.',
+        err.message || 'Failed to Auctioneer licence.',
       );
     }
   }
@@ -238,6 +240,15 @@ export class AuctioneerService {
     return this.auctioneerModel.findById(id);
   }
 
+  async findTransactionByAuctioneerId(
+    auctioneerId: string,
+  ): Promise<Transaction | null> {
+    return this.transactionModel
+      .findOne({ auctioneerId, status: 'success' })
+      .sort({ createdAt: -1 })
+      .exec();
+  }
+
   async getAuctRequest() {
     return await this.auctioneerModel
       .find({})
@@ -250,13 +261,53 @@ export class AuctioneerService {
       .exec();
   }
 
+  // async approveLincence(id: string, approvedBy: string): Promise<Auctioneer> {
+  //   const request = await this.auctioneerModel
+  //     .findByIdAndUpdate(
+  //       id,
+  //       {
+  //         status: 'Approved',
+  //         approvalDate: new Date(),
+  //         approvedBy: new Types.ObjectId(approvedBy),
+  //       },
+  //       { new: true },
+  //     )
+  //     .exec();
+
+  //   if (request) {
+  //     // Extract the user ID as a string
+  //     const userId =
+  //       typeof request.userId === 'string'
+  //         ? request.userId
+  //         : (request.userId as any)._id.toString();
+
+  //     await this.notificationsService.createSystemNotification(
+  //       userId,
+  //       'Auctioneer Approved',
+  //       'Congratulations! Your auctioneer request has been approved.',
+  //       'auctioneer',
+  //       '/dashboard/auctioneer-requests',
+  //     );
+  //   }
+
+  //   return request;
+  // }
+
   async approveLincence(id: string, approvedBy: string): Promise<Auctioneer> {
+    const now = new Date();
+
+    // Calculate exactly 1 year from now
+    const oneYearFromNow = new Date(now);
+    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+
     const request = await this.auctioneerModel
       .findByIdAndUpdate(
         id,
         {
           status: 'Approved',
-          approvalDate: new Date(),
+          approvalDate: now,
+          issueDate: now, // Set issue date
+          expiryDate: oneYearFromNow, // Set 1-year expiry
           approvedBy: new Types.ObjectId(approvedBy),
         },
         { new: true },
@@ -264,7 +315,6 @@ export class AuctioneerService {
       .exec();
 
     if (request) {
-      // Extract the user ID as a string
       const userId =
         typeof request.userId === 'string'
           ? request.userId
@@ -469,7 +519,8 @@ export class AuctioneerService {
         ...data,
       });
     } catch (error) {
-      this.logger.error('Reprint payment initialization failed', error?.stack);
+      const err = error as Error; // Assert type
+      this.logger.error('Reprint payment initialization failed', err?.stack);
       throw new InternalServerErrorException(
         'Failed to initialize payment. Try again later.',
       );
@@ -504,27 +555,73 @@ export class AuctioneerService {
       .exec();
   }
 
-  async confirmReprintPayment(
-    autioneerId: string,
-    paymentReference: string,
-    rrr: string,
-  ): Promise<Auctioneer> {
+  // async confirmReprintPayment(
+  //   autioneerId: string,
+  //   paymentReference: string,
+  //   rrr: string,
+  // ): Promise<Auctioneer> {
+  //   const now = new Date();
+  //   // const thirtyDaysFromNow = new Date(
+  //   //   now.getTime() + 30 * 24 * 60 * 60 * 1000,
+  //   // );
+  //   const thirtyDaysFromNow = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes for testing
+
+  //   const updatedAuctioneer = await this.auctioneerModel
+  //     .findByIdAndUpdate(
+  //       autioneerId,
+  //       {
+  //         reprintPaymentStatus: 'Paid',
+  //         $inc: { reprintCount: 1 },
+  //         lastReprintDate: now,
+  //         reprintDownloadExpiryDate: thirtyDaysFromNow,
+  //         requiresReprintPayment: false,
+  //         downloadCount: 0,
+  //       },
+  //       { new: true },
+  //     )
+  //     .exec();
+
+  //   if (!updatedAuctioneer) {
+  //     throw new NotFoundException('Auctioneer request not found.');
+  //   }
+
+  //   // This ensures the transaction record moves from 'service_paid' to 'success'
+  //   if (paymentReference) {
+  //     await this.transactionModel
+  //       .updateOne(
+  //         { reference: paymentReference },
+  //         {
+  //           $set: {
+  //             status: 'success',
+  //             rrr: rrr,
+  //             verified: true,
+  //             verifiedAt: new Date(),
+  //           },
+  //         },
+  //       )
+  //       .exec();
+  //   }
+
+  //   return updatedAuctioneer;
+  // }
+
+  // ============================================
+  // NEW LOGIC: GRANT DOWNLOAD ACCESS
+  // ============================================
+  async grantReprintDownloadAccess(auctioneerId: string): Promise<Auctioneer> {
     const now = new Date();
-    // const thirtyDaysFromNow = new Date(
-    //   now.getTime() + 30 * 24 * 60 * 60 * 1000,
-    // );
-    const thirtyDaysFromNow = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes for testing
+    const thirtyDaysFromNow = new Date(Date.now() + 10 * 60 * 1000); // 10 mins for testing (change to 30 days for prod)
 
     const updatedAuctioneer = await this.auctioneerModel
       .findByIdAndUpdate(
-        autioneerId,
+        auctioneerId,
         {
           reprintPaymentStatus: 'Paid',
           $inc: { reprintCount: 1 },
           lastReprintDate: now,
           reprintDownloadExpiryDate: thirtyDaysFromNow,
           requiresReprintPayment: false,
-          downloadCount: 0,
+          downloadCount: 0, // Reset download count for the new window
         },
         { new: true },
       )
@@ -532,23 +629,6 @@ export class AuctioneerService {
 
     if (!updatedAuctioneer) {
       throw new NotFoundException('Auctioneer request not found.');
-    }
-
-    // This ensures the transaction record moves from 'service_paid' to 'success'
-    if (paymentReference) {
-      await this.transactionModel
-        .updateOne(
-          { reference: paymentReference },
-          {
-            $set: {
-              status: 'success',
-              rrr: rrr,
-              verified: true,
-              verifiedAt: new Date(),
-            },
-          },
-        )
-        .exec();
     }
 
     return updatedAuctioneer;
@@ -677,14 +757,36 @@ export class AuctioneerService {
       : 'https://api.citizenship.benuestate.gov.ng';
   }
 
+  // private async generatePdf(auctioneer: any, owner: any): Promise<Buffer> {
+  //   const htmlTemplate = await this.loadHtmlTemplate(
+  //     'auctioneer-template.html',
+  //   );
+  //   const populatedHtml = this.populateHtmlTemplate(
+  //     htmlTemplate,
+  //     auctioneer,
+  //     owner,
+  //   );
+
+  //   const filePath = await this.generateAuctioneerPDF(
+  //     `reprint-${auctioneer.id}`,
+  //     populatedHtml,
+  //   );
+  //   return fs.promises.readFile(filePath);
+  // }
+
   private async generatePdf(auctioneer: any, owner: any): Promise<Buffer> {
     const htmlTemplate = await this.loadHtmlTemplate(
       'auctioneer-template.html',
     );
+
+    // Fetch the transaction for this auctioneer
+    const transaction = await this.findTransactionByAuctioneerId(auctioneer.id);
+
     const populatedHtml = this.populateHtmlTemplate(
       htmlTemplate,
       auctioneer,
       owner,
+      transaction,
     );
 
     const filePath = await this.generateAuctioneerPDF(
@@ -705,7 +807,12 @@ export class AuctioneerService {
     return fs.promises.readFile(templatePath, 'utf8');
   }
 
-  private populateHtmlTemplate(html: string, data: any, user: any): string {
+  private populateHtmlTemplate(
+    html: string,
+    data: any,
+    user: any,
+    transaction?: Transaction | null,
+  ): string {
     const date = new Date(data.DOB);
 
     const getBaseUrl = (): string =>
@@ -724,24 +831,49 @@ export class AuctioneerService {
       return value ? value.toUpperCase() : '';
     };
 
-    // Format DOB
-    const formattedDate = date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    // Helper: Format currency from kobo to Naira (₦)
+    const formatCurrency = (amount: number): string => {
+      if (amount === null || amount === undefined) return 'N/A';
 
-    // Format Issue Date
-    const dateOfIssue = new Date();
-    const formattedDateOfIssue = dateOfIssue.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+      // Convert from kobo to Naira
+      const nairaAmount = amount / 100;
+
+      // Format with commas and the Naira sign
+      return `₦${nairaAmount.toLocaleString('en-NG')}`;
+    };
 
     const fullName = `${toTitleCase(user.firstname)} ${toTitleCase(
       user.middlename || '',
     )} ${toTitleCase(user.lastname)}`.trim();
+
+    // Formats day with ordinal suffix (e.g., 1st, 2nd, 3rd, 15th, 31st)
+    const formatOrdinal = (day: number): string => {
+      const j = day % 10;
+      const k = day % 100;
+      if (j === 1 && k !== 11) return `${day}st`;
+      if (j === 2 && k !== 12) return `${day}nd`;
+      if (j === 3 && k !== 13) return `${day}rd`;
+      return `${day}th`;
+    };
+
+    // Gets the full month name (e.g., "January")
+    const getMonthName = (date: Date): string => {
+      return date.toLocaleString('en-US', { month: 'long' });
+    };
+
+    // Gets the last two digits of the year (e.g., "26" for 2026)
+    const getShortYear = (date: Date): string => {
+      return date.getFullYear().toString().slice(-2);
+    };
+
+    // Determine dates (fallback to current date if missing)
+    const issueDate = new Date(
+      data.issueDate || data.approvalDate || Date.now(),
+    );
+    const expiryDate = new Date(data.expiryDate || issueDate);
+
+    // Extract transaction amounts with safe defaults
+    const documentFee = transaction?.documentAmount ?? 0;
 
     return (
       html
@@ -751,11 +883,20 @@ export class AuctioneerService {
         .replace(/{{name}}/g, `<i>${fullName}</i>`)
         .replace(/{{address}}/g, `<i>${toTitleCase(data.address)}</i>`)
 
-        // Official values in uppercase
         .replace(/{{licenceRefNumber}}/g, data.licenceRefNumber)
 
-        // Dates italicized
         .replace(/{{formattedNumber}}/g, data.formattedNumber)
+
+        .replace(/{{issueDay}}/g, formatOrdinal(issueDate.getDate()))
+        .replace(/{{issueMonth}}/g, getMonthName(issueDate))
+        .replace(/{{issueYear}}/g, getShortYear(issueDate))
+
+        .replace(/{{expiryDay}}/g, formatOrdinal(expiryDate.getDate()))
+        .replace(/{{expiryMonth}}/g, getMonthName(expiryDate))
+        .replace(/{{expiryYear}}/g, getShortYear(expiryDate))
+
+        // Transaction fees
+        .replace(/{{documentAmount}}/g, formatCurrency(documentFee))
 
         // Images (no italics needed)
         .replace(/{{qrCodeUrl}}/g, data.qrCodeUrl)
@@ -928,6 +1069,21 @@ export class AuctioneerService {
     }
   }
 
+  // private async generateAutioneerPdf(
+  //   auctioneer: any,
+  //   user: any,
+  // ): Promise<string> {
+  //   const htmlTemplate = await this.loadHtmlTemplate(
+  //     'auctioneer-template.html',
+  //   );
+  //   const populatedHtml = this.populateHtmlTemplate(
+  //     htmlTemplate,
+  //     auctioneer,
+  //     user,
+  //   );
+
+  //   return this.generateAuctioneerPDF(auctioneer.id, populatedHtml);
+  // }
   private async generateAutioneerPdf(
     auctioneer: any,
     user: any,
@@ -935,10 +1091,15 @@ export class AuctioneerService {
     const htmlTemplate = await this.loadHtmlTemplate(
       'auctioneer-template.html',
     );
+
+    // Fetch the transaction for this auctioneer
+    const transaction = await this.findTransactionByAuctioneerId(auctioneer.id);
+
     const populatedHtml = this.populateHtmlTemplate(
       htmlTemplate,
       auctioneer,
       user,
+      transaction,
     );
 
     return this.generateAuctioneerPDF(auctioneer.id, populatedHtml);

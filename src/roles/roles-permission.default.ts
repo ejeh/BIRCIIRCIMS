@@ -12,25 +12,25 @@ export function getDefaultPermissions(role: string): Permission[] {
     case UserRole.GLOBAL_ADMIN:
       return Object.values(Permission);
 
-    // case UserRole.SUPER_ADMIN:
-    //   return [
-    //     Permission.USER_CREATE,
-    //     Permission.USER_READ,
-    //     Permission.USER_UPDATE,
-    //     Permission.USER_DELETE,
-    //     Permission.ROLE_CREATE,
-    //     Permission.ROLE_READ,
-    //     Permission.ROLE_UPDATE,
-    //     Permission.ROLE_ASSIGN,
-    //     Permission.KINDRED_CREATE,
-    //     Permission.KINDRED_READ,
-    //     Permission.KINDRED_UPDATE,
-    //     Permission.KINDRED_DELETE,
-    //     Permission.SYSTEM_CONFIG,
-    //     Permission.SYSTEM_LOGS,
-    //     Permission.REPORTS_VIEW,
-    //     Permission.REPORTS_GENERATE,
-    //   ];
+    case UserRole.ADMIN:
+      return [
+        Permission.USER_CREATE,
+        Permission.USER_READ,
+        Permission.USER_UPDATE,
+        Permission.USER_DELETE,
+        Permission.ROLE_CREATE,
+        Permission.ROLE_READ,
+        Permission.ROLE_UPDATE,
+        Permission.ROLE_ASSIGN,
+        Permission.KINDRED_CREATE,
+        Permission.KINDRED_READ,
+        Permission.KINDRED_UPDATE,
+        Permission.KINDRED_DELETE,
+        Permission.SYSTEM_CONFIG,
+        Permission.SYSTEM_LOGS,
+        Permission.REPORTS_VIEW,
+        Permission.REPORTS_GENERATE,
+      ];
 
     case UserRole.SUPPORT_ADMIN:
       return [

@@ -8,7 +8,7 @@ export type RolePermissionDocument = RolePermission & Document;
 export class RolePermission {
   @Prop({
     required: true,
-    enum: ['global_admin', 'support_admin', 'kindred_head', 'user'],
+    enum: ['global_admin', 'support_admin', 'kindred_head', 'user', 'admin'],
   })
   role: string;
 

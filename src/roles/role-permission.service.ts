@@ -22,7 +22,6 @@ export class RolePermissionService {
     const rolePermissions = await this.rolePermissionModel.find().exec();
 
     return roles.map((role) => {
-      console.log(role);
       const rolePermission = rolePermissions.find((rp) => rp.role === role);
       return {
         value: role,

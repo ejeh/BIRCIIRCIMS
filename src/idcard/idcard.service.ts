@@ -501,7 +501,8 @@ export class IdcardService {
         ...data,
       });
     } catch (error) {
-      this.logger.error('Reprint payment initialization failed', error?.stack);
+      const err = error as any;
+      this.logger.error('Reprint payment initialization failed', err?.message);
       throw new InternalServerErrorException(
         'Failed to initialize payment. Try again later.',
       );
@@ -535,54 +536,54 @@ export class IdcardService {
       .exec();
   }
 
-  async confirmReprintPayment(
-    id: string,
-    paymentReference: string,
-    rrr: string,
-  ): Promise<IdCard> {
-    const now = new Date();
-    // const thirtyDaysFromNow = new Date(
-    //   now.getTime() + 30 * 24 * 60 * 60 * 1000,
-    // );
-    const thirtyDaysFromNow = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes for testing
+  // async confirmReprintPayment(
+  //   id: string,
+  //   paymentReference: string,
+  //   rrr: string,
+  // ): Promise<IdCard> {
+  //   const now = new Date();
+  //   // const thirtyDaysFromNow = new Date(
+  //   //   now.getTime() + 30 * 24 * 60 * 60 * 1000,
+  //   // );
+  //   const thirtyDaysFromNow = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes for testing
 
-    const updatedIdcard = await this.idCardModel
-      .findByIdAndUpdate(
-        id,
-        {
-          reprintPaymentStatus: 'Paid',
-          $inc: { reprintCount: 1 },
-          lastReprintDate: now,
-          reprintDownloadExpiryDate: thirtyDaysFromNow,
-          requiresReprintPayment: false,
-          downloadCount: 0,
-        },
-        { new: true },
-      )
-      .exec();
+  //   const updatedIdcard = await this.idCardModel
+  //     .findByIdAndUpdate(
+  //       id,
+  //       {
+  //         reprintPaymentStatus: 'Paid',
+  //         $inc: { reprintCount: 1 },
+  //         lastReprintDate: now,
+  //         reprintDownloadExpiryDate: thirtyDaysFromNow,
+  //         requiresReprintPayment: false,
+  //         downloadCount: 0,
+  //       },
+  //       { new: true },
+  //     )
+  //     .exec();
 
-    if (!updatedIdcard) {
-      throw new NotFoundException('Auctioneer request not found.');
-    }
-    // This ensures the transaction record moves from 'service_paid' to 'success'
-    if (paymentReference) {
-      await this.transactionModel
-        .updateOne(
-          { reference: paymentReference },
-          {
-            $set: {
-              status: 'success',
-              rrr: rrr,
-              verified: true,
-              verifiedAt: new Date(),
-            },
-          },
-        )
-        .exec();
-    }
+  //   if (!updatedIdcard) {
+  //     throw new NotFoundException('Auctioneer request not found.');
+  //   }
+  //   // This ensures the transaction record moves from 'service_paid' to 'success'
+  //   if (paymentReference) {
+  //     await this.transactionModel
+  //       .updateOne(
+  //         { reference: paymentReference },
+  //         {
+  //           $set: {
+  //             status: 'success',
+  //             rrr: rrr,
+  //             verified: true,
+  //             verifiedAt: new Date(),
+  //           },
+  //         },
+  //       )
+  //       .exec();
+  //   }
 
-    return updatedIdcard;
-  }
+  //   return updatedIdcard;
+  // }
   async incrementReprintCount(cardId: string): Promise<void> {
     await this.idCardModel.findByIdAndUpdate(cardId, {
       $inc: { reprintCount: 1 },
@@ -933,4 +934,30 @@ export class IdcardService {
       message: 'ID Card request deleted successfully',
     };
   };
+
+  async grantReprintDownloadAccess(cardId: string): Promise<IdCard> {
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(Date.now() + 10 * 60 * 1000); // 10 mins for testing (change to 30 days for prod)
+
+    const updatedCard = await this.idCardModel
+      .findByIdAndUpdate(
+        cardId,
+        {
+          reprintPaymentStatus: 'Paid',
+          $inc: { reprintCount: 1 },
+          lastReprintDate: now,
+          reprintDownloadExpiryDate: thirtyDaysFromNow,
+          requiresReprintPayment: false,
+          downloadCount: 0, // Reset download count for the new window
+        },
+        { new: true },
+      )
+      .exec();
+
+    if (!updatedCard) {
+      throw new NotFoundException('Auctioneer request not found.');
+    }
+
+    return updatedCard;
+  }
 }

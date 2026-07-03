@@ -18,7 +18,9 @@ import { AuctioneerService } from 'src/auctioneer/auctioneer.service';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { NotificationsService } from 'src/notifications/notifications.service';
+import { fileUploadConfig } from 'src/config/file-upload.config';
 
 @Injectable()
 export class TransactionService {
@@ -30,6 +32,8 @@ export class TransactionService {
   private readonly httpService: HttpService;
   constructor(
     private configService: ConfigService,
+    private readonly cloudinaryService: CloudinaryService,
+    private readonly notificationsService: NotificationsService,
     @InjectModel('Transaction')
     private readonly transactionModel: Model<Transaction>,
     @Inject(forwardRef(() => IndigeneCertificateService))
@@ -178,7 +182,7 @@ export class TransactionService {
         },
       };
     } catch (err) {
-      const errorData = err?.response?.data || err.message;
+      const errorData = (err as any)?.response?.data || (err as Error)?.message;
 
       console.error('Credo initialization error:', errorData);
 
@@ -187,135 +191,6 @@ export class TransactionService {
   }
 
   // // NEW: Initialize reprint payment
-  // async initializeReprintPayment(data: {
-  //   documentId: string;
-  //   userId: string;
-  //   amount?: number; // Default reprint fee if not provided
-  //   email: string;
-  //   currency?: string;
-  //   reference?: string;
-  //   documentType?: any;
-  // }) {
-  //   const userObjectId = new mongoose.Types.ObjectId(data.userId);
-
-  //   //  1. Dynamically determine the reference ID and type
-  //   let paymentReference: any = {};
-  //   let metadata: any = {};
-
-  //   if (!data.documentId) {
-  //     throw new Error('Document ID is required.');
-  //   }
-
-  //   const documentObjectId = new mongoose.Types.ObjectId(data.documentId);
-
-  //   switch (data.documentType) {
-  //     case 'certificate':
-  //       paymentReference.certificateId = documentObjectId;
-  //       metadata.certificateId = data.documentId;
-  //       break;
-
-  //     case 'auctioneer':
-  //       paymentReference.auctioneerId = documentObjectId;
-  //       metadata.auctioneerId = data.documentId;
-  //       break;
-
-  //     // case 'card':
-  //     case 'idcard':
-  //       paymentReference.cardId = documentObjectId;
-  //       metadata.cardId = data.documentId;
-  //       break;
-
-  //     default:
-  //       throw new Error('Invalid document type.');
-  //   }
-
-  //   // 2. Check for existing pending reprint transaction
-  //   // The spread operator (...) applies the correct field (e.g., certificateId: ...) dynamically
-  //   const existing = await this.transactionModel.findOne({
-  //     userId: userObjectId,
-  //     ...paymentReference,
-  //     status: 'pending',
-  //     paymentType: 'reprint',
-  //   });
-
-  //   if (existing) {
-  //     return {
-  //       success: true,
-  //       message: 'Existing reprint transaction found',
-  //       data: {
-  //         reference: existing.reference,
-  //         amount: existing.amount,
-  //         paymentUrl: `${this.baseUrl}/payment/${existing.reference}`, // Construct payment URL
-  //       },
-  //     };
-  //   }
-
-  //   // Generate unique reference for reprint
-  //   const reference =
-  //     data.reference ||
-  //     `reprint-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-
-  //   // Create new reprint transaction
-  //   const newTransaction = new this.transactionModel({
-  //     userId: userObjectId,
-  //     reference,
-  //     amount: data.amount,
-  //     email: data.email,
-  //     status: 'pending',
-  //     currency: data.currency || 'NGN',
-  //     paymentType: 'reprint',
-  //     ...paymentReference,
-  //   });
-
-  //   await newTransaction.save();
-
-  //   try {
-  //     // Initialize payment with Credo
-  //     const payload = {
-  //       amount: data.amount,
-  //       reference,
-  //       bearer: 0,
-  //       currency: data.currency || 'NGN',
-  //       email: data.email,
-  //       customer: {
-  //         email: data.email,
-  //       },
-  //       metadata: {
-  //         ...metadata,
-  //         paymentType: 'reprint',
-  //       },
-  //     };
-
-  //     const headers = {
-  //       Authorization: this.secretKey,
-  //       'Content-Type': 'application/json',
-  //     };
-
-  //     const url = `${this.baseUrl}/transaction/initialize`;
-  //     const credoResponse = await axios.post(url, payload, { headers });
-
-  //     return {
-  //       success: true,
-  //       message: 'Reprint payment initialized',
-  //       data: {
-  //         reference,
-  //         amount: data.amount / 100, // Convert to Naira for display
-  //         paymentUrl:
-  //           credoResponse.data?.data?.checkoutUrl ||
-  //           `${this.baseUrl}/payment/${reference}`,
-  //       },
-  //     };
-  //   } catch (err) {
-  //     console.error(
-  //       'Credo reprint init error:',
-  //       err?.response?.data || err.message,
-  //     );
-  //     // Clean up the transaction if Credo initialization fails
-  //     await this.transactionModel.deleteOne({ reference });
-  //     throw new Error('Reprint payment initialization failed');
-  //   }
-  // }
-
   async initializeReprintPayment(data: {
     documentId: string;
     userId: string;
@@ -484,7 +359,10 @@ export class TransactionService {
         },
       };
     } catch (err) {
-      const errorData = err?.response?.data || err.message;
+      const error = err as any;
+      const errorData =
+        error?.response?.data ||
+        (err instanceof Error ? err.message : String(err));
 
       console.error('Credo reprint initialization error:', errorData);
 
@@ -504,8 +382,13 @@ export class TransactionService {
       .exec();
   }
 
-  // async verifyReprintPayment(reference: string) {
-  //   // 1. Find the transaction
+  // async verifyReprintPayment(reference: string, rrr: string) {
+  //   /*
+  // --------------------------------
+  // FIND TRANSACTION
+  // --------------------------------
+  // */
+
   //   const transaction = await this.transactionModel.findOne({
   //     reference,
   //     paymentType: 'reprint',
@@ -515,7 +398,12 @@ export class TransactionService {
   //     throw new NotFoundException('Reprint transaction not found');
   //   }
 
-  //   // 2. Handle Idempotency: If already verified, return existing state
+  //   /*
+  // --------------------------------
+  // IDEMPOTENCY CHECK
+  // --------------------------------
+  // */
+
   //   if (transaction.status !== 'pending') {
   //     return {
   //       success: true,
@@ -530,216 +418,87 @@ export class TransactionService {
   //     };
   //   }
 
-  //   // 3. Verify with Credo
-  //   const url = `${this.baseUrl}/transaction/${reference}/verify`;
-  //   const headers = { Authorization: this.secretKey };
+  //   /*
+  // --------------------------------
+  // VERIFY SERVICE FEE (CREDO)
+  // --------------------------------
+  // */
 
-  //   try {
-  //     const response = await axios.get(url, { headers });
+  //   const credoUrl = `${this.baseUrl}/transaction/${reference}/verify`;
 
-  //     // 4. Check for Success
-  //     if (response.data.status === 200 && response.data.data.status === 0) {
-  //       // Update transaction status
-  //       const updatedTransaction = await this.transactionModel
-  //         .findOneAndUpdate(
-  //           { reference },
-  //           {
-  //             status: 'success',
-  //             verified: true,
-  //             verifiedAt: new Date(),
-  //           },
-  //           { new: true },
-  //         )
-  //         .exec();
+  //   const credoResponse = await axios.get(credoUrl, {
+  //     headers: {
+  //       Authorization: this.secretKey,
+  //     },
+  //   });
 
-  //       // 5. Update the specific document based on which ID is present
-  //       // We check which ID exists in the transaction and call the appropriate service
+  //   const isCredoSuccessful = credoResponse.data?.data?.status === 0;
 
-  //       if (transaction.certificateId) {
-  //         await this.indigeneCertificateService.confirmReprintPayment(
-  //           transaction.certificateId.toString(),
-  //         );
-  //       } else if (transaction.cardId) {
-  //         await this.idcardService.confirmReprintPayment(
-  //           transaction.cardId.toString(),
-  //         );
-  //       } else if (transaction.auctioneerId) {
-  //         await this.auctioneerService.confirmReprintPayment(
-  //           transaction.auctioneerId.toString(),
-  //         );
-  //       }
-
-  //       return {
-  //         success: true,
-  //         message: 'Reprint payment verified successfully',
-  //         data: {
-  //           status: 'success',
-  //           documentId:
-  //             transaction.certificateId ||
-  //             transaction.cardId ||
-  //             transaction.auctioneerId,
-  //           verified: updatedTransaction.verified,
-  //         },
-  //       };
-  //     } else {
-  //       // 6. Handle Payment Failure (Credo returned non-success)
-  //       await this.transactionModel.findOneAndUpdate(
-  //         { reference },
-  //         { status: 'failed' },
-  //       );
-
-  //       return {
-  //         success: false,
-  //         message: 'Reprint payment verification failed',
-  //         data: {
-  //           status: 'failed',
-  //           reason: response.data.data?.message || 'Payment not successful',
-  //         },
-  //       };
-  //     }
-  //   } catch (err) {
-  //     console.error(
-  //       'Reprint verification error:',
-  //       err?.response?.data || err.message,
-  //     );
-  //     // Optional: Mark transaction as failed on error?
-  //     throw new InternalServerErrorException(
-  //       'Reprint payment verification failed',
-  //     );
+  //   if (!isCredoSuccessful) {
+  //     return {
+  //       success: false,
+  //       message: 'Service fee (Credo) not confirmed.',
+  //       data: { status: 'pending' },
+  //     };
   //   }
+
+  //   /*
+  // --------------------------------
+  // VERIFY DOCUMENT FEE (REMITA)
+  // --------------------------------
+  // */
+
+  //   const remitaResult = await this.verifyRrr(rrr);
+  //   console.log('remitaResult.success', remitaResult.success);
+
+  //   if (!remitaResult.success) {
+  //     return {
+  //       success: false,
+  //       message: 'Document fee (Remita) not confirmed.',
+  //       data: { status: 'pending' },
+  //     };
+  //   }
+
+  //   /*
+  // --------------------------------
+  // BOTH PAYMENTS SUCCESSFUL
+  // --------------------------------
+  // */
+
+  //   const updatedTransaction = await this.transactionModel
+  //     .findOneAndUpdate(
+  //       { reference },
+  //       {
+  //         $set: {
+  //           status: 'success',
+  //           rrr,
+  //           verified: true,
+  //           verifiedAt: new Date(),
+  //         },
+  //       },
+  //       { new: true },
+  //     )
+  //     .exec();
+
+  //   /*
+  // --------------------------------
+  // UPDATE DOCUMENT STATUS
+  // --------------------------------
+  // */
+
+  //   return {
+  //     success: true,
+  //     message: 'Reprint payment verified successfully',
+  //     data: {
+  //       status: 'success',
+  //       paymentType: updatedTransaction.paymentType,
+  //       documentId:
+  //         transaction.certificateId ||
+  //         transaction.cardId ||
+  //         transaction.auctioneerId,
+  //     },
+  //   };
   // }
-
-  async verifyReprintPayment(reference: string, rrr: string) {
-    /*
-  --------------------------------
-  FIND TRANSACTION
-  --------------------------------
-  */
-
-    const transaction = await this.transactionModel.findOne({
-      reference,
-      paymentType: 'reprint',
-    });
-
-    if (!transaction) {
-      throw new NotFoundException('Reprint transaction not found');
-    }
-
-    /*
-  --------------------------------
-  IDEMPOTENCY CHECK
-  --------------------------------
-  */
-
-    if (transaction.status !== 'pending') {
-      return {
-        success: true,
-        message: `Reprint payment already ${transaction.status}`,
-        data: {
-          status: transaction.status,
-          documentId:
-            transaction.certificateId ||
-            transaction.cardId ||
-            transaction.auctioneerId,
-        },
-      };
-    }
-
-    /*
-  --------------------------------
-  VERIFY SERVICE FEE (CREDO)
-  --------------------------------
-  */
-
-    const credoUrl = `${this.baseUrl}/transaction/${reference}/verify`;
-
-    const credoResponse = await axios.get(credoUrl, {
-      headers: {
-        Authorization: this.secretKey,
-      },
-    });
-
-    const isCredoSuccessful = credoResponse.data?.data?.status === 0;
-
-    if (!isCredoSuccessful) {
-      return {
-        success: false,
-        message: 'Service fee (Credo) not confirmed.',
-        data: { status: 'pending' },
-      };
-    }
-
-    /*
-  --------------------------------
-  VERIFY DOCUMENT FEE (REMITA)
-  --------------------------------
-  */
-
-    const remitaResult = await this.verifyRrr(rrr);
-    console.log('remitaResult.success', remitaResult.success);
-
-    if (!remitaResult.success) {
-      return {
-        success: false,
-        message: 'Document fee (Remita) not confirmed.',
-        data: { status: 'pending' },
-      };
-    }
-
-    /*
-  --------------------------------
-  BOTH PAYMENTS SUCCESSFUL
-  --------------------------------
-  */
-
-    const updatedTransaction = await this.transactionModel
-      .findOneAndUpdate(
-        { reference },
-        {
-          $set: {
-            status: 'success',
-            rrr,
-            verified: true,
-            verifiedAt: new Date(),
-          },
-        },
-        { new: true },
-      )
-      .exec();
-
-    /*
-  --------------------------------
-  UPDATE DOCUMENT STATUS
-  --------------------------------
-  */
-
-    // if (transaction.certificateId) {
-    //   await this.indigeneCertificateService.confirmReprintPayment(
-    //     transaction.certificateId.toString(),
-    //   );
-    // } else if (transaction.cardId) {
-    //   await this.idcardService.confirmReprintPayment(
-    //     transaction.cardId.toString(),
-    //   );
-    // } else if (transaction.auctioneerId) {
-    //   await this.auctioneerService.confirmReprintPayment(
-    //     transaction.auctioneerId.toString(),
-    //   );
-    // }
-
-    return {
-      success: true,
-      message: 'Reprint payment verified successfully',
-      data: {
-        status: 'success',
-        paymentType: updatedTransaction.paymentType,
-        documentId:
-          transaction.certificateId ||
-          transaction.cardId ||
-          transaction.auctioneerId,
-      },
-    };
-  }
 
   async hasPendingReprintPayment(
     documentId: string,
@@ -776,15 +535,55 @@ export class TransactionService {
    * Helper method to update the payment status of the associated request.
    * @param transaction The successful transaction document.
    */
+  // private async updateRequestPaymentStatus(transaction: Transaction) {
+  //   try {
+  //     if (transaction.paymentType === 'card' && transaction.cardId) {
+  //       await this.idcardService.updatePaymentStatus(
+  //         transaction.cardId.toString(),
+  //         'paid',
+  //       );
+  //       console.log(
+  //         `Updated payment status for ID Card: ${transaction.cardId}`,
+  //       );
+  //     } else if (
+  //       transaction.paymentType === 'certificate' &&
+  //       transaction.certificateId
+  //     ) {
+  //       await this.indigeneCertificateService.updatePaymentStatus(
+  //         transaction.certificateId.toString(),
+  //         'paid',
+  //       );
+  //       console.log(
+  //         `Updated payment status for Certificate: ${transaction.certificateId}`,
+  //       );
+  //     } else if (
+  //       transaction.paymentType === 'auctioneer' &&
+  //       transaction.auctioneerId
+  //     ) {
+  //       await this.auctioneerService.updatePaymentStatus(
+  //         transaction.auctioneerId.toString(),
+  //         'paid',
+  //       );
+  //       console.log(
+  //         `Updated payment status for Auctioneer: ${transaction.auctioneerId}`,
+  //       );
+  //     }
+  //   } catch (error) {
+  //     console.error(
+  //       `Failed to update payment status for transaction ${transaction._id}:`,
+  //       error,
+  //     );
+  //     // Depending on your requirements, you might want to throw the error
+  //     // or just log it. For now, we'll log it.
+  //   }
+  // }
+  // Inside transaction.service.ts
   private async updateRequestPaymentStatus(transaction: Transaction) {
     try {
       if (transaction.paymentType === 'card' && transaction.cardId) {
         await this.idcardService.updatePaymentStatus(
           transaction.cardId.toString(),
           'paid',
-        );
-        console.log(
-          `Updated payment status for ID Card: ${transaction.cardId}`,
         );
       } else if (
         transaction.paymentType === 'certificate' &&
@@ -794,9 +593,6 @@ export class TransactionService {
           transaction.certificateId.toString(),
           'paid',
         );
-        console.log(
-          `Updated payment status for Certificate: ${transaction.certificateId}`,
-        );
       } else if (
         transaction.paymentType === 'auctioneer' &&
         transaction.auctioneerId
@@ -805,17 +601,33 @@ export class TransactionService {
           transaction.auctioneerId.toString(),
           'paid',
         );
-        console.log(
-          `Updated payment status for Auctioneer: ${transaction.auctioneerId}`,
-        );
+      }
+      // ============================================
+      // NEW: HANDLE REPRINT APPROVALS
+      // ============================================
+      else if (transaction.paymentType === 'reprint') {
+        if (transaction.auctioneerId) {
+          // Trigger the download window for Auctioneer
+          await this.auctioneerService.grantReprintDownloadAccess(
+            transaction.auctioneerId.toString(),
+          );
+        }
+        // Add blocks for certificate/card here later if needed:
+        else if (transaction.certificateId) {
+          await this.indigeneCertificateService.grantReprintDownloadAccess(
+            transaction.certificateId.toString(),
+          );
+        } else if (transaction.cardId) {
+          await this.idcardService.grantReprintDownloadAccess(
+            transaction.cardId.toString(),
+          );
+        }
       }
     } catch (error) {
       console.error(
         `Failed to update payment status for transaction ${transaction._id}:`,
         error,
       );
-      // Depending on your requirements, you might want to throw the error
-      // or just log it. For now, we'll log it.
     }
   }
 
@@ -1005,7 +817,7 @@ export class TransactionService {
       (tx) => tx.status === 'success',
     );
     const totalAmountKobo = successfulTransactions.reduce(
-      (sum, tx) => sum + (tx.amount || 0),
+      (sum, tx) => sum + (tx.documentAmount || 0),
       0,
     );
 
@@ -1025,7 +837,7 @@ export class TransactionService {
       .forEach((t) => {
         const date = new Date(t.createdAt);
         const month = date.toLocaleString('default', { month: 'short' }); // e.g., "Jan"
-        const amountInNaira = t.amount || 0;
+        const amountInNaira = t.documentAmount || 0;
         monthlyTrend[month] = (monthlyTrend[month] || 0) + amountInNaira;
       });
 
@@ -1045,7 +857,7 @@ export class TransactionService {
         }
 
         // 🔹 Convert from kobo to naira
-        const amountInNaira = t.amount || 0;
+        const amountInNaira = t.documentAmount || 0;
         revenueByLGA[lga] = (revenueByLGA[lga] || 0) + amountInNaira;
       });
 
@@ -1306,12 +1118,19 @@ export class TransactionService {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
+          'User-Agent': 'My-Commerce-App/1.0', // Replace with your app name and version
           Authorization: `remitaConsumerKey=${this.merchantId},remitaConsumerToken=${apiHash}`,
         },
         body: JSON.stringify(payload),
       });
 
       const raw = await response.text();
+
+      // / --- DEBUGGING LOG START ---
+      console.log('--- Remita Raw Response ---');
+      console.log(raw);
+      console.log('--- End Raw Response ---');
+      // --- DEBUGGING LOG END ---
 
       let data: any = {};
 
@@ -1329,6 +1148,8 @@ export class TransactionService {
           });
         }
       }
+
+      console.log('Remita RRR Response:', data);
 
       const rrr = data.RRR;
 
@@ -1350,10 +1171,9 @@ export class TransactionService {
         message: 'RRR generated successfully',
       };
     } catch (error) {
-      console.error(error);
-      throw new InternalServerErrorException(
-        error.message || 'Failed to generate RRR',
-      );
+      const message =
+        error instanceof Error ? error.message : 'Failed to generate RRR';
+      throw new InternalServerErrorException(message);
     }
   }
 
@@ -1388,7 +1208,7 @@ export class TransactionService {
         transactionStatus: data.message,
         rawData: data,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error(
         'Remita Verification Error Details:',
         error.response?.data || error.message,
@@ -1431,6 +1251,140 @@ export class TransactionService {
     return {
       success: true,
       message: 'Service fee verified',
+    };
+  }
+
+  async processReceiptUpload(
+    file: Express.Multer.File,
+    reference: string,
+    userId: string | any, // Accept string or object just in case
+  ) {
+    // Safely convert to ObjectId
+    let userObjectId;
+    try {
+      userObjectId =
+        typeof userId === 'string'
+          ? new mongoose.Types.ObjectId(userId)
+          : userId;
+    } catch (error) {
+      throw new BadRequestException('Invalid User ID format.');
+    }
+
+    const transaction = await this.transactionModel.findOne({
+      reference: reference.trim(), // Trim to remove accidental whitespace
+      userId: userObjectId,
+    });
+
+    if (!transaction) {
+      // LOG THE EXACT VALUES BEING SEARCHED SO YOU CAN SEE WHY IT FAILED
+      console.error('Receipt Upload Failed. Searching for:', {
+        reference: reference.trim(),
+        userId: userObjectId,
+      });
+      throw new NotFoundException(
+        'Transaction not found. Ensure you are logged into the account that initiated the payment.',
+      );
+    }
+
+    if (transaction.status !== 'service_paid') {
+      throw new BadRequestException(
+        `Receipt can only be uploaded after service fee is paid. Current status: ${transaction.status}`,
+      );
+    }
+
+    // Upload receipt to Cloudinary (using your existing service)
+    const receiptUrl = await this.cloudinaryService.uploadFile(
+      file,
+      fileUploadConfig.folders.paymentReceipts,
+      fileUploadConfig.allowedMimeTypes,
+      5,
+    );
+
+    // Update transaction
+    transaction.receiptUrl = receiptUrl;
+    transaction.receiptUploadedAt = new Date();
+    transaction.status = 'receipt_uploaded'; // New status for admins to review
+    await transaction.save();
+
+    return {
+      success: true,
+      message: 'Receipt uploaded successfully. Awaiting admin verification.',
+    };
+  }
+
+  // In your TransactionService
+  async adminApproveReceipt(transactionId: string) {
+    const transaction = await this.transactionModel.findById(transactionId);
+
+    if (!transaction) {
+      throw new NotFoundException('Transaction not found');
+    }
+
+    if (transaction.status !== 'receipt_uploaded') {
+      throw new BadRequestException(
+        `Cannot approve. Current status is '${transaction.status}'.`,
+      );
+    }
+
+    // Mark as successful
+    transaction.status = 'success';
+    transaction.verified = true;
+    transaction.verifiedAt = new Date();
+    await transaction.save();
+
+    // Trigger whatever happens when payment is successful (e.g., update the Certificate/ID card status)
+    await this.updateRequestPaymentStatus(transaction);
+
+    return {
+      success: true,
+      message: 'Receipt approved and payment marked as successful.',
+    };
+  }
+
+  async adminRejectReceipt(transactionId: string, reason: string) {
+    const transaction = await this.transactionModel.findById(transactionId);
+
+    if (!transaction) {
+      throw new NotFoundException('Transaction not found');
+    }
+
+    // Can only reject if a receipt is currently pending review
+    if (transaction.status !== 'receipt_uploaded') {
+      throw new BadRequestException(
+        `Cannot reject. Current status is '${transaction.status}', expected 'receipt_uploaded'.`,
+      );
+    }
+
+    if (!reason || reason.trim() === '') {
+      throw new BadRequestException('Please provide a reason for rejection.');
+    }
+
+    // 1. Revert status back to service_paid so the user can upload again
+    transaction.status = 'service_paid';
+
+    // 2. Clear the bad receipt data
+    transaction.receiptUrl = null;
+    transaction.receiptUploadedAt = null;
+
+    await transaction.save();
+
+    // 3. Notify the user (Assuming you have access to NotificationsService)
+    try {
+      await this.notificationsService.createSystemNotification(
+        transaction.userId.toString(),
+        'Payment Receipt Rejected',
+        `The receipt you uploaded for your ${transaction.paymentType} fee was rejected. Reason: ${reason}. Please upload a valid receipt.`,
+        'payment',
+        '/dashboard/requests',
+      );
+    } catch (notifError) {
+      console.error('Failed to send rejection notification:', notifError);
+      // Don't throw here, the main rejection was successful
+    }
+
+    return {
+      success: true,
+      message: 'Receipt rejected. User has been notified to re-upload.',
     };
   }
 }

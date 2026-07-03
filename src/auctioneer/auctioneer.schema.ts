@@ -105,6 +105,20 @@ export class Auctioneer extends Document {
   approvalDate: Date;
 
   @ApiProperty({
+    description: 'Issue Date',
+    example: '2023-01-01T00:00:00.000Z',
+  })
+  @Prop({ type: mongoose.SchemaTypes.Date, default: null })
+  issueDate: Date;
+
+  @ApiProperty({
+    description: 'Expiry Date (1 year from issue)',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  @Prop({ type: mongoose.SchemaTypes.Date, default: null })
+  expiryDate: Date;
+
+  @ApiProperty({
     description: 'Approved By',
     example: 'Approved By',
   })

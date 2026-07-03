@@ -229,7 +229,7 @@ export class IdcardController {
     @Param('id') id: string,
     @Body() body: any,
     @Req() req,
-    @UploadedFiles() files: Array<Express.Multer.File>, // Note: Validation pipe is optional here as files are optional
+    @UploadedFiles() files: Array<Express.Multer.File> = [], // Note: Validation pipe is optional here as files are optional
   ) {
     // 1. Verify Ownership & Existence
     const existingRequest = await this.idcardService.findOneCard(
@@ -292,7 +292,7 @@ export class IdcardController {
   @Get('get-all-request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: IdCard, isArray: true })
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
   async getCertsRequest() {
     return await this.idcardService.idCardModel
       .find({})
@@ -309,7 +309,7 @@ export class IdcardController {
   @Get('card-request')
   @UseGuards(RolesGuard)
   @ApiResponse({ type: IdCard, isArray: true })
-  @Roles(UserRole.SUPPORT_ADMIN, UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.GLOBAL_ADMIN)
   async getRequestsByStatuses(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
@@ -339,7 +339,7 @@ export class IdcardController {
 
   @Patch(':id/approve')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
   @ApiResponse({ type: IdCard, isArray: false })
   async approveCert(
     @Param('id') id: string,
@@ -350,7 +350,7 @@ export class IdcardController {
 
   @Patch(':id/reject')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.GLOBAL_ADMIN)
+  @Roles(UserRole.GLOBAL_ADMIN, UserRole.ADMIN)
   @ApiResponse({ type: IdCard, isArray: false })
   async rejectCert(
     @Param('id') id: string,
@@ -538,7 +538,8 @@ export class IdcardController {
       .replace(/{{passportPhoto}}/g, data.passportPhoto)
       .replace(/{{qrCodeUrl}}/g, data.qrCodeUrl)
       .replace(/{{issueDate}}/g, formattedDateOfIssue)
-      .replace(/{{gender}}/g, user.gender);
+      .replace(/{{gender}}/g, user.gender)
+      .replace(/{{documentAmount}}/g, data.documentAmount);
   }
 
   private async markCardAsDownloaded(id: string): Promise<void> {
@@ -853,13 +854,24 @@ export class IdcardController {
 
       // Pipe the stream from Cloudinary to the client
       return cloudinaryRes.data.pipe(res);
+      // } catch (error) {
+      //   console.log(
+      //     `Error streaming document from Cloudinary: ${error.message}`,
+      //     error.stack,
+      //   );
+      //   throw new InternalServerErrorException(
+      //     'Could not retrieve the document. Please try again later.',
+      //   );
+      // }
     } catch (error) {
+      const err = error as Error; // Assert type
       console.log(
-        `Error streaming document from Cloudinary: ${error.message}`,
-        error.stack,
+        `Error streaming document from Cloudinary: ${err.message}`,
+        err.stack,
       );
+
       throw new InternalServerErrorException(
-        'Could not retrieve the document. Please try again later.',
+        'Could not retrieve document. Please try again later.',
       );
     }
   }
@@ -913,40 +925,40 @@ export class IdcardController {
   }
 
   // New confirm payment endpoint
-  @Post(':id/confirm-reprint-payment')
-  async confirmReprintPayment(
-    @Param('id') id: string,
-    @Body() confirmPaymentDto: ConfirmReprintPaymentDto,
-  ) {
-    const { paymentReference, rrr } = confirmPaymentDto;
+  // @Post(':id/confirm-reprint-payment')
+  // async confirmReprintPayment(
+  //   @Param('id') id: string,
+  //   @Body() confirmPaymentDto: ConfirmReprintPaymentDto,
+  // ) {
+  //   const { paymentReference, rrr } = confirmPaymentDto;
 
-    // Verify payment with provider
-    const paymentVerified = await this.transactionService.verifyReprintPayment(
-      paymentReference,
-      rrr,
-    );
+  //   // Verify payment with provider
+  //   const paymentVerified = await this.transactionService.verifyReprintPayment(
+  //     paymentReference,
+  //     rrr,
+  //   );
 
-    if (!paymentVerified) {
-      throw new HttpException(
-        'Payment verification failed',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+  //   if (!paymentVerified) {
+  //     throw new HttpException(
+  //       'Payment verification failed',
+  //       HttpStatus.BAD_REQUEST,
+  //     );
+  //   }
 
-    // Update id card with paid status and new download window
-    const updatedCertificate = await this.idcardService.confirmReprintPayment(
-      id,
-      paymentReference,
-      rrr,
-    );
+  //   // Update id card with paid status and new download window
+  //   const updatedCertificate = await this.idcardService.confirmReprintPayment(
+  //     id,
+  //     paymentReference,
+  //     rrr,
+  //   );
 
-    return {
-      success: true,
-      message: 'Payment confirmed. Reprint download available.',
-      downloadUrl: `/api/idcard/reprint/download/${id}`,
-      expiryDate: updatedCertificate.reprintDownloadExpiryDate,
-    };
-  }
+  //   return {
+  //     success: true,
+  //     message: 'Payment confirmed. Reprint download available.',
+  //     downloadUrl: `/api/idcard/reprint/download/${id}`,
+  //     expiryDate: updatedCertificate.reprintDownloadExpiryDate,
+  //   };
+  // }
 
   @Get('reprint/download/:id')
   @Throttle({ default: { limit: 5, ttl: 60000 } })

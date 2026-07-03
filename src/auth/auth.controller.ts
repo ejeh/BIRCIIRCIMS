@@ -47,10 +47,16 @@ export class AuthController {
         ? process.env.FRONTEND_URL || 'http://127.0.0.1:5503'
         : 'https://citizenship.benuestate.gov.ng';
     };
+
+    const getBasePath = () => {
+      return config.isDev ? '/source' : '';
+    };
+
     const result = await this.authService.activate(params);
+
     const redirectUrl = result.success
-      ? `${getFrontendBaseUrl()}/app/auth/activation-success.html`
-      : `${getFrontendBaseUrl()}/app/auth/activation-failed.html`;
+      ? `${getFrontendBaseUrl()}${getBasePath()}/app/auth/activation-success.html`
+      : `${getFrontendBaseUrl()}${getBasePath()}/app/auth/activation-failed.html`;
 
     return res.redirect(redirectUrl);
   }
@@ -157,13 +163,22 @@ export class AuthController {
   }
 
   @Post('verify')
-  async verifyNIN(@Body() { nin }: { nin: string }) {
+  async verifyNIN(
+    @Body() body: { nin: string; firstName: string; lastName: string },
+  ) {
+    const { nin, firstName, lastName } = body;
+
     if (!nin || nin.length !== 11) {
       throw new BadRequestException('Invalid NIN format');
     }
 
-    const result = await this.authService.verifyNIN(nin);
-    console.log('result', result);
+    if (!firstName || !lastName) {
+      throw new BadRequestException(
+        'First name and last name are required for NIN verification',
+      );
+    }
+
+    const result = await this.authService.verifyNIN(nin, firstName, lastName);
 
     if (!result || !result.status) {
       throw new BadRequestException('NIN not found or invalid');
@@ -173,14 +188,14 @@ export class AuthController {
       success: true,
       message: 'NIN verified successfully',
       data: {
-        firstname: result?.echoverify_response.data?.firstName,
-        lastname: result?.echoverify_response.data?.lastName,
-        middlename: result?.echoverify_response.data?.middleName,
-        dob: result?.echoverify_response.data?.dateOfBirth,
-        phone: result?.echoverify_response?.data?.mobile,
-        stateOfOrigin: result?.echoverify_response.data?.birthState,
-        lga: result?.echoverify_response.data?.birthLGA,
-        NIN: result?.echoverify_response.data?.nin,
+        firstname: result?.nin?.firstName,
+        lastname: result?.nin?.lastName,
+        middlename: result?.nin?.middleName,
+        dob: result?.nin?.birthdate,
+        phone: result?.nin?.mobile,
+        stateOfOrigin: result?.nin?.state_of_origin,
+        lga: result?.nin?.lga_of_origin,
+        NIN: result?.nin?.nin,
       },
     };
   }

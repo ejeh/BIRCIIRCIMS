@@ -612,7 +612,8 @@ export class IndigeneCertificateService {
         ...data,
       });
     } catch (error) {
-      this.logger.error('Reprint payment initialization failed', error?.stack);
+      const err = error as Error; // Assert type
+      this.logger.error('Reprint payment initialization failed', err?.message);
       throw new InternalServerErrorException(
         'Failed to initialize payment. Try again later.',
       );
@@ -654,15 +655,20 @@ export class IndigeneCertificateService {
     return updatedCertificate;
   }
 
-  // async confirmReprintPayment(certificateId: string): Promise<Certificate> {
+  // async confirmReprintPayment(
+  //   autioneerId: string,
+  //   paymentReference: string,
+  //   rrr: string,
+  // ): Promise<Certificate> {
   //   const now = new Date();
-  //   const thirtyDaysFromNow = new Date(
-  //     now.getTime() + 30 * 24 * 60 * 60 * 1000,
-  //   );
+  //   // const thirtyDaysFromNow = new Date(
+  //   //   now.getTime() + 30 * 24 * 60 * 60 * 1000,
+  //   // );
+  //   const thirtyDaysFromNow = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes for testing
 
-  //   return this.certificateModel
+  //   const updatedAuctioneer = await this.certificateModel
   //     .findByIdAndUpdate(
-  //       certificateId,
+  //       autioneerId,
   //       {
   //         reprintPaymentStatus: 'Paid',
   //         $inc: { reprintCount: 1 },
@@ -674,57 +680,30 @@ export class IndigeneCertificateService {
   //       { new: true },
   //     )
   //     .exec();
+
+  //   if (!updatedAuctioneer) {
+  //     throw new NotFoundException('Certificate request not found.');
+  //   }
+
+  //   // This ensures the transaction record moves from 'service_paid' to 'success'
+  //   if (paymentReference) {
+  //     await this.transactionModel
+  //       .updateOne(
+  //         { reference: paymentReference },
+  //         {
+  //           $set: {
+  //             status: 'success',
+  //             rrr: rrr,
+  //             verified: true,
+  //             verifiedAt: new Date(),
+  //           },
+  //         },
+  //       )
+  //       .exec();
+  //   }
+
+  //   return updatedAuctioneer;
   // }
-
-  async confirmReprintPayment(
-    autioneerId: string,
-    paymentReference: string,
-    rrr: string,
-  ): Promise<Certificate> {
-    const now = new Date();
-    // const thirtyDaysFromNow = new Date(
-    //   now.getTime() + 30 * 24 * 60 * 60 * 1000,
-    // );
-    const thirtyDaysFromNow = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes for testing
-
-    const updatedAuctioneer = await this.certificateModel
-      .findByIdAndUpdate(
-        autioneerId,
-        {
-          reprintPaymentStatus: 'Paid',
-          $inc: { reprintCount: 1 },
-          lastReprintDate: now,
-          reprintDownloadExpiryDate: thirtyDaysFromNow,
-          requiresReprintPayment: false,
-          downloadCount: 0,
-        },
-        { new: true },
-      )
-      .exec();
-
-    if (!updatedAuctioneer) {
-      throw new NotFoundException('Certificate request not found.');
-    }
-
-    // This ensures the transaction record moves from 'service_paid' to 'success'
-    if (paymentReference) {
-      await this.transactionModel
-        .updateOne(
-          { reference: paymentReference },
-          {
-            $set: {
-              status: 'success',
-              rrr: rrr,
-              verified: true,
-              verifiedAt: new Date(),
-            },
-          },
-        )
-        .exec();
-    }
-
-    return updatedAuctioneer;
-  }
   async updateReprintPaymentStatus(
     certificateId: string,
     status: 'Pending' | 'Paid' | 'NotRequired',
@@ -1116,5 +1095,31 @@ export class IndigeneCertificateService {
     );
 
     return this.generateCertificatePDF(certificate.id, populatedHtml);
+  }
+
+  async grantReprintDownloadAccess(auctioneerId: string): Promise<Certificate> {
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(Date.now() + 10 * 60 * 1000); // 10 mins for testing (change to 30 days for prod)
+
+    const updatedCertificate = await this.certificateModel
+      .findByIdAndUpdate(
+        auctioneerId,
+        {
+          reprintPaymentStatus: 'Paid',
+          $inc: { reprintCount: 1 },
+          lastReprintDate: now,
+          reprintDownloadExpiryDate: thirtyDaysFromNow,
+          requiresReprintPayment: false,
+          downloadCount: 0, // Reset download count for the new window
+        },
+        { new: true },
+      )
+      .exec();
+
+    if (!updatedCertificate) {
+      throw new NotFoundException('Auctioneer request not found.');
+    }
+
+    return updatedCertificate;
   }
 }

@@ -184,22 +184,16 @@
               </div>
 
               <div class="header-right">
-                <p class="mb-1">All communications should be addressed</p>
-                <p class="mb-1">to the permanent secretary</p>
-
-                <p class="mb-1">
-                  Ref No:
-                  <span class="dynamic-line autofit" style="width: 180px">
-                    <span>{{refNumber}}</span>
-                  </span>
-                </p>
-
-                <p class="mb-1">
-                  Date:
-                  <span class="dynamic-line autofit" style="width: 150px">
-                    <span>{{issueDate}}</span>
-                  </span>
-                </p>
+                <div class="text-start">
+                  <p class="mb-1">All communications should be addressed</p>
+                  <p class="mb-1">to the permanent secretary</p>
+                  <p class="mb-1">
+                    Date:
+                    <span class="dynamic-line autofit" style="width: 150px">
+                      <span>{{issueDate}}</span>
+                    </span>
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -212,9 +206,9 @@
 
             <!-- CERT NUMBER -->
             <div class="text-end mb-4 fw-bold">
-              NO:
+              Ref No:
               <span class="dynamic-line autofit" style="width: 200px">
-                <span>{{certificateNumber}}</span>
+                <span> BS/SEC/G.18/S.1/{{certificateNumber}}</span>
               </span>
             </div>
 
@@ -281,7 +275,7 @@
               <div class="text-center">
                 <img
                   class="signature-image"
-                  src="{{baseUrl}}/images/Adobe Express - file.png"
+                  src="{{baseUrl}}/images/signature1.png"
                   alt="signature"
                 />
                 <div class="signature-line"></div>
