@@ -51,6 +51,7 @@ export class AuthController {
     const getBasePath = () => {
       return config.isDev ? '/source' : '';
     };
+    console.log('getBasePath:', getBasePath());
 
     const result = await this.authService.activate(params);
 

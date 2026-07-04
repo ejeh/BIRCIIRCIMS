@@ -81,12 +81,21 @@ export class UsersService {
     origin: string,
   ): Promise<UserDocument> {
     try {
+      let formattedDOB = DOB;
+      if (DOB && DOB.includes('-')) {
+        const [day, month, year] = DOB.split('-');
+
+        // Convert DD-MM-YYYY -> YYYY-MM-DD
+        if (year.length === 4) {
+          formattedDOB = `${year}-${month}-${day}`;
+        }
+      }
       const user = await this.userModel.create({
         email: email.toLocaleLowerCase(),
         firstname,
         middlename,
         lastname,
-        DOB,
+        DOB: formattedDOB,
         phone,
         stateOfOrigin,
         lgaOfOrigin,
