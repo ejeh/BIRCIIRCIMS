@@ -29,6 +29,7 @@ import config from 'src/config';
 import QRCode from 'qrcode';
 import { Readable } from 'stream';
 import { Transaction } from 'src/transaction/transaction.schema';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class IndigeneCertificateService {
@@ -45,6 +46,7 @@ export class IndigeneCertificateService {
     private readonly userService: UsersService,
     private readonly transactionService: TransactionService,
     @InjectModel('Transaction') private transactionModel: Model<Transaction>,
+    private readonly mailService: MailService,
   ) {}
 
   /**
@@ -98,6 +100,13 @@ export class IndigeneCertificateService {
         ...data,
       });
 
+      // Send admin notification (fire and forget)
+      this.sendNewRequestNotification(newRequest, userId).catch((err) => {
+        this.logger.error(
+          `Failed to send new request notification: ${err.message}`,
+        );
+      });
+
       // 🔔 Send notification
       await this.notificationsService.createSystemNotification(
         userId,
@@ -116,6 +125,45 @@ export class IndigeneCertificateService {
       }
       throw new BadRequestException(
         error.message || 'Failed to create certificate.',
+      );
+    }
+  }
+
+  private async sendNewRequestNotification(
+    certificateRequest: any,
+    userId: string,
+  ): Promise<void> {
+    try {
+      const user = await this.userService.findById(userId);
+
+      if (!user) {
+        this.logger.warn(`User not found for notification: ${userId}`);
+        return;
+      }
+
+      // Get admin emails from UserModel
+      const adminEmails = await this.userService.getAdminEmails();
+
+      if (adminEmails.length === 0) {
+        this.logger.warn('No admin emails found. Notification not sent.');
+        return;
+      }
+
+      await this.mailService.sendNewRequestNotificationToAdmins(adminEmails, {
+        requesterName: user.firstname + ' ' + user.lastname || 'Unknown User',
+        requesterEmail: user.email || 'Unknown Email',
+        requestType: 'Certificate of Origin Request',
+        requestId: certificateRequest._id.toString(),
+        submittedAt: certificateRequest.createdAt || new Date(),
+      });
+
+      this.logger.log(
+        `Admin notification sent for request: ${certificateRequest._id} to ${adminEmails.length} admin(s)`,
+      );
+    } catch (error) {
+      const err = error as Error; // Assert type
+      this.logger.error(
+        `Error sending new request notification: ${err.message}`,
       );
     }
   }
@@ -1099,7 +1147,10 @@ export class IndigeneCertificateService {
 
   async grantReprintDownloadAccess(auctioneerId: string): Promise<Certificate> {
     const now = new Date();
-    const thirtyDaysFromNow = new Date(Date.now() + 10 * 60 * 1000); // 10 mins for testing (change to 30 days for prod)
+    const thirtyDaysFromNow = new Date(
+      now.getTime() + 30 * 24 * 60 * 60 * 1000,
+    );
+    // const thirtyDaysFromNow = new Date(Date.now() + 10 * 60 * 1000); // 10 mins for testing (change to 30 days for prod)
 
     const updatedCertificate = await this.certificateModel
       .findByIdAndUpdate(

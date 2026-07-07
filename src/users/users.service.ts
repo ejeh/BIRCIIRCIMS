@@ -38,7 +38,6 @@ import { Types } from 'mongoose';
 import PDFDocument from 'pdfkit';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { Auctioneer } from 'src/auctioneer/auctioneer.schema';
-import { error } from 'console';
 
 @Injectable()
 export class UsersService {
@@ -394,6 +393,18 @@ export class UsersService {
       .select('+family +neighbor')
       .populate('lga', 'name headquaters')
       .exec();
+    if (!user) {
+      throw UserNotFoundException();
+    }
+    return user;
+  }
+
+  async findUserId(id: string): Promise<UserDocument> {
+    const user = await this.userModel
+      .findById(id)
+      .select('name email')
+      //  .exec();
+      .lean();
     if (!user) {
       throw UserNotFoundException();
     }
@@ -2495,5 +2506,41 @@ export class UsersService {
 
   async findByNIN(nin: string) {
     return this.userModel.findOne({ NIN: nin });
+  }
+
+  /**
+   * Retrieve all admin emails from the database
+   * Includes users with 'global_admin' or 'admin' roles
+   */
+  async getAdminEmails(): Promise<string[]> {
+    try {
+      const admins = await this.userModel
+        .find(
+          {
+            role: { $in: ['global_admin', 'admin'] },
+            // email: { $exists: true, $ne: null, $ne: '' },
+            email: { $exists: true, $nin: [null, ''] },
+            isActive: { $ne: false },
+          },
+          { email: 1 },
+        )
+        .lean()
+        .exec();
+
+      const emails = admins
+        .map((admin) => admin.email)
+        .filter((email): email is string => !!email);
+
+      this.logger.log(`Found ${emails.length} admin email(s)`);
+
+      return emails;
+    } catch (error) {
+      const err = error as any;
+      this.logger.error(
+        `Failed to retrieve admin emails: ${err.message}`,
+        err.stack,
+      );
+      return [];
+    }
   }
 }

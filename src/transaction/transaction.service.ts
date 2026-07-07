@@ -4,6 +4,7 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import mongoose, { Model, Types } from 'mongoose';
@@ -21,9 +22,12 @@ import { HttpService } from '@nestjs/axios';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { fileUploadConfig } from 'src/config/file-upload.config';
+import { UsersService } from 'src/users/users.service';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class TransactionService {
+  private readonly logger = new Logger(TransactionService.name);
   private readonly merchantId: string;
   private readonly apiKey: string;
   private readonly apiToken: string;
@@ -42,6 +46,8 @@ export class TransactionService {
     private readonly idcardService: IdcardService,
     @Inject(forwardRef(() => AuctioneerService))
     private readonly auctioneerService: AuctioneerService,
+    private readonly userService: UsersService,
+    private readonly mailService: MailService,
   ) {
     this.merchantId = this.configService.get<string>('REMITA_MERCHANT_ID');
     this.apiKey = this.configService.get<string>('REMITA_API_KEY');
@@ -1185,6 +1191,15 @@ export class TransactionService {
       .update(hashString)
       .digest('hex');
 
+    console.log({
+      merchantId: this.merchantId,
+      apiKey: this.apiKey,
+      rrr,
+    });
+
+    console.log(hashString);
+    console.log(apiHash);
+
     // 2. Build the URL using the echannelsvc path from your doc
     // Make sure your remitaBaseUrl is "https://demo.remita.net/remita"
     const url = `${this.remitaBaseUrl}/echannelsvc/${this.merchantId}/${rrr}/${apiHash}/status.reg`;
@@ -1306,10 +1321,60 @@ export class TransactionService {
     transaction.status = 'receipt_uploaded'; // New status for admins to review
     await transaction.save();
 
+    // Send admin notification
+    this.sendPaymentNotification(transaction, 'Payment').catch((err) => {
+      this.logger.error(`Failed to send payment notification: ${err.message}`);
+    });
+
     return {
       success: true,
       message: 'Receipt uploaded successfully. Awaiting admin verification.',
     };
+  }
+
+  private async sendPaymentNotification(
+    transaction: any,
+    paymentLabel: string,
+  ): Promise<void> {
+    try {
+      const user = await this.userService.findById(transaction.userId);
+
+      if (!user) {
+        this.logger.warn(
+          `User not found for payment notification: ${transaction.userId}`,
+        );
+        return;
+      }
+
+      // Get admin emails from UserModel
+      const adminEmails = await this.userService.getAdminEmails();
+
+      if (adminEmails.length === 0) {
+        this.logger.warn('No admin emails found. Notification not sent.');
+        return;
+      }
+
+      await this.mailService.sendPaymentNotificationToAdmins(
+        adminEmails,
+        {
+          payerName: user.firstname + ' ' + user.lastname || 'Unknown User',
+          payerEmail: user.email || 'Unknown Email',
+          amount: transaction.totalAmount,
+          currency: transaction.currency || 'NGN',
+          reference: transaction.reference,
+          paymentType: `${paymentLabel} - ${transaction.paymentType}`,
+          paidAt: new Date(),
+        },
+        paymentLabel,
+      );
+
+      this.logger.log(
+        `Admin payment notification sent for: ${transaction.reference} to ${adminEmails.length} admin(s)`,
+      );
+    } catch (error) {
+      const err = error as any;
+      this.logger.error(`Error sending payment notification: ${err.message}`);
+    }
   }
 
   // In your TransactionService

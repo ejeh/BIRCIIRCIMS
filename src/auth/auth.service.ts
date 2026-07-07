@@ -310,7 +310,6 @@ export class AuthService {
       throw new BadRequestException('NIN verification failed');
     }
 
-    console.log('Verification result:', verification);
     const verifiedData = verification?.nin;
     // 4️⃣ Match user-submitted data with verified record
     if (
@@ -708,7 +707,7 @@ export class AuthService {
         },
       );
 
-      console.log('QoreId NIN verification response:', response.data);
+      // console.log('QoreId NIN verification response:', response.data);
       return response.data;
     } catch (error: any) {
       console.error(

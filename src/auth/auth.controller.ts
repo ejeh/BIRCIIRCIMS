@@ -55,9 +55,13 @@ export class AuthController {
 
     const result = await this.authService.activate(params);
 
+    // const redirectUrl = result.success
+    //   ? `${getFrontendBaseUrl()}${getBasePath()}/app/auth/activation-success.html`
+    //   : `${getFrontendBaseUrl()}${getBasePath()}/app/auth/activation-failed.html`;
+
     const redirectUrl = result.success
-      ? `${getFrontendBaseUrl()}${getBasePath()}/app/auth/activation-success.html`
-      : `${getFrontendBaseUrl()}${getBasePath()}/app/auth/activation-failed.html`;
+      ? `${getFrontendBaseUrl()}/app/auth/activation-success.html`
+      : `${getFrontendBaseUrl()}/app/auth/activation-failed.html`;
 
     return res.redirect(redirectUrl);
   }

@@ -38,6 +38,7 @@ import QRCode from 'qrcode';
 import * as puppeteer from 'puppeteer';
 import { Readable } from 'stream';
 import { Transaction } from 'src/transaction/transaction.schema';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuctioneerService {
@@ -54,6 +55,7 @@ export class AuctioneerService {
     @Inject(forwardRef(() => TransactionService))
     private readonly transactionService: TransactionService,
     @InjectModel('Transaction') private transactionModel: Model<Transaction>,
+    private readonly mailService: MailService,
   ) {}
   /**
    * Validates if a user is eligible to create a new auctioneer request.
@@ -94,7 +96,58 @@ export class AuctioneerService {
       taxClearance: taxClearanceUrl,
     };
 
-    return this.createAuctioneer(dataToSave, userId);
+    const result = await this.createAuctioneer(dataToSave, userId);
+    // Send admin notification (fire and forget)
+    this.sendNewRequestNotification(result, userId).catch((err) => {
+      this.logger.error(
+        `Failed to send new request notification: ${err.message}`,
+      );
+    });
+
+    return result;
+  }
+
+  private async sendNewRequestNotification(
+    auctioneerRequest: any,
+    userId: string,
+  ): Promise<void> {
+    try {
+      const user = await this.userService.findById(userId);
+
+      if (!user) {
+        this.logger.warn(`User not found for notification: ${userId}`);
+        return;
+      }
+
+      // Get admin emails from UserModel
+      const adminEmails = await this.userService.getAdminEmails();
+
+      if (adminEmails.length === 0) {
+        this.logger.warn('No admin emails found. Notification not sent.');
+        return;
+      }
+
+      // const adminDashboardUrl =
+      //   process.env.ADMIN_DASHBOARD_URL ||
+      //   'https://admin.citizenship.benuestate.gov.ng/auctioneer-requests';
+
+      await this.mailService.sendNewRequestNotificationToAdmins(adminEmails, {
+        requesterName: user.firstname + ' ' + user.lastname || 'Unknown User',
+        requesterEmail: user.email || 'Unknown Email',
+        requestType: 'Auctioneer License',
+        requestId: auctioneerRequest._id.toString(),
+        submittedAt: auctioneerRequest.createdAt || new Date(),
+      });
+
+      this.logger.log(
+        `Admin notification sent for request: ${auctioneerRequest._id} to ${adminEmails.length} admin(s)`,
+      );
+    } catch (error) {
+      const err = error as Error; // Assert type
+      this.logger.error(
+        `Error sending new request notification: ${err.message}`,
+      );
+    }
   }
 
   private async uploadDocument(
@@ -610,7 +663,10 @@ export class AuctioneerService {
   // ============================================
   async grantReprintDownloadAccess(auctioneerId: string): Promise<Auctioneer> {
     const now = new Date();
-    const thirtyDaysFromNow = new Date(Date.now() + 10 * 60 * 1000); // 10 mins for testing (change to 30 days for prod)
+    const thirtyDaysFromNow = new Date(
+      now.getTime() + 30 * 24 * 60 * 60 * 1000,
+    );
+    // const thirtyDaysFromNow = new Date(Date.now() + 10 * 60 * 1000); // 10 mins for testing (change to 30 days for prod)
 
     const updatedAuctioneer = await this.auctioneerModel
       .findByIdAndUpdate(

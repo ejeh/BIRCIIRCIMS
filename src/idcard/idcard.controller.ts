@@ -4,8 +4,6 @@ import {
   Controller,
   Delete,
   Get,
-  HttpException,
-  HttpStatus,
   InternalServerErrorException,
   Logger,
   Param,
@@ -45,10 +43,7 @@ import { FileSizeValidationPipe } from 'src/common/pipes/file-size-validation.pi
 import { UpdateIdCardDto } from './dto/update-idcard.dto';
 import { PassportPhotoQualityPipe } from 'src/common/pipes/passport-photo-quality.pipes';
 import { TransactionService } from 'src/transaction/transaction.service';
-import {
-  ConfirmReprintPaymentDto,
-  ReprintResponseDto,
-} from 'src/indigene-certificate/dto/request-reprint.dto';
+import { ReprintResponseDto } from 'src/indigene-certificate/dto/request-reprint.dto';
 import { CurrentUser } from 'src/common/decorators/current-user,decorator';
 
 // 1. SINGLE SOURCE OF TRUTH: Define all document rules here

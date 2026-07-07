@@ -7,8 +7,6 @@ import {
   UseGuards,
   Req,
   Patch,
-  HttpStatus,
-  HttpException,
   UseInterceptors,
   UploadedFile,
   Res,
@@ -19,7 +17,6 @@ import {
 } from '@nestjs/common';
 import { AuctioneerService } from './auctioneer.service';
 import {
-  ConfirmReprintPaymentDto,
   CreateAuctioneerDto,
   ReprintResponseDto,
   UpdateAuctioneerDto,
