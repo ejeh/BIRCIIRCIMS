@@ -813,23 +813,6 @@ export class AuctioneerService {
       : 'https://api.citizenship.benuestate.gov.ng';
   }
 
-  // private async generatePdf(auctioneer: any, owner: any): Promise<Buffer> {
-  //   const htmlTemplate = await this.loadHtmlTemplate(
-  //     'auctioneer-template.html',
-  //   );
-  //   const populatedHtml = this.populateHtmlTemplate(
-  //     htmlTemplate,
-  //     auctioneer,
-  //     owner,
-  //   );
-
-  //   const filePath = await this.generateAuctioneerPDF(
-  //     `reprint-${auctioneer.id}`,
-  //     populatedHtml,
-  //   );
-  //   return fs.promises.readFile(filePath);
-  // }
-
   private async generatePdf(auctioneer: any, owner: any): Promise<Buffer> {
     const htmlTemplate = await this.loadHtmlTemplate(
       'auctioneer-template.html',
