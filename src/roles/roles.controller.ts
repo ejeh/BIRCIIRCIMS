@@ -1,5 +1,4 @@
-// src/roles/roles.controller.ts
-import { Controller, Get, Put, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, Body, Param, UseGuards, BadRequestException } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -12,6 +11,8 @@ import { Permissions } from '../common/decorators/permissions.decorator';
 import { RolePermissionService } from './role-permission.service';
 import { RoleAssignmentService } from './role-assignment.service';
 import { Permission } from '../users/permissions.enum';
+import { UserRole } from '../users/users.role.enum';
+import { UpdateRolePermissionsDto } from './dto/update-role-permissions.dto';
 
 @ApiTags('roles')
 @Controller('api/roles')
@@ -36,6 +37,7 @@ export class RolesController {
   @ApiResponse({ status: 200, description: 'Permissions for the role' })
   @Permissions(Permission.ROLE_READ)
   async getRolePermissions(@Param('role') role: string) {
+    this.validateRole(role);
     return await this.rolePermissionService.getRolePermissions(role);
   }
 
@@ -45,11 +47,12 @@ export class RolesController {
   @Permissions(Permission.ROLE_UPDATE)
   async updateRolePermissions(
     @Param('role') role: string,
-    @Body('permissions') permissions: Permission[],
+    @Body() dto: UpdateRolePermissionsDto,
   ) {
+    this.validateRole(role);
     return await this.rolePermissionService.updateRolePermissions(
       role,
-      permissions,
+      dto.permissions,
     );
   }
 
@@ -59,5 +62,13 @@ export class RolesController {
   @Permissions(Permission.ROLE_READ)
   async getRoleAssignments() {
     return await this.roleAssignmentService.getAllAssignments();
+  }
+
+  private validateRole(role: string) {
+    if (!Object.values(UserRole).includes(role as UserRole)) {
+      throw new BadRequestException(
+        `Invalid role: '${role}'. Valid values: ${Object.values(UserRole).join(', ')}`,
+      );
+    }
   }
 }

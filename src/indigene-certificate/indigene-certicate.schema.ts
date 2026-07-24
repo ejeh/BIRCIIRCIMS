@@ -64,7 +64,7 @@ export class Certificate extends Document {
   @Prop({
     type: mongoose.SchemaTypes.String,
     required: true,
-    unique: true,
+    // unique: true,
   })
   phone: string;
 

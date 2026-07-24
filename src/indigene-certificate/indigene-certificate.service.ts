@@ -939,8 +939,6 @@ export class IndigeneCertificateService {
   }
 
   private populateHtmlTemplate(html: string, data: any, user: any): string {
-    const date = new Date(data.DOB);
-
     const getBaseUrl = (): string =>
       config.isDev
         ? process.env.BASE_URL || 'http://localhost:5000'
@@ -957,13 +955,6 @@ export class IndigeneCertificateService {
       return value ? value.toUpperCase() : '';
     };
 
-    // Format DOB
-    const formattedDate = date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-
     // Format Issue Date
     const dateOfIssue = new Date();
     const formattedDateOfIssue = dateOfIssue.toLocaleDateString('en-US', {
@@ -974,9 +965,9 @@ export class IndigeneCertificateService {
 
     const certNumber = data.certificateNumber.toString().padStart(6, '0');
 
-    const fullName = `${toTitleCase(user.firstname)} ${toTitleCase(
-      user.middlename || '',
-    )} ${toTitleCase(user.lastname)}`.trim();
+    const fullName = `${toTitleCase(data.firstname)} ${toTitleCase(
+      data.middlename || '',
+    )} ${toTitleCase(data.lastname)}`.trim();
 
     return (
       html
@@ -992,9 +983,6 @@ export class IndigeneCertificateService {
 
         // Official values in uppercase
         .replace(/{{refNumber}}/g, data.refNumber)
-
-        // Dates italicized
-        .replace(/{{dob}}/g, `<i>${formattedDate}</i>`)
         .replace(/{{issueDate}}/g, formattedDateOfIssue)
 
         // Images (no italics needed)

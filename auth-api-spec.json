@@ -1,0 +1,1158 @@
+[
+  {
+    "name": "Activate Account",
+    "description": "Activates a user account using the userId and activationToken from the email link. Redirects to a success or failure HTML page on the frontend.",
+    "controller": "AuthController",
+    "methodName": "activate",
+    "httpMethod": "GET",
+    "endpoint": "activate/:userId/:activationToken",
+    "fullUrl": "/api/auth/activate/:userId/:activationToken",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "text/html"
+    },
+    "pathParams": {
+      "userId": ":userId",
+      "activationToken": ":activationToken"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/auth/activate/687ad12ab5.../550e8400-e29b-41d4-a716-446655440000",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "userId: @IsNotEmpty, @IsString",
+      "activationToken: @IsUUID"
+    ],
+    "successResponse": {
+      "statusCode": 302,
+      "message": "Redirect to activation-success.html or activation-failed.html",
+      "data": null
+    },
+    "successExample": "302 Found → Location: https://citizenship.benuestate.gov.ng/app/auth/activation-success.html",
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Invalid or expired token (redirects to activation-failed.html)"
+      }
+    ]
+  },
+  {
+    "name": "Resend Activation Email",
+    "description": "Resends the account activation email to the specified email address.",
+    "controller": "AuthController",
+    "methodName": "resendActivationEmail",
+    "httpMethod": "POST",
+    "endpoint": "resend-activation",
+    "fullUrl": "/api/auth/resend-activation",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Authorization": "",
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {
+      "email": "john@gmail.com"
+    },
+    "requestExample": {
+      "email": "john@gmail.com"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "email: string (raw @Body('email'), not validated by class-validator)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Activation email sent successfully",
+      "data": {
+        "success": true,
+        "message": "Activation email sent successfully"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Activation email sent successfully",
+      "data": {
+        "success": true,
+        "message": "Activation email sent successfully"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "User not found"
+      },
+      {
+        "statusCode": 400,
+        "message": "Account is already activated"
+      }
+    ]
+  },
+  {
+    "name": "User Signup",
+    "description": "Registers a new user account. Verifies NIN with QoreId, creates the user, and sends an activation email.",
+    "controller": "AuthController",
+    "methodName": "signup",
+    "httpMethod": "POST",
+    "endpoint": "signup",
+    "fullUrl": "/api/auth/signup",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {
+      "firstname": "John",
+      "lastname": "Doe",
+      "middlename": "Smith",
+      "DOB": "1990-01-01",
+      "phone": 8012345678,
+      "NIN": "12345678901",
+      "email": "john@gmail.com",
+      "password": "Password@123",
+      "stateOfOrigin": "Benue",
+      "lgaOfOrigin": "Gboko"
+    },
+    "requestExample": {
+      "firstname": "John",
+      "lastname": "Doe",
+      "middlename": "Smith",
+      "DOB": "1990-01-01",
+      "phone": 8012345678,
+      "NIN": "12345678901",
+      "email": "john@gmail.com",
+      "password": "Password@123",
+      "stateOfOrigin": "Benue",
+      "lgaOfOrigin": "Gboko"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "firstname: @IsNotEmpty, @MaxLength(255), required",
+      "lastname: @IsNotEmpty, @MaxLength(255), required",
+      "middlename: @MaxLength(255), optional (no @IsNotEmpty)",
+      "DOB: @IsNotEmpty, required",
+      "phone: @IsNotEmpty, @MaxLength(11), type: number, required",
+      "NIN: @IsNotEmpty, @MaxLength(11), type: string, required",
+      "email: @IsNotEmpty, @IsEmail, @MaxLength(255), required",
+      "password: @MinLength(8), required",
+      "stateOfOrigin: @IsNotEmpty, @MaxLength(255), required",
+      "lgaOfOrigin: @IsNotEmpty, @MaxLength(255), required",
+      "Business rule: NIN must be exactly 11 characters",
+      "Business rule: NIN must not already be registered",
+      "Business rule: firstname, lastname, stateOfOrigin must match QoreId NIN record"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "NIN Verified Successfully",
+      "data": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "user": {
+          "id": "687ad12ab5...",
+          "email": "john@gmail.com",
+          "firstname": "John",
+          "lastname": "Doe",
+          "role": "user",
+          "middlename": "Smith",
+          "stateOfOrigin": "Benue",
+          "gender": null,
+          "DOB": "1990-01-01",
+          "nationality": null,
+          "phone": 8012345678,
+          "address": null,
+          "created_at": "2026-01-01T12:00:00.000Z",
+          "lga": null
+        },
+        "success": true,
+        "message": "NIN Verified Successfully"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "NIN Verified Successfully",
+      "data": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "user": {
+          "id": "687ad12ab5...",
+          "email": "john@gmail.com",
+          "firstname": "John",
+          "lastname": "Doe",
+          "role": "user",
+          "middlename": "Smith",
+          "stateOfOrigin": "Benue",
+          "gender": null,
+          "DOB": "1990-01-01",
+          "nationality": null,
+          "phone": 8012345678,
+          "address": null,
+          "created_at": "2026-01-01T12:00:00.000Z",
+          "lga": null
+        },
+        "success": true,
+        "message": "NIN Verified Successfully"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Invalid NIN format"
+      },
+      {
+        "statusCode": 400,
+        "message": "This NIN is already registered"
+      },
+      {
+        "statusCode": 400,
+        "message": "NIN verification failed"
+      },
+      {
+        "statusCode": 400,
+        "message": "User details do not match the NIN record"
+      }
+    ]
+  },
+  {
+    "name": "Admin Signup",
+    "description": "Registers a new admin/user account with auto-generated password from phone number. Uses a fake NIN database for verification.",
+    "controller": "AuthController",
+    "methodName": "adminSignup",
+    "httpMethod": "POST",
+    "endpoint": "admin-signup",
+    "fullUrl": "/api/auth/admin-signup",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {
+      "firstname": "John",
+      "lastname": "Doe",
+      "middlename": "Smith",
+      "DOB": "1990-01-01",
+      "phone": 8012345678,
+      "NIN": 12345678901,
+      "email": "john@gmail.com",
+      "stateOfOrigin": "Benue",
+      "lgaOfOrigin": "Gboko",
+      "role": "admin"
+    },
+    "requestExample": {
+      "firstname": "John",
+      "lastname": "Doe",
+      "middlename": "Smith",
+      "DOB": "1990-01-01",
+      "phone": 8012345678,
+      "NIN": 12345678901,
+      "email": "john@gmail.com",
+      "stateOfOrigin": "Benue",
+      "lgaOfOrigin": "Gboko",
+      "role": "admin"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "firstname: @IsNotEmpty, @MaxLength(255), required",
+      "lastname: @IsNotEmpty, @MaxLength(255), required",
+      "middlename: @MaxLength(255), optional (no @IsNotEmpty)",
+      "DOB: @IsNotEmpty, required",
+      "phone: @IsNotEmpty, @MaxLength(11), type: number, required",
+      "NIN: @IsNotEmpty, @MaxLength(11), type: number (NOTE: number type in AdminSignUpDto, different from SignUpDto string), required",
+      "email: @IsNotEmpty, @IsEmail, @MaxLength(255), required",
+      "stateOfOrigin: @IsNotEmpty, @MaxLength(255), required",
+      "lgaOfOrigin: @IsNotEmpty, @MaxLength(255), required",
+      "role: @IsOptional, type: string, optional",
+      "Business rule: NIN must exist in the fake database",
+      "Business rule: firstname, lastname, stateOfOrigin must match fake database record",
+      "Business rule: Password is auto-generated from last 8 digits of phone"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "User created successfully",
+      "data": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "user": {
+          "id": "687ad12ab5...",
+          "email": "john@gmail.com",
+          "firstname": "John",
+          "lastname": "Doe",
+          "role": "admin",
+          "middlename": "Smith",
+          "stateOfOrigin": "Benue",
+          "gender": null,
+          "DOB": "1990-01-01",
+          "nationality": null,
+          "phone": 8012345678,
+          "address": null,
+          "created_at": "2026-01-01T12:00:00.000Z",
+          "lga": null
+        },
+        "success": true,
+        "message": "User created successfully"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "User created successfully",
+      "data": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "user": {
+          "id": "687ad12ab5...",
+          "email": "john@gmail.com",
+          "firstname": "John",
+          "lastname": "Doe",
+          "role": "admin",
+          "middlename": "Smith",
+          "stateOfOrigin": "Benue",
+          "gender": null,
+          "DOB": "1990-01-01",
+          "nationality": null,
+          "phone": 8012345678,
+          "address": null,
+          "created_at": "2026-01-01T12:00:00.000Z",
+          "lga": null
+        },
+        "success": true,
+        "message": "User created successfully"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "NIN not found"
+      },
+      {
+        "statusCode": 400,
+        "message": "User details do not match the NIN record"
+      }
+    ]
+  },
+  {
+    "name": "Login",
+    "description": "Authenticates a user with email and password using passport local strategy. Returns a JWT token and user public data. Account must be activated.",
+    "controller": "AuthController",
+    "methodName": "login",
+    "httpMethod": "POST",
+    "endpoint": "login",
+    "fullUrl": "/api/auth/login",
+    "authentication": {
+      "required": true,
+      "guards": ["AuthGuard('local')"],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {
+      "email": "john@gmail.com",
+      "password": "Password@123"
+    },
+    "requestExample": {
+      "email": "john@gmail.com",
+      "password": "Password@123"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "email: @IsEmail, @MaxLength(255), required",
+      "password: @MinLength(8), required",
+      "Business rule: Email must exist in database",
+      "Business rule: Password must match stored hash",
+      "Business rule: Account must be activated (isActive: true)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Login successful",
+      "data": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "user": {
+          "id": "687ad12ab5...",
+          "email": "john@gmail.com",
+          "firstname": "John",
+          "lastname": "Doe",
+          "role": "user",
+          "middlename": "Smith",
+          "stateOfOrigin": "Benue",
+          "gender": null,
+          "DOB": "1990-01-01",
+          "nationality": null,
+          "phone": 8012345678,
+          "address": null,
+          "created_at": "2026-01-01T12:00:00.000Z",
+          "lga": null
+        }
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Login successful",
+      "data": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "user": {
+          "id": "687ad12ab5...",
+          "email": "john@gmail.com",
+          "firstname": "John",
+          "lastname": "Doe",
+          "role": "user",
+          "middlename": "Smith",
+          "stateOfOrigin": "Benue",
+          "gender": null,
+          "DOB": "1990-01-01",
+          "nationality": null,
+          "phone": 8012345678,
+          "address": null,
+          "created_at": "2026-01-01T12:00:00.000Z",
+          "lga": null
+        }
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Invalid credentials"
+      },
+      {
+        "statusCode": 401,
+        "message": "Account is not activated. Please check your email for activation instructions."
+      }
+    ]
+  },
+  {
+    "name": "Forgot Password",
+    "description": "Sends a password reset email to the user's registered email address.",
+    "controller": "AuthController",
+    "methodName": "forgotPassword",
+    "httpMethod": "POST",
+    "endpoint": "forgot-password",
+    "fullUrl": "/api/auth/forgot-password",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {
+      "email": "john@gmail.com"
+    },
+    "requestExample": {
+      "email": "john@gmail.com"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "email: @IsEmail, @MaxLength(255), required"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Password reset email sent",
+      "data": {
+        "success": true,
+        "message": "Password reset email sent"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Password reset email sent",
+      "data": {
+        "success": true,
+        "message": "Password reset email sent"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "User not found"
+      }
+    ]
+  },
+  {
+    "name": "Reset Password",
+    "description": "Resets the user's password using a token received from the forgot-password email.",
+    "controller": "AuthController",
+    "methodName": "resetPassword",
+    "httpMethod": "POST",
+    "endpoint": "reset-password/:token",
+    "fullUrl": "/api/auth/reset-password/:token",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "token": ":token"
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "email": "john@gmail.com",
+      "password": "NewPassword@123"
+    },
+    "requestExample": {
+      "email": "john@gmail.com",
+      "password": "NewPassword@123"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "email: @IsEmail, @MaxLength(255), required",
+      "password: @MinLength(8), required",
+      "token: string (from path param)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Password reset successfully",
+      "data": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "user": {
+          "id": "687ad12ab5...",
+          "email": "john@gmail.com",
+          "firstname": "John",
+          "lastname": "Doe",
+          "role": "user",
+          "middlename": "Smith",
+          "stateOfOrigin": "Benue",
+          "gender": null,
+          "DOB": "1990-01-01",
+          "nationality": null,
+          "phone": 8012345678,
+          "address": null,
+          "created_at": "2026-01-01T12:00:00.000Z",
+          "lga": null
+        }
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Password reset successfully",
+      "data": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "user": {
+          "id": "687ad12ab5...",
+          "email": "john@gmail.com",
+          "firstname": "John",
+          "lastname": "Doe",
+          "role": "user",
+          "middlename": "Smith",
+          "stateOfOrigin": "Benue",
+          "gender": null,
+          "DOB": "1990-01-01",
+          "nationality": null,
+          "phone": 8012345678,
+          "address": null,
+          "created_at": "2026-01-01T12:00:00.000Z",
+          "lga": null
+        }
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Invalid or expired reset token"
+      },
+      {
+        "statusCode": 400,
+        "message": "User not found"
+      }
+    ]
+  },
+  {
+    "name": "Change Password",
+    "description": "Changes the authenticated user's password after verifying the current password.",
+    "controller": "AuthController",
+    "methodName": "changePassword",
+    "httpMethod": "POST",
+    "endpoint": "change-password",
+    "fullUrl": "/api/auth/change-password",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {
+      "currentPassword": "OldPassword@123",
+      "newPassword": "NewPassword@456"
+    },
+    "requestExample": {
+      "currentPassword": "OldPassword@123",
+      "newPassword": "NewPassword@456"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "currentPassword: @MinLength(8), required",
+      "newPassword: @MinLength(8), required",
+      "Business rule: currentPassword must match the stored password hash"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Password changed successfully",
+      "data": {
+        "message": "Password changed successfully"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Password changed successfully",
+      "data": {
+        "message": "Password changed successfully"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "User not found"
+      },
+      {
+        "statusCode": 401,
+        "message": "Current password is incorrect"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Setup 2FA",
+    "description": "Generates a new TOTP secret and QR code URL for the authenticated user to set up two-factor authentication.",
+    "controller": "AuthController",
+    "methodName": "setup2FA",
+    "httpMethod": "GET",
+    "endpoint": "2fa/setup",
+    "fullUrl": "/api/auth/2fa/setup",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": null,
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "2FA secret generated",
+      "data": {
+        "secret": "JBSWY3DPEHPK3PXP",
+        "qrCodeUrl": "otpauth://totp/benueId:john@gmail.com?secret=JBSWY3DPEHPK3PXP&issuer=benueId"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "2FA secret generated",
+      "data": {
+        "secret": "JBSWY3DPEHPK3PXP",
+        "qrCodeUrl": "otpauth://totp/benueId:john@gmail.com?secret=JBSWY3DPEHPK3PXP&issuer=benueId"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "User not found"
+      },
+      {
+        "statusCode": 400,
+        "message": "Failed to setup 2FA"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get 2FA Status",
+    "description": "Returns the current two-factor authentication status for the authenticated user.",
+    "controller": "AuthController",
+    "methodName": "get2FAStatus",
+    "httpMethod": "GET",
+    "endpoint": "2fa/status",
+    "fullUrl": "/api/auth/2fa/status",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": null,
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "2FA status retrieved",
+      "data": {
+        "hasSecret": true,
+        "isEnabled": false,
+        "userId": "687ad12ab5..."
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "2FA status retrieved",
+      "data": {
+        "hasSecret": true,
+        "isEnabled": false,
+        "userId": "687ad12ab5..."
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "User not found"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Verify 2FA Code",
+    "description": "Verifies a TOTP code against the stored 2FA secret. Must have completed 2FA setup first.",
+    "controller": "AuthController",
+    "methodName": "verify2FA",
+    "httpMethod": "POST",
+    "endpoint": "2fa/verify",
+    "fullUrl": "/api/auth/2fa/verify",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {
+      "code": "123456"
+    },
+    "requestExample": {
+      "code": "123456"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "code: @IsString, @MinLength(6), @MaxLength(6), @IsNotEmpty, required"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Verification successful",
+      "data": {
+        "message": "Verification successful"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Verification successful",
+      "data": {
+        "message": "Verification successful"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "2FA setup not initiated"
+      },
+      {
+        "statusCode": 400,
+        "message": "Invalid verification code"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Enable 2FA",
+    "description": "Enables two-factor authentication for the authenticated user. Returns backup codes. 2FA setup must be completed first.",
+    "controller": "AuthController",
+    "methodName": "enable2FA",
+    "httpMethod": "POST",
+    "endpoint": "2fa/enable",
+    "fullUrl": "/api/auth/2fa/enable",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": null,
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "Business rule: 2FA setup must be completed (twoFactorSecret must exist)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "2FA enabled successfully",
+      "data": {
+        "message": "2FA enabled successfully",
+        "backupCodes": [
+          "A1B2C3D4",
+          "E5F6G7H8",
+          "I9J0K1L2",
+          "M3N4O5P6",
+          "Q7R8S9T0",
+          "U1V2W3X4",
+          "Y5Z6A7B8",
+          "C9D0E1F2",
+          "G3H4I5J6",
+          "K7L8M9N0"
+        ]
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "2FA enabled successfully",
+      "data": {
+        "message": "2FA enabled successfully",
+        "backupCodes": [
+          "A1B2C3D4",
+          "E5F6G7H8",
+          "I9J0K1L2",
+          "M3N4O5P6",
+          "Q7R8S9T0",
+          "U1V2W3X4",
+          "Y5Z6A7B8",
+          "C9D0E1F2",
+          "G3H4I5J6",
+          "K7L8M9N0"
+        ]
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "2FA setup not completed"
+      },
+      {
+        "statusCode": 401,
+        "message": "User not found"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Disable 2FA",
+    "description": "Disables two-factor authentication and removes all 2FA data for the authenticated user.",
+    "controller": "AuthController",
+    "methodName": "disable2FA",
+    "httpMethod": "POST",
+    "endpoint": "2fa/disable",
+    "fullUrl": "/api/auth/2fa/disable",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": null,
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "2FA disabled successfully",
+      "data": {
+        "message": "2FA disabled successfully"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "2FA disabled successfully",
+      "data": {
+        "message": "2FA disabled successfully"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Verify NIN",
+    "description": "Verifies a National Identification Number (NIN) against the QoreId API. Returns the verified NIN data.",
+    "controller": "AuthController",
+    "methodName": "verifyNIN",
+    "httpMethod": "POST",
+    "endpoint": "verify",
+    "fullUrl": "/api/auth/verify",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {
+      "nin": "12345678901",
+      "firstName": "John",
+      "lastName": "Doe"
+    },
+    "requestExample": {
+      "nin": "12345678901",
+      "firstName": "John",
+      "lastName": "Doe"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "nin: string, required, must be exactly 11 characters",
+      "firstName: string, required",
+      "lastName: string, required",
+      "Business rule: nin must have length === 11",
+      "Business rule: firstName and lastName must not be empty"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "NIN verified successfully",
+      "data": {
+        "success": true,
+        "message": "NIN verified successfully",
+        "data": {
+          "firstname": "John",
+          "lastname": "Doe",
+          "middlename": "Smith",
+          "dob": "1990-01-01",
+          "phone": "08012345678",
+          "stateOfOrigin": "Benue",
+          "lga": "Gboko",
+          "NIN": "12345678901"
+        }
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "NIN verified successfully",
+      "data": {
+        "success": true,
+        "message": "NIN verified successfully",
+        "data": {
+          "firstname": "John",
+          "lastname": "Doe",
+          "middlename": "Smith",
+          "dob": "1990-01-01",
+          "phone": "08012345678",
+          "stateOfOrigin": "Benue",
+          "lga": "Gboko",
+          "NIN": "12345678901"
+        }
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Invalid NIN format"
+      },
+      {
+        "statusCode": 400,
+        "message": "First name and last name are required for NIN verification"
+      },
+      {
+        "statusCode": 400,
+        "message": "NIN not found or invalid"
+      }
+    ]
+  },
+  {
+    "name": "Check User Existence",
+    "description": "Checks if one or more identifiers (email, phone, NIN) already exist in the system. At least one identifier must be provided.",
+    "controller": "AuthController",
+    "methodName": "checkUserExistence",
+    "httpMethod": "POST",
+    "endpoint": "check-existence",
+    "fullUrl": "/api/auth/check-existence",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {
+      "email": "john@gmail.com",
+      "phone": "08012345678",
+      "nin": "12345678901"
+    },
+    "requestExample": {
+      "email": "john@gmail.com",
+      "phone": "08012345678",
+      "nin": "12345678901"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "email: string, optional",
+      "phone: string, optional",
+      "nin: string, optional",
+      "Business rule: At least one of email, phone, or nin must be provided"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Existence check completed",
+      "data": {
+        "email": true,
+        "phone": false,
+        "nin": false
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Existence check completed",
+      "data": {
+        "email": true,
+        "phone": false,
+        "nin": false
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "At least one identifier (email, phone, or NIN) must be provided."
+      }
+    ]
+  }
+]

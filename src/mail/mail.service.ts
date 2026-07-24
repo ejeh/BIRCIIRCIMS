@@ -91,19 +91,169 @@ export class MailService {
     }
   }
 
+  // async sendForgottenPasswordMail(
+  //   to: string,
+  //   passwordResetToken: string,
+  //   origin: string,
+  // ) {
+  //   const getFrontEndUrl = (): string =>
+  //     config.isDev
+  //       ? process.env.FRONTEND_URL || 'http://127.0.0.1:5503'
+  //       : 'https://citizenship.benuestate.gov.ng';
+
+  //   const getBasePath = () => {
+  //     return config.isDev ? '/source' : '';
+  //   };
+
+  //   const resetUrl = `${getFrontEndUrl}/${getBasePath}/app/auth/reset-password.html?token=${passwordResetToken}`;
+  //   // const context = { link: resetUrl };
+  //   const context = {
+  //     baseUrl: getFrontEndUrl(),
+  //     link: resetUrl,
+  //   };
+
+  //   if (config.isTest) {
+  //     console.log(
+  //       `[Mailgun] Test mode: Pretending to send password reset to ${to}`,
+  //     );
+  //     return { success: true, dev: true };
+  //   }
+
+  //   try {
+  //     if (config.isDev) {
+  //       console.warn(
+  //         `[Mailgun Sandbox] Only authorized recipients can receive emails. Check Mailgun dashboard for ${to}`,
+  //       );
+  //     }
+
+  //     const templatePath = path.join(
+  //       process.cwd(),
+  //       'templates',
+  //       `reset-password.hbs`,
+  //     );
+  //     if (!fs.existsSync(templatePath)) {
+  //       throw new Error(`Template file not found: ${templatePath}`);
+  //     }
+
+  //     const source = fs.readFileSync(templatePath, 'utf-8');
+  //     const compiled = handlebars.compile(source);
+  //     const html = compiled(context);
+
+  //     const response = await this.mg.messages.create(this.domain, {
+  //       from: `Benue Resident ID <noreply@${this.domain}>`,
+  //       to,
+  //       subject: 'Reset your password',
+  //       html,
+  //     });
+
+  //     return { success: true, response };
+  //   } catch (error) {
+  //     const err = error as any;
+  //     console.error('Mailgun Error:', err);
+  //     return {
+  //       success: false,
+  //       message:
+  //         err?.details || err?.message || 'Failed to send password reset email',
+  //       status: err?.status || 500,
+  //     };
+  //   }
+  // }
+
+  // async sendForgottenPasswordMail(
+  //   to: string,
+  //   passwordResetToken: string,
+  //   origin: string,
+  // ) {
+  //   // Use a specific FRONTEND_URL env variable, fallback to the passed origin
+  //   const getFrontendUrl = (): string =>
+  //     config.isDev
+  //       ? process.env.FRONTEND_URL || 'http://localhost:5000' // Make sure this matches your local frontend port
+  //       : process.env.FRONTEND_URL || 'https://citizenship.benuestate.gov.ng'; // <-- Removed 'api.'
+
+  //   const getBasePath = () => {
+  //     return config.isDev ? '/source' : '';
+  //   };
+
+  //   const resetUrl = `${getFrontendUrl()}${getBasePath()}/app/auth/reset-password.html?token=${passwordResetToken}`;
+
+  //   const context = {
+  //     baseUrl: `${getFrontendUrl()}${getBasePath()}`,
+  //     link: resetUrl,
+  //   };
+
+  //   if (config.isTest) {
+  //     console.log(
+  //       `[Mailgun] Test mode: Pretending to send password reset to ${to}. Link: ${resetUrl}`,
+  //     );
+  //     return { success: true, dev: true };
+  //   }
+
+  //   try {
+  //     if (config.isDev) {
+  //       console.warn(
+  //         `[Mailgun Sandbox] Only authorized recipients can receive emails. Check Mailgun dashboard for ${to}`,
+  //       );
+  //     }
+
+  //     const templatePath = path.join(
+  //       process.cwd(),
+  //       'templates',
+  //       `reset-password.hbs`,
+  //     );
+  //     if (!fs.existsSync(templatePath)) {
+  //       throw new Error(`Template file not found: ${templatePath}`);
+  //     }
+
+  //     const source = fs.readFileSync(templatePath, 'utf-8');
+  //     const compiled = handlebars.compile(source);
+  //     const html = compiled(context);
+
+  //     const response = await this.mg.messages.create(this.domain, {
+  //       from: `Benue Resident ID <noreply@${this.domain}>`,
+  //       to,
+  //       subject: 'Reset your password',
+  //       html,
+  //     });
+
+  //     return { success: true, response };
+  //   } catch (error) {
+  //     const err = error as any;
+  //     console.error('Mailgun Error:', err);
+  //     return {
+  //       success: false,
+  //       message:
+  //         err?.details || err?.message || 'Failed to send password reset email',
+  //       status: err?.status || 500,
+  //     };
+  //   }
+  // }
+
   async sendForgottenPasswordMail(
     to: string,
     passwordResetToken: string,
     origin: string,
   ) {
+    const getFrontendUrl = (): string =>
+      config.isDev
+        ? process.env.FRONTEND_URL || 'http://localhost:5000'
+        : process.env.FRONTEND_URL || 'https://citizenship.benuestate.gov.ng';
+
+    const getBasePath = () => {
+      return config.isDev ? '/source' : '';
+    };
+
+    // 1. FIX: Changed filename to match your error (use whichever is actually correct)
+    const resetUrl = `${getFrontendUrl()}${getBasePath()}/app/auth/reset-password-form.html?token=${passwordResetToken}`;
+
+    // 2. FIX: Added getBasePath() to baseUrl so CSS/JS inside the HTML load correctly
     const context = {
-      baseUrl: origin,
-      link: `${origin}/app/auth/reset-password.html?token=${passwordResetToken}`,
+      baseUrl: `${getFrontendUrl()}${getBasePath()}`,
+      link: resetUrl,
     };
 
     if (config.isTest) {
       console.log(
-        `[Mailgun] Test mode: Pretending to send password reset to ${to}`,
+        `[Mailgun] Test mode: Pretending to send password reset to ${to}. Link: ${resetUrl}`,
       );
       return { success: true, dev: true };
     }
@@ -118,7 +268,7 @@ export class MailService {
       const templatePath = path.join(
         process.cwd(),
         'templates',
-        `reset-password.hbs`,
+        `reset-password.hbs`, // Make sure this matches your template file too
       );
       if (!fs.existsSync(templatePath)) {
         throw new Error(`Template file not found: ${templatePath}`);
@@ -367,6 +517,87 @@ export class MailService {
           err?.details ||
           err?.message ||
           'Failed to send welcome password email',
+        status: err?.status || 500,
+      };
+    }
+  }
+
+  async sendInvitationMail(
+    to: string,
+    data: {
+      senderName: string;
+      familyName: string;
+      relationship: string;
+      message?: string;
+      acceptToken: string;
+      declineToken: string;
+      expiresAt: Date;
+    },
+  ) {
+    if (config.isTest) {
+      this.logger.log(
+        `[Mailgun] Test mode: Pretending to send family invitation to ${to}`,
+      );
+      return { success: true, dev: true };
+    }
+
+    try {
+      if (config.isDev) {
+        console.warn(
+          `[Mailgun Sandbox] Only authorized recipients can receive emails. Check Mailgun dashboard for ${to}`,
+        );
+      }
+
+      const baseUrl = config.isDev
+        ? process.env.BASE_URL || 'http://localhost:5000'
+        : 'https://api.citizenship.benuestate.gov.ng';
+
+      const acceptLink = `${baseUrl}/api/families/invite/accept/${data.acceptToken}`;
+      const declineLink = `${baseUrl}/api/families/invite/reject/${data.declineToken}`;
+
+      const context = {
+        senderName: data.senderName,
+        familyName: data.familyName,
+        relationship: data.relationship,
+        message: data.message || '',
+        acceptLink,
+        declineLink,
+        expiresAt: new Date(data.expiresAt).toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+      };
+
+      const templatePath = path.join(
+        process.cwd(),
+        'templates',
+        'invite-member.hbs',
+      );
+      if (!fs.existsSync(templatePath)) {
+        throw new Error(`Template file not found: ${templatePath}`);
+      }
+
+      const source = fs.readFileSync(templatePath, 'utf-8');
+      const compiled = handlebars.compile(source);
+      const html = compiled(context);
+
+      const response = await this.mg.messages.create(this.domain, {
+        from: `Benue Resident ID <noreply@${this.domain}>`,
+        to,
+        subject: `You've been invited to join ${data.familyName} family`,
+        html,
+      });
+
+      return { success: true, response };
+    } catch (error) {
+      const err = error as any;
+      this.logger.error(`Failed to send invitation email: ${err?.message}`);
+      return {
+        success: false,
+        message:
+          err?.details || err?.message || 'Failed to send invitation email',
         status: err?.status || 500,
       };
     }

@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -172,10 +173,23 @@ export class ChangePasswordDto {
 
 // src/auth/dto/verify-2fa.dto.ts
 export class Verify2FADto {
-  @ApiProperty({ example: '123456', minLength: 6, maxLength: 6 })
+  @ApiProperty({ example: '123456', minLength: 6, maxLength: 6, description: '6-digit TOTP code from authenticator app' })
   @IsString()
   @MinLength(6)
   @MaxLength(6)
+  @Matches(/^\d{6}$/, { message: 'Code must be exactly 6 digits' })
+  @IsNotEmpty()
+  readonly code: string;
+}
+
+export class Login2FADto {
+  @ApiProperty({ description: 'Temporary token from login when 2FA is required' })
+  @IsString()
+  @IsNotEmpty()
+  readonly tempToken: string;
+
+  @ApiProperty({ example: '123456', minLength: 6, maxLength: 6, description: '6-digit TOTP code or backup code' })
+  @IsString()
   @IsNotEmpty()
   readonly code: string;
 }

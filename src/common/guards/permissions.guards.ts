@@ -1,5 +1,4 @@
-// src/roles/permissions.guard.ts
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
 import { UsersService } from '../../users/users.service';
@@ -18,7 +17,7 @@ export class PermissionsGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
 
-    if (!requiredPermissions) {
+    if (!requiredPermissions || requiredPermissions.length === 0) {
       return true;
     }
 
@@ -27,8 +26,19 @@ export class PermissionsGuard implements CanActivate {
       user.id,
     );
 
-    return requiredPermissions.every((permission) =>
+    const hasAll = requiredPermissions.every((permission) =>
       userWithPermissions.permissions.includes(permission),
     );
+
+    if (!hasAll) {
+      const missing = requiredPermissions.filter(
+        (p) => !userWithPermissions.permissions.includes(p),
+      );
+      throw new ForbiddenException(
+        `Missing required permissions: ${missing.join(', ')}`,
+      );
+    }
+
+    return true;
   }
 }

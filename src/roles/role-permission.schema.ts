@@ -1,6 +1,7 @@
 import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { Permission } from '../users/permissions.enum';
+import { UserRole } from '../users/users.role.enum';
 
 export type RolePermissionDocument = RolePermission & Document;
 
@@ -8,7 +9,7 @@ export type RolePermissionDocument = RolePermission & Document;
 export class RolePermission {
   @Prop({
     required: true,
-    enum: ['global_admin', 'support_admin', 'kindred_head', 'user', 'admin'],
+    enum: Object.values(UserRole),
   })
   role: string;
 

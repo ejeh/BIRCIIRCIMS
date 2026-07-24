@@ -42,16 +42,10 @@ export function getDefaultPermissions(role: string): Permission[] {
         Permission.REPORTS_VIEW,
         Permission.ROLE_READ,
       ];
-      // case UserRole.KINDRED_HEAD:
-      return [
-        Permission.USER_READ,
-        Permission.KINDRED_READ,
-        Permission.KINDRED_UPDATE,
-        Permission.REPORTS_VIEW,
-        Permission.ROLE_READ,
-      ];
+
     case UserRole.USER:
       return [Permission.USER_READ];
+
     default:
       return [];
   }

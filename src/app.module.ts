@@ -35,6 +35,7 @@ import { VerificationLimitsModule } from './verification-limits/verification-lim
 import { RolesController } from './roles/roles.controller';
 import { RolesModule } from './roles/roles.module';
 import { AuctioneerModule } from './auctioneer/auctioneer.module';
+import { FamiliesModule } from './families/families.module';
 
 // console.log(config.isProd); // boolean
 // console.log(dbUrl); // string | undefined
@@ -109,6 +110,7 @@ const DEV_TRANSPORTER = {
     VerificationLimitsModule,
     RolesModule,
     AuctioneerModule,
+    FamiliesModule,
   ],
   controllers: [AppController, RolesController],
   providers: [AppService, CloudinaryService],

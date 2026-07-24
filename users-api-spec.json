@@ -1,0 +1,2068 @@
+[
+  {
+    "name": "Update User Profile",
+    "description": "Updates the authenticated user's profile. Supports multipart form data for passport photo upload with brightness/sharpness validation. Body is parsed through ParseJSONPipe before validation.",
+    "controller": "UsersController",
+    "methodName": "updateProfile",
+    "httpMethod": "PUT",
+    "endpoint": ":id",
+    "fullUrl": "/api/users/:id",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "multipart/form-data"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the user (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "passportPhoto": "string (optional, base64 or file, max 1MB, min 350x450px)",
+      "firstname": "string (optional)",
+      "email": "string (optional)",
+      "lastname": "string (optional)",
+      "phone": "number (optional)",
+      "community": "string (optional)",
+      "religion": "string (optional)",
+      "middlename": "string (optional)",
+      "house_number": "string (optional)",
+      "maritalStatus": "string (optional)",
+      "lgaOfOrigin": "string (optional)",
+      "stateOfOrigin": "string (optional)",
+      "street_name": "string (optional)",
+      "nearest_bus_stop_landmark": "string (optional)",
+      "city_town": "string (optional)",
+      "countryOfResidence": "string (optional)",
+      "address": "string (optional)",
+      "nationality": "string (optional)",
+      "DOB": "string (optional)",
+      "gender": "string (optional)",
+      "nextOfKin": "any (optional)",
+      "employmentHistory": "any (optional)",
+      "business": "any (optional)",
+      "neighbor": "any (optional)",
+      "educationalHistory": "any (optional)",
+      "healthInfo": "any (optional)",
+      "family": "any (optional)",
+      "identification": "string (optional)",
+      "id_number": "string (optional)",
+      "issue_date": "string (optional)",
+      "expiry_date": "string (optional)",
+      "stateOfResidence": "string (optional)",
+      "lgaOfResidence": "string (optional)"
+    },
+    "requestExample": {
+      "passportPhoto": "data:image/jpeg;base64,/9j/4AAQ...",
+      "firstname": "John",
+      "lastname": "Doe",
+      "email": "john.doe@example.com",
+      "phone": 2348012345678,
+      "community": "Umueze",
+      "religion": "Christian",
+      "middlename": "Michael",
+      "house_number": "42",
+      "maritalStatus": "Single",
+      "lgaOfOrigin": "Aba South",
+      "stateOfOrigin": "Abia",
+      "street_name": "Oasis Road",
+      "nearest_bus_stop_landmark": "Near Unity Bank",
+      "city_town": "Aba",
+      "countryOfResidence": "Nigeria",
+      "address": "42 Oasis Road, Aba",
+      "nationality": "Nigerian",
+      "DOB": "1995-06-15",
+      "gender": "Male",
+      "nextOfKin": { "name": "Jane Doe", "relationship": "Sister", "phone": "08098765432" },
+      "employmentHistory": { "employer": "ACME Corp", "position": "Engineer", "years": 5 },
+      "business": { "name": "My Business", "type": "Retail" },
+      "neighbor": { "name": "Neighbor Name", "address": "Next door" },
+      "educationalHistory": { "school": "University of Nigeria", "degree": "B.Sc", "year": 2018 },
+      "healthInfo": { "bloodGroup": "O+", "conditions": "None" },
+      "family": { "spouse": "None", "children": 0 },
+      "identification": "NIN",
+      "id_number": "12345678901",
+      "issue_date": "2020-01-01",
+      "expiry_date": "2025-01-01",
+      "stateOfResidence": "Abia",
+      "lgaOfResidence": "Aba South"
+    },
+    "multipart": {
+      "enabled": true,
+      "files": [
+        {
+          "fieldName": "passportPhoto",
+          "required": false,
+          "maxSize": "1MB",
+          "mimeType": "image/*",
+          "constraints": "Must be minimum 350x450px, validated for brightness and sharpness"
+        }
+      ],
+      "fields": {
+        "firstname": { "type": "string", "required": false },
+        "lastname": { "type": "string", "required": false },
+        "email": { "type": "string", "required": false },
+        "phone": { "type": "number", "required": false },
+        "community": { "type": "string", "required": false },
+        "religion": { "type": "string", "required": false },
+        "middlename": { "type": "string", "required": false },
+        "house_number": { "type": "string", "required": false },
+        "maritalStatus": { "type": "string", "required": false },
+        "lgaOfOrigin": { "type": "string", "required": false },
+        "stateOfOrigin": { "type": "string", "required": false },
+        "street_name": { "type": "string", "required": false },
+        "nearest_bus_stop_landmark": { "type": "string", "required": false },
+        "city_town": { "type": "string", "required": false },
+        "countryOfResidence": { "type": "string", "required": false },
+        "address": { "type": "string", "required": false },
+        "nationality": { "type": "string", "required": false },
+        "DOB": { "type": "string", "required": false },
+        "gender": { "type": "string", "required": false },
+        "nextOfKin": { "type": "any", "required": false },
+        "employmentHistory": { "type": "any", "required": false },
+        "business": { "type": "any", "required": false },
+        "neighbor": { "type": "any", "required": false },
+        "educationalHistory": { "type": "any", "required": false },
+        "healthInfo": { "type": "any", "required": false },
+        "family": { "type": "any", "required": false },
+        "identification": { "type": "string", "required": false },
+        "id_number": { "type": "string", "required": false },
+        "issue_date": { "type": "string", "required": false },
+        "expiry_date": { "type": "string", "required": false },
+        "stateOfResidence": { "type": "string", "required": false },
+        "lgaOfResidence": { "type": "string", "required": false }
+      }
+    },
+    "validation": [
+      "All fields in UpdateProfileDto are @IsOptional",
+      "email: IsEmail (if provided)",
+      "phone: IsNumber (if provided)",
+      "passportPhoto: validated for file size (max 1MB), dimensions (min 350x450), brightness, and sharpness"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "User profile updated successfully",
+      "data": "UserDocument"
+    },
+    "successExample": {
+      "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+      "firstname": "John",
+      "lastname": "Doe",
+      "email": "john.doe@example.com",
+      "phone": 2348012345678,
+      "passportPhoto": "https://storage.example.com/photos/64a1b2c3.jpg",
+      "community": "Umueze",
+      "religion": "Christian",
+      "middlename": "Michael",
+      "house_number": "42",
+      "maritalStatus": "Single",
+      "lgaOfOrigin": "Aba South",
+      "stateOfOrigin": "Abia",
+      "street_name": "Oasis Road",
+      "nearest_bus_stop_landmark": "Near Unity Bank",
+      "city_town": "Aba",
+      "countryOfResidence": "Nigeria",
+      "address": "42 Oasis Road, Aba",
+      "nationality": "Nigerian",
+      "DOB": "1995-06-15",
+      "gender": "Male",
+      "role": "user",
+      "stateOfResidence": "Abia",
+      "lgaOfResidence": "Aba South",
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-06-20T14:45:00.000Z"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Error while updating user",
+        "description": "Returned when the update operation fails due to validation or processing error"
+      },
+      {
+        "statusCode": 500,
+        "message": "Internal server error",
+        "description": "Returned when an unexpected server error occurs"
+      }
+    ]
+  },
+  {
+    "name": "Get Verification History",
+    "description": "Retrieves the verification history for a specific reference associated with a user.",
+    "controller": "UsersController",
+    "methodName": "getVerificationHistory",
+    "httpMethod": "GET",
+    "endpoint": ":id/verification-history/:refId",
+    "fullUrl": "/api/users/:id/verification-history/:refId",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the user (MongoDB ObjectId)"
+      },
+      "refId": {
+        "type": "string",
+        "description": "The unique identifier of the reference (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Verification history retrieved successfully.",
+      "data": [
+        {
+          "date": "datetime",
+          "status": "string",
+          "comments": "string",
+          "deviceInfo": "string",
+          "verifiedBy": "string"
+        }
+      ]
+    },
+    "successExample": {
+      "success": true,
+      "message": "Verification history retrieved successfully.",
+      "data": [
+        {
+          "date": "2024-06-20T14:30:00.000Z",
+          "status": "verified",
+          "comments": "Applicant is known to me",
+          "deviceInfo": "Chrome 125.0 on Windows 10",
+          "verifiedBy": "Jane Smith"
+        },
+        {
+          "date": "2024-06-19T09:15:00.000Z",
+          "status": "pending",
+          "comments": "",
+          "deviceInfo": "",
+          "verifiedBy": ""
+        }
+      ]
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "User or Reference not found",
+        "description": "Returned when the specified user or reference ID does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Get Verification Tokens",
+    "description": "Retrieves verification tokens and links for a user's neighbor and family references.",
+    "controller": "UsersController",
+    "methodName": "getVerificationTokens",
+    "httpMethod": "GET",
+    "endpoint": ":id/verification-tokens",
+    "fullUrl": "/api/users/:id/verification-tokens",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the user (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "neighbor": [
+          {
+            "id": "string",
+            "verificationToken": "string",
+            "verificationLink": "string",
+            "status": "string"
+          }
+        ],
+        "family": [
+          {
+            "id": "string",
+            "verificationToken": "string",
+            "verificationLink": "string",
+            "status": "string"
+          }
+        ]
+      }
+    },
+    "successExample": {
+      "neighbor": [
+        {
+          "id": "64a1b2c3d4e5f6a7b8c9d0e1",
+          "verificationToken": "abc123def456ghi789",
+          "verificationLink": "https://example.com/verify/abc123def456ghi789",
+          "status": "pending"
+        }
+      ],
+      "family": [
+        {
+          "id": "64a1b2c3d4e5f6a7b8c9d0e2",
+          "verificationToken": "xyz789uvw456rst123",
+          "verificationLink": "https://example.com/verify/xyz789uvw456rst123",
+          "status": "verified"
+        }
+      ]
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "User not found",
+        "description": "Returned when the specified user ID does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Get Verification Details",
+    "description": "Retrieves applicant and reference details for verification. This is a PUBLIC endpoint that bypasses JWT authentication.",
+    "controller": "UsersController",
+    "methodName": "getVerificationDetails",
+    "httpMethod": "GET",
+    "endpoint": "verify-reference/:token",
+    "fullUrl": "/api/users/verify-reference/:token",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "token": {
+        "type": "string",
+        "description": "The verification token"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "applicant": "UserDocument",
+        "referenceType": "string",
+        "referenceName": "string"
+      }
+    },
+    "successExample": {
+      "applicant": {
+        "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+        "firstname": "John",
+        "lastname": "Doe",
+        "email": "john.doe@example.com",
+        "community": "Umueze",
+        "lgaOfOrigin": "Aba South"
+      },
+      "referenceType": "neighbor",
+      "referenceName": "Jane Smith"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Invalid or expired verification token",
+        "description": "Returned when the token is not found or has expired"
+      }
+    ]
+  },
+  {
+    "name": "Verify Reference",
+    "description": "Submits a reference verification response. This is a PUBLIC endpoint that bypasses JWT authentication.",
+    "controller": "UsersController",
+    "methodName": "verifyReference",
+    "httpMethod": "POST",
+    "endpoint": "verify-reference/:token",
+    "fullUrl": "/api/users/verify-reference/:token",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "token": {
+        "type": "string",
+        "description": "The verification token"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "knowsApplicant": "boolean (required)",
+      "knownDuration": "string (optional)",
+      "isResident": "boolean (optional)",
+      "comments": "string (optional)"
+    },
+    "requestExample": {
+      "knowsApplicant": true,
+      "knownDuration": "5 years",
+      "isResident": true,
+      "comments": "I have known John for over 5 years as a neighbor."
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "knowsApplicant: @IsBoolean, @IsNotEmpty (required)",
+      "knownDuration: @IsOptional, @IsString",
+      "isResident: @IsOptional, @IsBoolean",
+      "comments: @IsOptional, @IsString"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "success": "boolean",
+        "referenceType": "string",
+        "reference": "object",
+        "applicant": "object"
+      }
+    },
+    "successExample": {
+      "success": true,
+      "referenceType": "neighbor",
+      "reference": {
+        "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+        "name": "Jane Smith",
+        "status": "verified"
+      },
+      "applicant": {
+        "_id": "64a1b2c3d4e5f6a7b8c9d0e2",
+        "firstname": "John",
+        "lastname": "Doe"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Invalid verification token",
+        "description": "Returned when the token is invalid or expired"
+      },
+      {
+        "statusCode": 404,
+        "message": "Reference not found",
+        "description": "Returned when no reference matches the provided token"
+      }
+    ]
+  },
+  {
+    "name": "Initiate Verification",
+    "description": "Initiates the verification process for a user. No request body required.",
+    "controller": "UsersController",
+    "methodName": "initiateVerification",
+    "httpMethod": "POST",
+    "endpoint": ":id/initiate-verification",
+    "fullUrl": "/api/users/:id/initiate-verification",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the user (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": "UserDocument"
+    },
+    "successExample": {
+      "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+      "firstname": "John",
+      "lastname": "Doe",
+      "email": "john.doe@example.com",
+      "role": "user",
+      "status": "pending_verification",
+      "verificationInitiatedAt": "2024-06-20T14:30:00.000Z",
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-06-20T14:30:00.000Z"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "User not found",
+        "description": "Returned when the specified user ID does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Change User Role",
+    "description": "Changes a user's role. Requires GLOBAL_ADMIN privileges.",
+    "controller": "UsersController",
+    "methodName": "changeUserRole",
+    "httpMethod": "PATCH",
+    "endpoint": ":id/role",
+    "fullUrl": "/api/users/:id/role",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["GLOBAL_ADMIN"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the user (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "role": "string (required)",
+      "reason": "string (optional)",
+      "lga": "string (optional, MongoId)",
+      "approvedBy": "string (optional, MongoId)"
+    },
+    "requestExample": {
+      "role": "admin",
+      "reason": "Promoted to administrator for Aba South LGA",
+      "lga": "64a1b2c3d4e5f6a7b8c9d0e5",
+      "approvedBy": "64a1b2c3d4e5f6a7b8c9d0e6"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "role: @IsNotEmpty, @IsString (required)",
+      "reason: @IsOptional, @IsString",
+      "lga: @IsOptional, @IsMongoId",
+      "approvedBy: @IsOptional, @IsMongoId"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": "UserDocument"
+    },
+    "successExample": {
+      "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+      "firstname": "John",
+      "lastname": "Doe",
+      "email": "john.doe@example.com",
+      "role": "admin",
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-06-20T14:30:00.000Z"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 403,
+        "message": "Permission denied",
+        "description": "Returned when the authenticated user does not have GLOBAL_ADMIN role"
+      },
+      {
+        "statusCode": 404,
+        "message": "User not found",
+        "description": "Returned when the specified user ID does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Get Role History",
+    "description": "Retrieves the role assignment history for a user, sorted by createdAt in descending order.",
+    "controller": "UsersController",
+    "methodName": "getRoleHistory",
+    "httpMethod": "GET",
+    "endpoint": ":id/role-history",
+    "fullUrl": "/api/users/:id/role-history",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the user (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": [
+        {
+          "userId": "string",
+          "previousRole": "string",
+          "newRole": "string",
+          "assignedBy": {
+            "_id": "string",
+            "firstname": "string",
+            "lastname": "string",
+            "email": "string"
+          },
+          "reason": "string",
+          "createdAt": "datetime",
+          "updatedAt": "datetime"
+        }
+      ]
+    },
+    "successExample": [
+      {
+        "userId": "64a1b2c3d4e5f6a7b8c9d0e1",
+        "previousRole": "user",
+        "newRole": "admin",
+        "assignedBy": {
+          "_id": "64a1b2c3d4e5f6a7b8c9d0e6",
+          "firstname": "Admin",
+          "lastname": "User",
+          "email": "admin@example.com"
+        },
+        "reason": "Promoted for outstanding performance",
+        "createdAt": "2024-06-20T14:30:00.000Z",
+        "updatedAt": "2024-06-20T14:30:00.000Z"
+      },
+      {
+        "userId": "64a1b2c3d4e5f6a7b8c9d0e1",
+        "previousRole": "support_admin",
+        "newRole": "user",
+        "assignedBy": {
+          "_id": "64a1b2c3d4e5f6a7b8c9d0e6",
+          "firstname": "Admin",
+          "lastname": "User",
+          "email": "admin@example.com"
+        },
+        "reason": "Role reassigned",
+        "createdAt": "2024-03-10T08:00:00.000Z",
+        "updatedAt": "2024-03-10T08:00:00.000Z"
+      }
+    ],
+    "errorResponses": [
+      {
+        "statusCode": 403,
+        "message": "Insufficient permissions. Requires ROLE_READ permission.",
+        "description": "Returned when the authenticated user lacks ROLE_READ permission"
+      },
+      {
+        "statusCode": 404,
+        "message": "User not found",
+        "description": "Returned when the specified user ID does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Get Available Roles",
+    "description": "Returns the list of assignable roles (global_admin is filtered out).",
+    "controller": "UsersController",
+    "methodName": "getAvailableRoles",
+    "httpMethod": "GET",
+    "endpoint": "roles",
+    "fullUrl": "/api/users/roles",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": [
+        {
+          "value": "string",
+          "label": "string"
+        }
+      ]
+    },
+    "successExample": {
+      "status": "success",
+      "data": [
+        { "value": "support_admin", "label": "Support Admin" },
+        { "value": "user", "label": "User" },
+        { "value": "admin", "label": "Admin" }
+      ]
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Returned when no valid JWT token is provided"
+      }
+    ]
+  },
+  {
+    "name": "Update User (Admin)",
+    "description": "Updates a user's details by an admin. Requires GLOBAL_ADMIN or ADMIN role.",
+    "controller": "UsersController",
+    "methodName": "updateUserAdmin",
+    "httpMethod": "PUT",
+    "endpoint": ":id/user-details",
+    "fullUrl": "/api/users/:id/user-details",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["GLOBAL_ADMIN", "ADMIN"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the user (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "firstname": "string (optional)",
+      "lastname": "string (optional)",
+      "email": "string (optional, must be valid email)",
+      "phoneNumber": "string (optional)"
+    },
+    "requestExample": {
+      "firstname": "Jane",
+      "lastname": "Doe",
+      "email": "jane.doe@example.com",
+      "phoneNumber": "08012345678"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "firstname: @IsOptional, @IsString",
+      "lastname: @IsOptional, @IsString",
+      "email: @IsOptional, @IsEmail",
+      "phoneNumber: @IsOptional, @IsString"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "User updated successfully",
+      "data": "UserDocument"
+    },
+    "successExample": {
+      "message": "User updated successfully",
+      "data": {
+        "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+        "firstname": "Jane",
+        "lastname": "Doe",
+        "email": "jane.doe@example.com",
+        "phoneNumber": "08012345678",
+        "role": "user",
+        "createdAt": "2024-01-15T10:30:00.000Z",
+        "updatedAt": "2024-06-20T14:30:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 403,
+        "message": "Permission denied",
+        "description": "Returned when the authenticated user does not have GLOBAL_ADMIN or ADMIN role"
+      },
+      {
+        "statusCode": 404,
+        "message": "User not found",
+        "description": "Returned when the specified user ID does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Toggle User Status",
+    "description": "Toggles a user's active/inactive status. Requires GLOBAL_ADMIN privileges.",
+    "controller": "UsersController",
+    "methodName": "toggleUserStatus",
+    "httpMethod": "PATCH",
+    "endpoint": ":id/toggle-status",
+    "fullUrl": "/api/users/:id/toggle-status",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["GLOBAL_ADMIN"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the user (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "string (User successfully activated or User successfully deactivated)",
+      "data": "UserDocument"
+    },
+    "successExample": {
+      "message": "User successfully activated",
+      "data": {
+        "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+        "firstname": "John",
+        "lastname": "Doe",
+        "email": "john.doe@example.com",
+        "isActive": true,
+        "role": "user",
+        "createdAt": "2024-01-15T10:30:00.000Z",
+        "updatedAt": "2024-06-20T14:30:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 403,
+        "message": "Permission denied",
+        "description": "Returned when the authenticated user does not have GLOBAL_ADMIN role"
+      },
+      {
+        "statusCode": 404,
+        "message": "User not found",
+        "description": "Returned when the specified user ID does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Get Role Statistics",
+    "description": "Returns the count of users per role along with their permission descriptions.",
+    "controller": "UsersController",
+    "methodName": "getRoleStats",
+    "httpMethod": "GET",
+    "endpoint": "role-stats",
+    "fullUrl": "/api/users/role-stats",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "global_admin": { "count": "number", "permissions": "string" },
+        "super_admin": { "count": "number", "permissions": "string" },
+        "support_admin": { "count": "number", "permissions": "string" },
+        "kindred_head": { "count": "number", "permissions": "string" },
+        "user": { "count": "number", "permissions": "string" }
+      }
+    },
+    "successExample": {
+      "global_admin": { "count": 2, "permissions": "Full system access" },
+      "super_admin": { "count": 5, "permissions": "Manage admins and system settings" },
+      "support_admin": { "count": 15, "permissions": "Manage requests, moderate users" },
+      "kindred_head": { "count": 8, "permissions": "LGA/Kindred certificate requests" },
+      "user": { "count": 1250, "permissions": "Submit requests only" }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Returned when no valid JWT token is provided"
+      }
+    ]
+  },
+  {
+    "name": "Get Analytics",
+    "description": "Returns analytics data including monthly user growth, request volume, processing times, and request type distribution. Requires GLOBAL_ADMIN or ADMIN role.",
+    "controller": "UsersController",
+    "methodName": "getAnalyticsStats",
+    "httpMethod": "GET",
+    "endpoint": "analytics-stats",
+    "fullUrl": "/api/users/analytics-stats",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["GLOBAL_ADMIN", "ADMIN"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "monthlyUserGrowth": "Record<string, number>",
+        "monthlyRequestVolume": "Record<string, number>",
+        "averageProcessingTime": "Record<string, number>",
+        "requestTypeDistribution": "Record<string, number>"
+      }
+    },
+    "successExample": {
+      "monthlyUserGrowth": {
+        "Jan": 45, "Feb": 52, "Mar": 61, "Apr": 48, "May": 70, "Jun": 85,
+        "Jul": 90, "Aug": 78, "Sep": 65, "Oct": 55, "Nov": 42, "Dec": 38
+      },
+      "monthlyRequestVolume": {
+        "Jan": 120, "Feb": 135, "Mar": 150, "Apr": 110, "May": 160, "Jun": 180,
+        "Jul": 200, "Aug": 175, "Sep": 145, "Oct": 130, "Nov": 100, "Dec": 90
+      },
+      "averageProcessingTime": {
+        "Identity Card": 3.5,
+        "Certificate": 2.8,
+        "Auctioneer Lincence": 4.2,
+        "Verification": 1.5,
+        "Approval": 2.0
+      },
+      "requestTypeDistribution": {
+        "Identity Card": 350,
+        "Certificate of Origin": 280,
+        "Auctioneers Licence": 95,
+        "Verification": 420,
+        "Renewal": 155
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 403,
+        "message": "Permission denied",
+        "description": "Returned when the authenticated user does not have GLOBAL_ADMIN or ADMIN role"
+      }
+    ]
+  },
+  {
+    "name": "Get Member Statistics",
+    "description": "Returns member statistics including total count, age distribution, gender distribution, and state distribution. Requires GLOBAL_ADMIN or ADMIN role.",
+    "controller": "UsersController",
+    "methodName": "getStats",
+    "httpMethod": "GET",
+    "endpoint": "stats",
+    "fullUrl": "/api/users/stats",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["GLOBAL_ADMIN", "ADMIN"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "total": "number",
+        "ageDistribution": "Record<string, number>",
+        "genderDistribution": { "male": "number", "female": "number" },
+        "stateDistribution": "Record<string, number>"
+      }
+    },
+    "successExample": {
+      "total": 1500,
+      "ageDistribution": {
+        "18-19": 45,
+        "20-29": 380,
+        "30-39": 520,
+        "40-49": 310,
+        "50-59": 165,
+        "60+": 80
+      },
+      "genderDistribution": {
+        "male": 820,
+        "female": 680
+      },
+      "stateDistribution": {
+        "Abia": 450,
+        "Lagos": 280,
+        "Rivers": 190,
+        "Imo": 150,
+        "Enugu": 120,
+        "Anambra": 110,
+        "Other": 200
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 403,
+        "message": "Permission denied",
+        "description": "Returned when the authenticated user does not have GLOBAL_ADMIN or ADMIN role"
+      }
+    ]
+  },
+  {
+    "name": "Get Dashboard Statistics",
+    "description": "Returns comprehensive dashboard statistics including totals, user counts, trends, payments, request statuses, top LGAs, and recent activities. Requires GLOBAL_ADMIN or ADMIN role.",
+    "controller": "UsersController",
+    "methodName": "getDashboardStats",
+    "httpMethod": "GET",
+    "endpoint": "dashboard-stats",
+    "fullUrl": "/api/users/dashboard-stats",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["GLOBAL_ADMIN", "ADMIN"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {
+      "startDate": {
+        "type": "string",
+        "required": false,
+        "format": "YYYY-MM-DD",
+        "description": "Filter start date"
+      },
+      "endDate": {
+        "type": "string",
+        "required": false,
+        "format": "YYYY-MM-DD",
+        "description": "Filter end date"
+      }
+    },
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "startDate: @IsOptional, @IsDateString (format: YYYY-MM-DD)",
+      "endDate: @IsOptional, @IsDateString (format: YYYY-MM-DD)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "totals": {
+          "certificates": "number",
+          "idcards": "number",
+          "auctioneers": "number",
+          "transactions": "number"
+        },
+        "totalUsers": "number",
+        "activeUsers": "number",
+        "registrationTrend": "number[12]",
+        "payments": {
+          "total": "number",
+          "success": "number",
+          "failed": "number",
+          "pending": "number",
+          "totalAmount": "number"
+        },
+        "requestStatus": {
+          "Approved": "number",
+          "Pending": "number",
+          "Rejected": "number"
+        },
+        "topLGAs": [{ "name": "string", "count": "number" }],
+        "recentActivities": [{ "name": "string", "type": "string", "status": "string", "createdAt": "string" }]
+      }
+    },
+    "successExample": {
+      "totals": {
+        "certificates": 450,
+        "idcards": 320,
+        "auctioneers": 85,
+        "transactions": 855
+      },
+      "totalUsers": 1500,
+      "activeUsers": 1200,
+      "registrationTrend": [45, 52, 61, 48, 70, 85, 90, 78, 65, 55, 42, 38],
+      "payments": {
+        "total": 855,
+        "success": 780,
+        "failed": 25,
+        "pending": 50,
+        "totalAmount": 4275000
+      },
+      "requestStatus": {
+        "Approved": 650,
+        "Pending": 120,
+        "Rejected": 85
+      },
+      "topLGAs": [
+        { "name": "Aba South", "count": 150 },
+        { "name": "Aba North", "count": 120 },
+        { "name": "Umuahia North", "count": 95 }
+      ],
+      "recentActivities": [
+        { "name": "John Doe", "type": "Certificate of Origin", "status": "Approved", "createdAt": "2024-06-20T14:30:00.000Z" },
+        { "name": "Jane Smith", "type": "Identity Card", "status": "Pending", "createdAt": "2024-06-20T13:15:00.000Z" }
+      ]
+    },
+    "errorResponses": [
+      {
+        "statusCode": 403,
+        "message": "Permission denied",
+        "description": "Returned when the authenticated user does not have GLOBAL_ADMIN or ADMIN role"
+      }
+    ]
+  },
+  {
+    "name": "Export Dashboard PDF",
+    "description": "Generates and returns a PDF report of the dashboard data as a downloadable file.",
+    "controller": "UsersController",
+    "methodName": "exportDashboardPdf",
+    "httpMethod": "GET",
+    "endpoint": "dashboard/export/pdf",
+    "fullUrl": "/api/users/dashboard/export/pdf",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "attachment; filename=\"dashboard-report.pdf\""
+    },
+    "pathParams": {},
+    "queryParams": {
+      "startDate": {
+        "type": "string",
+        "required": false,
+        "format": "YYYY-MM-DD",
+        "description": "Filter start date"
+      },
+      "endDate": {
+        "type": "string",
+        "required": false,
+        "format": "YYYY-MM-DD",
+        "description": "Filter end date"
+      }
+    },
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "startDate: @IsOptional, @IsDateString (format: YYYY-MM-DD)",
+      "endDate: @IsOptional, @IsDateString (format: YYYY-MM-DD)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "PDF binary stream",
+      "data": "Buffer (application/pdf)"
+    },
+    "successExample": "Binary PDF file stream with headers Content-Type: application/pdf and Content-Disposition: attachment; filename=\"dashboard-report.pdf\"",
+    "errorResponses": [
+      {
+        "statusCode": 500,
+        "message": "Error generating PDF report",
+        "description": "Returned when the PDF generation process fails"
+      }
+    ]
+  },
+  {
+    "name": "Get Current User",
+    "description": "Returns the full profile of the currently authenticated user based on the JWT token.",
+    "controller": "UsersController",
+    "methodName": "getCurrentUser",
+    "httpMethod": "GET",
+    "endpoint": "me",
+    "fullUrl": "/api/users/me",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": "UserDocument"
+    },
+    "successExample": {
+      "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+      "firstname": "John",
+      "lastname": "Doe",
+      "email": "john.doe@example.com",
+      "phone": 2348012345678,
+      "passportPhoto": "https://storage.example.com/photos/64a1b2c3.jpg",
+      "community": "Umueze",
+      "religion": "Christian",
+      "middlename": "Michael",
+      "house_number": "42",
+      "maritalStatus": "Single",
+      "lgaOfOrigin": "Aba South",
+      "stateOfOrigin": "Abia",
+      "street_name": "Oasis Road",
+      "nearest_bus_stop_landmark": "Near Unity Bank",
+      "city_town": "Aba",
+      "countryOfResidence": "Nigeria",
+      "address": "42 Oasis Road, Aba",
+      "nationality": "Nigerian",
+      "DOB": "1995-06-15",
+      "gender": "Male",
+      "role": "user",
+      "isActive": true,
+      "stateOfResidence": "Abia",
+      "lgaOfResidence": "Aba South",
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-06-20T14:45:00.000Z"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Returned when no valid JWT token is provided"
+      }
+    ]
+  },
+  {
+    "name": "Get Users By LGA",
+    "description": "Returns users filtered by Local Government Area. Requires SUPPORT_ADMIN role. If lga query param is provided, returns filtered results; otherwise returns all users.",
+    "controller": "UsersController",
+    "methodName": "getUsersByLga",
+    "httpMethod": "GET",
+    "endpoint": "by-lga",
+    "fullUrl": "/api/users/by-lga",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["SUPPORT_ADMIN"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {
+      "lga": {
+        "type": "string",
+        "required": false,
+        "description": "Local Government Area to filter by"
+      }
+    },
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "lga: @IsOptional, @IsString"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": "UserDocument[] (without password field)"
+    },
+    "successExample": [
+      {
+        "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+        "firstname": "John",
+        "lastname": "Doe",
+        "email": "john.doe@example.com",
+        "lgaOfResidence": "Aba South",
+        "role": "user",
+        "isActive": true,
+        "createdAt": "2024-01-15T10:30:00.000Z"
+      },
+      {
+        "_id": "64a1b2c3d4e5f6a7b8c9d0e2",
+        "firstname": "Jane",
+        "lastname": "Smith",
+        "email": "jane.smith@example.com",
+        "lgaOfResidence": "Aba South",
+        "role": "user",
+        "isActive": true,
+        "createdAt": "2024-02-20T08:15:00.000Z"
+      }
+    ],
+    "errorResponses": [
+      {
+        "statusCode": 403,
+        "message": "Permission denied",
+        "description": "Returned when the authenticated user does not have SUPPORT_ADMIN role"
+      }
+    ]
+  },
+  {
+    "name": "Get Trends",
+    "description": "Returns registration trend data for a specific LGA, broken down by monthly, daily, and hourly aggregations.",
+    "controller": "UsersController",
+    "methodName": "getTrends",
+    "httpMethod": "GET",
+    "endpoint": "trends",
+    "fullUrl": "/api/users/trends",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {
+      "lga": {
+        "type": "string",
+        "required": true,
+        "description": "Local Government Area to get trends for"
+      },
+      "startDate": {
+        "type": "string",
+        "required": false,
+        "description": "Start date filter (string)"
+      },
+      "endDate": {
+        "type": "string",
+        "required": false,
+        "description": "End date filter (string)"
+      }
+    },
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "lga: @IsNotEmpty, @IsString (required)",
+      "startDate: @IsOptional, @IsString",
+      "endDate: @IsOptional, @IsString"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "monthly": "Record<string, number>",
+        "daily": "Record<string, number>",
+        "hourly": "Record<string, number>"
+      }
+    },
+    "successExample": {
+      "monthly": {
+        "2024-01": 45, "2024-02": 52, "2024-03": 61, "2024-04": 48,
+        "2024-05": 70, "2024-06": 85
+      },
+      "daily": {
+        "2024-06-14": 12, "2024-06-15": 8, "2024-06-16": 15,
+        "2024-06-17": 10, "2024-06-18": 18, "2024-06-19": 14, "2024-06-20": 9
+      },
+      "hourly": {
+        "00": 2, "01": 0, "02": 1, "03": 0, "04": 0, "05": 1,
+        "06": 5, "07": 12, "08": 18, "09": 22, "10": 25, "11": 20,
+        "12": 15, "13": 18, "14": 22, "15": 20, "16": 18, "17": 15,
+        "18": 10, "19": 8, "20": 5, "21": 3, "22": 2, "23": 1
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "LGA parameter is required",
+        "description": "Returned when the required lga query parameter is not provided"
+      }
+    ]
+  },
+  {
+    "name": "Get Demographics",
+    "description": "Returns demographic data for a specific LGA including gender, age, and combined group distributions.",
+    "controller": "UsersController",
+    "methodName": "getDemographics",
+    "httpMethod": "GET",
+    "endpoint": "demographics",
+    "fullUrl": "/api/users/demographics",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {
+      "lga": {
+        "type": "string",
+        "required": true,
+        "description": "Local Government Area to get demographics for"
+      },
+      "startDate": {
+        "type": "string",
+        "required": false,
+        "description": "Start date filter (string)"
+      },
+      "endDate": {
+        "type": "string",
+        "required": false,
+        "description": "End date filter (string)"
+      }
+    },
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "lga: @IsNotEmpty, @IsString (required)",
+      "startDate: @IsOptional, @IsString",
+      "endDate: @IsOptional, @IsString"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "genderDistribution": { "labels": "string[]", "values": "number[]" },
+        "ageDistribution": { "labels": "string[]", "values": "number[]" },
+        "combinedGroups": { "labels": "string[]", "values": "number[]" },
+        "hasData": "boolean"
+      }
+    },
+    "successExample": {
+      "genderDistribution": {
+        "labels": ["Male", "Female"],
+        "values": [280, 220]
+      },
+      "ageDistribution": {
+        "labels": ["18-19", "20-29", "30-39", "40-49", "50-59", "60+"],
+        "values": [25, 150, 180, 85, 45, 15]
+      },
+      "combinedGroups": {
+        "labels": ["Male 18-29", "Male 30-49", "Male 50+", "Female 18-29", "Female 30-49", "Female 50+"],
+        "values": [90, 120, 70, 85, 95, 40]
+      },
+      "hasData": true
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "LGA parameter is required",
+        "description": "Returned when the required lga query parameter is not provided"
+      }
+    ]
+  },
+  {
+    "name": "Get Kindred Activity",
+    "description": "Returns kindred-level activity counts for a specific LGA.",
+    "controller": "UsersController",
+    "methodName": "getKindredActivity",
+    "httpMethod": "GET",
+    "endpoint": "kindred-activity",
+    "fullUrl": "/api/users/kindred-activity",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {
+      "lga": {
+        "type": "string",
+        "required": true,
+        "description": "Local Government Area to get kindred activity for"
+      }
+    },
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "lga: @IsNotEmpty, @IsString (required)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "activity": "Record<string, number>"
+      }
+    },
+    "successExample": {
+      "activity": {
+        "Umueze": 45,
+        "Umuokoro": 32,
+        "Umuobi": 28,
+        "Umueke": 22,
+        "Umuhu": 18
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "LGA parameter is required",
+        "description": "Returned when the required lga query parameter is not provided"
+      }
+    ]
+  },
+  {
+    "name": "Get Recent Activities",
+    "description": "Returns a list of recent activities for a specific LGA.",
+    "controller": "UsersController",
+    "methodName": "getRecentActivities",
+    "httpMethod": "GET",
+    "endpoint": "recent-activities",
+    "fullUrl": "/api/users/recent-activities",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {
+      "lga": {
+        "type": "string",
+        "required": true,
+        "description": "Local Government Area to get recent activities for"
+      }
+    },
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "lga: @IsNotEmpty, @IsString (required)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": [
+        {
+          "time": "string",
+          "content": "string"
+        }
+      ]
+    },
+    "successExample": [
+      { "time": "2 hours ago", "content": "John Doe submitted a Certificate of Origin request" },
+      { "time": "5 hours ago", "content": "Jane Smith's Identity Card was approved" },
+      { "time": "1 day ago", "content": "Mike Johnson initiated verification" },
+      { "time": "2 days ago", "content": "Sarah Williams renewed Auctioneer Licence" }
+    ],
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "LGA parameter is required",
+        "description": "Returned when the required lga query parameter is not provided"
+      }
+    ]
+  },
+  {
+    "name": "Get LGA Request Trends",
+    "description": "Returns request counts per LGA within the specified date range.",
+    "controller": "UsersController",
+    "methodName": "getLgaTrends",
+    "httpMethod": "GET",
+    "endpoint": "lga-trends",
+    "fullUrl": "/api/users/lga-trends",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {
+      "startDate": {
+        "type": "string",
+        "required": false,
+        "description": "Start date filter (string)"
+      },
+      "endDate": {
+        "type": "string",
+        "required": false,
+        "description": "End date filter (string)"
+      }
+    },
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "startDate: @IsOptional, @IsString",
+      "endDate: @IsOptional, @IsString"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": "Record<string, number>"
+    },
+    "successExample": {
+      "Aba South": 150,
+      "Aba North": 120,
+      "Umuahia North": 95,
+      "Umuahia South": 80,
+      "Isiala Ngwa North": 65,
+      "Isiala Ngwa South": 55,
+      "Obi Ngwa": 45,
+      "Osisioma": 40,
+      "Ugwunagbo": 35,
+      "Bende": 30
+    },
+    "errorResponses": [
+      {
+        "statusCode": 500,
+        "message": "Internal server error",
+        "description": "Returned when an unexpected error occurs while fetching LGA trends"
+      }
+    ]
+  },
+  {
+    "name": "Initialize Dashboard",
+    "description": "Returns initial dashboard data including analytics, activity feed, and summary statistics for the authenticated user.",
+    "controller": "UsersController",
+    "methodName": "initializeDashboard",
+    "httpMethod": "GET",
+    "endpoint": "initialize",
+    "fullUrl": "/api/users/initialize",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "analytics": "object",
+        "activity": "array",
+        "summary": "object"
+      }
+    },
+    "successExample": {
+      "analytics": {
+        "monthlyUserGrowth": { "Jan": 45, "Feb": 52, "Mar": 61 },
+        "monthlyRequestVolume": { "Jan": 120, "Feb": 135, "Mar": 150 }
+      },
+      "activity": [
+        { "time": "2 hours ago", "content": "New user registered" },
+        { "time": "5 hours ago", "content": "Certificate approved" }
+      ],
+      "summary": {
+        "totalUsers": 1500,
+        "totalRequests": 855,
+        "pendingRequests": 50,
+        "completedRequests": 780
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Returned when no valid JWT token is provided"
+      }
+    ]
+  },
+  {
+    "name": "Get Full Analytics",
+    "description": "Returns comprehensive analytics data including demographics, trends, transactions, and LGA trends. Optionally filtered by LGA.",
+    "controller": "UsersController",
+    "methodName": "getFullAnalytics",
+    "httpMethod": "GET",
+    "endpoint": "refresh-analytics",
+    "fullUrl": "/api/users/refresh-analytics",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {
+      "lga": {
+        "type": "string",
+        "required": false,
+        "description": "Optional LGA filter for analytics"
+      }
+    },
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "lga: @IsOptional, @IsString"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "demographics": {
+          "genderDistribution": "object",
+          "ageDistribution": "object",
+          "combinedGroups": "object"
+        },
+        "trends": "Record<string, number>",
+        "transactions": "Record<string, number>",
+        "lgaTrends": "Record<string, number>"
+      }
+    },
+    "successExample": {
+      "demographics": {
+        "genderDistribution": {
+          "labels": ["Male", "Female"],
+          "values": [820, 680]
+        },
+        "ageDistribution": {
+          "labels": ["18-19", "20-29", "30-39", "40-49", "50-59", "60+"],
+          "values": [45, 380, 520, 310, 165, 80]
+        },
+        "combinedGroups": {
+          "labels": ["Male 18-29", "Male 30-49", "Male 50+", "Female 18-29", "Female 30-49", "Female 50+"],
+          "values": [210, 340, 270, 170, 380, 130]
+        }
+      },
+      "trends": {
+        "2024-01": 45, "2024-02": 52, "2024-03": 61, "2024-04": 48,
+        "2024-05": 70, "2024-06": 85
+      },
+      "transactions": {
+        "2024-01": 120, "2024-02": 135, "2024-03": 150, "2024-04": 110,
+        "2024-05": 160, "2024-06": 180
+      },
+      "lgaTrends": {
+        "Aba South": 150, "Aba North": 120, "Umuahia North": 95
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Returned when no valid JWT token is provided"
+      }
+    ]
+  },
+  {
+    "name": "Get User Profile",
+    "description": "Retrieves a specific user's full profile by their ID.",
+    "controller": "UsersController",
+    "methodName": "getUserProfile",
+    "httpMethod": "GET",
+    "endpoint": ":id",
+    "fullUrl": "/api/users/:id",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the user (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "user": "UserDocument"
+      }
+    },
+    "successExample": {
+      "user": {
+        "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+        "firstname": "John",
+        "lastname": "Doe",
+        "email": "john.doe@example.com",
+        "phone": 2348012345678,
+        "passportPhoto": "https://storage.example.com/photos/64a1b2c3.jpg",
+        "community": "Umueze",
+        "religion": "Christian",
+        "middlename": "Michael",
+        "house_number": "42",
+        "maritalStatus": "Single",
+        "lgaOfOrigin": "Aba South",
+        "stateOfOrigin": "Abia",
+        "street_name": "Oasis Road",
+        "nearest_bus_stop_landmark": "Near Unity Bank",
+        "city_town": "Aba",
+        "countryOfResidence": "Nigeria",
+        "address": "42 Oasis Road, Aba",
+        "nationality": "Nigerian",
+        "DOB": "1995-06-15",
+        "gender": "Male",
+        "nextOfKin": { "name": "Jane Doe", "relationship": "Sister", "phone": "08098765432" },
+        "employmentHistory": { "employer": "ACME Corp", "position": "Engineer", "years": 5 },
+        "business": { "name": "My Business", "type": "Retail" },
+        "neighbor": { "name": "Neighbor Name", "address": "Next door" },
+        "educationalHistory": { "school": "University of Nigeria", "degree": "B.Sc", "year": 2018 },
+        "healthInfo": { "bloodGroup": "O+", "conditions": "None" },
+        "family": { "spouse": "None", "children": 0 },
+        "identification": "NIN",
+        "id_number": "12345678901",
+        "issue_date": "2020-01-01",
+        "expiry_date": "2025-01-01",
+        "role": "user",
+        "isActive": true,
+        "stateOfResidence": "Abia",
+        "lgaOfResidence": "Aba South",
+        "createdAt": "2024-01-15T10:30:00.000Z",
+        "updatedAt": "2024-06-20T14:45:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "User not found",
+        "description": "Returned when the specified user ID does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Get Paginated Users",
+    "description": "Returns a paginated list of all users. Requires GLOBAL_ADMIN or ADMIN role.",
+    "controller": "UsersController",
+    "methodName": "getPaginatedUsers",
+    "httpMethod": "GET",
+    "endpoint": "/",
+    "fullUrl": "/api/users/",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["GLOBAL_ADMIN", "ADMIN"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": "UserDocument[]"
+    },
+    "successExample": {
+      "data": [
+        {
+          "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+          "firstname": "John",
+          "lastname": "Doe",
+          "email": "john.doe@example.com",
+          "phone": 2348012345678,
+          "role": "user",
+          "isActive": true,
+          "community": "Umueze",
+          "lgaOfOrigin": "Aba South",
+          "stateOfOrigin": "Abia",
+          "lgaOfResidence": "Aba South",
+          "stateOfResidence": "Abia",
+          "createdAt": "2024-01-15T10:30:00.000Z",
+          "updatedAt": "2024-06-20T14:45:00.000Z"
+        },
+        {
+          "_id": "64a1b2c3d4e5f6a7b8c9d0e2",
+          "firstname": "Jane",
+          "lastname": "Smith",
+          "email": "jane.smith@example.com",
+          "phone": 2348098765432,
+          "role": "support_admin",
+          "isActive": true,
+          "community": "Umuokoro",
+          "lgaOfOrigin": "Aba North",
+          "stateOfOrigin": "Abia",
+          "lgaOfResidence": "Aba North",
+          "stateOfResidence": "Abia",
+          "createdAt": "2024-02-20T08:15:00.000Z",
+          "updatedAt": "2024-06-18T11:20:00.000Z"
+        }
+      ]
+    },
+    "errorResponses": [
+      {
+        "statusCode": 403,
+        "message": "Permission denied",
+        "description": "Returned when the authenticated user does not have GLOBAL_ADMIN or ADMIN role"
+      }
+    ]
+  }
+]

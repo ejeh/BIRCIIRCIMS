@@ -32,7 +32,19 @@ export class IdCard extends Document {
 
   @ApiProperty()
   @Prop({ type: mongoose.SchemaTypes.String, required: true })
+  middlename: string;
+
+  @ApiProperty()
+  @Prop({ type: mongoose.SchemaTypes.String, required: true })
   email: string;
+
+  @ApiProperty()
+  @Prop({ type: mongoose.SchemaTypes.String, required: true })
+  gender: string;
+
+  @ApiProperty()
+  @Prop({ type: mongoose.SchemaTypes.String, required: true })
+  dob: string;
 
   @ApiProperty()
   @Prop({

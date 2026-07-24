@@ -1,0 +1,2010 @@
+[
+  {
+    "name": "Create Certificate",
+    "description": "Creates a new indigene certificate request. Validates that the user has no pending requests, no pending payments, and is a Benue indigene before allowing creation.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "createCertificate",
+    "httpMethod": "POST",
+    "endpoint": "create",
+    "fullUrl": "/api/indigene/certificate/create",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {
+      "firstname": "John",
+      "lastname": "Doe",
+      "middlename": "Smith",
+      "gender": "Male",
+      "lgaOfOrigin": "Gboko",
+      "ward": "Ward 1",
+      "phone": "08012345678",
+      "kindred": "Kindred A",
+      "village": "Village Name"
+    },
+    "requestExample": {
+      "firstname": "John",
+      "lastname": "Doe",
+      "middlename": "Smith",
+      "gender": "Male",
+      "lgaOfOrigin": "Gboko",
+      "ward": "Ward 1",
+      "phone": "08012345678",
+      "kindred": "Kindred A",
+      "village": "Village Name"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "firstname: @IsString, @IsNotEmpty, required",
+      "lastname: @IsString, @IsNotEmpty, required",
+      "middlename: @IsString, @IsOptional",
+      "gender: @IsEnum(Gender ['Male','Female']), @IsNotEmpty, required",
+      "lgaOfOrigin: @IsString, @IsNotEmpty, required",
+      "ward: @IsString, @IsNotEmpty, required",
+      "phone: @IsString, @IsNotEmpty, unique, required",
+      "kindred: @IsString, @IsNotEmpty, required",
+      "village: @IsString, @IsNotEmpty, required",
+      "Business rule: User must not have an existing Pending certificate request",
+      "Business rule: User must not have a pending payment",
+      "Business rule: User must be a Benue indigene"
+    ],
+    "successResponse": {
+      "statusCode": 201,
+      "message": "Certificate created successfully",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "middlename": "Smith",
+        "gender": "Male",
+        "ward": "Ward 1",
+        "phone": "08012345678",
+        "kindred": "Kindred A",
+        "village": "Village Name",
+        "status": "Pending",
+        "lgaOfOrigin": "Gboko",
+        "refNumber": "550e8400-e29b-41d4-a716-446655440000",
+        "certificateNumber": 1001,
+        "isValid": true,
+        "isVerified": false,
+        "downloaded": false,
+        "downloadCount": 0,
+        "resubmissionAllowed": true,
+        "resubmissionAttempts": 0,
+        "qrCodeUrl": null,
+        "rejectionReason": null,
+        "approvalDate": null,
+        "approvedBy": null,
+        "paymentStatus": "pending",
+        "reprintCount": 0,
+        "reprintPaymentStatus": "NotRequired",
+        "requiresReprintPayment": false,
+        "created_at": "2026-07-13T12:00:00.000Z",
+        "updated_at": "2026-07-13T12:00:00.000Z"
+      }
+    },
+    "successExample": {
+      "statusCode": 201,
+      "success": true,
+      "message": "Certificate created successfully",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "middlename": "Smith",
+        "gender": "Male",
+        "ward": "Ward 1",
+        "phone": "08012345678",
+        "kindred": "Kindred A",
+        "village": "Village Name",
+        "status": "Pending",
+        "lgaOfOrigin": "Gboko",
+        "refNumber": "550e8400-e29b-41d4-a716-446655440000",
+        "certificateNumber": 1001,
+        "isValid": true,
+        "isVerified": false,
+        "downloaded": false,
+        "downloadCount": 0,
+        "resubmissionAllowed": true,
+        "resubmissionAttempts": 0,
+        "qrCodeUrl": null,
+        "rejectionReason": null,
+        "approvalDate": null,
+        "approvedBy": null,
+        "paymentStatus": "pending",
+        "reprintCount": 0,
+        "reprintPaymentStatus": "NotRequired",
+        "requiresReprintPayment": false,
+        "created_at": "2026-07-13T12:00:00.000Z",
+        "updated_at": "2026-07-13T12:00:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "You already have a pending certificate request"
+      },
+      {
+        "statusCode": 400,
+        "message": "You have a pending payment"
+      },
+      {
+        "statusCode": 400,
+        "message": "User is not a Benue indigene"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Update Certificate",
+    "description": "Updates an existing certificate request. Only allowed if the certificate status is Pending or Rejected.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "updateCertificate",
+    "httpMethod": "PATCH",
+    "endpoint": ":id",
+    "fullUrl": "/api/indigene/certificate/:id",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "firstname": "John",
+      "lastname": "Doe",
+      "middlename": "Smith",
+      "gender": "Male",
+      "lgaOfOrigin": "Gboko",
+      "ward": "Ward 1",
+      "phone": "08012345678",
+      "kindred": "Kindred A",
+      "village": "Village Name"
+    },
+    "requestExample": {
+      "firstname": "John",
+      "lastname": "Doe",
+      "middlename": "Smith",
+      "gender": "Male",
+      "lgaOfOrigin": "Gboko",
+      "ward": "Ward 1",
+      "phone": "08012345678",
+      "kindred": "Kindred A",
+      "village": "Village Name"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "All fields are @IsOptional",
+      "userId: @IsString, optional",
+      "firstname: @IsString, optional",
+      "lastname: @IsString, optional",
+      "middlename: @IsString, optional",
+      "gender: @IsEnum(Gender ['Male','Female']), optional",
+      "lgaOfOrigin: @IsString, optional",
+      "ward: @IsString, optional",
+      "phone: @IsString, optional",
+      "kindred: @IsString, optional",
+      "village: @IsString, optional",
+      "Business rule: Certificate must be in Pending or Rejected status"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Certificate updated successfully",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "middlename": "Smith",
+        "gender": "Male",
+        "ward": "Ward 1",
+        "phone": "08012345678",
+        "kindred": "Kindred A",
+        "village": "Village Name",
+        "status": "Pending",
+        "lgaOfOrigin": "Gboko",
+        "refNumber": "550e8400-e29b-41d4-a716-446655440000",
+        "certificateNumber": 1001,
+        "updated_at": "2026-07-13T12:05:00.000Z"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Certificate updated successfully",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "middlename": "Smith",
+        "gender": "Male",
+        "ward": "Ward 1",
+        "phone": "08012345678",
+        "kindred": "Kindred A",
+        "village": "Village Name",
+        "status": "Pending",
+        "lgaOfOrigin": "Gboko",
+        "refNumber": "550e8400-e29b-41d4-a716-446655440000",
+        "certificateNumber": 1001,
+        "updated_at": "2026-07-13T12:05:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Certificate cannot be updated in its current status"
+      },
+      {
+        "statusCode": 404,
+        "message": "Certificate not found"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Download Certificate",
+    "description": "Downloads the indigene certificate as a PDF file. Enforces download limits and expiry dates.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "downloadCertificate",
+    "httpMethod": "GET",
+    "endpoint": "download/:id",
+    "fullUrl": "/api/indigene/certificate/download/:id",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "attachment; filename=\"certificate.pdf\""
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/indigene/certificate/download/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "PDF file stream",
+      "data": "<binary PDF stream>"
+    },
+    "successExample": "Binary PDF data with Content-Type: application/pdf",
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Certificate not found"
+      },
+      {
+        "statusCode": 400,
+        "message": "Download limit exceeded or download window expired"
+      },
+      {
+        "statusCode": 500,
+        "message": "Error generating certificate PDF"
+      }
+    ]
+  },
+  {
+    "name": "Download Certificate (Alternate)",
+    "description": "Downloads the indigene certificate as a PDF using an alternate route. Does not enforce download limits.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "downloadCert",
+    "httpMethod": "GET",
+    "endpoint": "download/certificate/:id",
+    "fullUrl": "/api/indigene/certificate/download/certificate/:id",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "attachment; filename=\"certificate.pdf\""
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/indigene/certificate/download/certificate/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "PDF file stream",
+      "data": "<binary PDF stream>"
+    },
+    "successExample": "Binary PDF data with Content-Type: application/pdf",
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Certificate not found"
+      },
+      {
+        "statusCode": 500,
+        "message": "Error generating certificate PDF"
+      }
+    ]
+  },
+  {
+    "name": "Get Certificate Details",
+    "description": "Returns the public details of a certificate including the holder's name, LGA, state, and kindred.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "getCertificateDetails",
+    "httpMethod": "GET",
+    "endpoint": "certificate/:id",
+    "fullUrl": "/api/indigene/certificate/certificate/:id",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/indigene/certificate/certificate/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Certificate details retrieved",
+      "data": {
+        "id": "687ad12ab5...",
+        "name": "John Doe",
+        "lga": "Gboko",
+        "state": "Benue",
+        "kindred": "Kindred A"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Certificate details retrieved",
+      "data": {
+        "id": "687ad12ab5...",
+        "name": "John Doe",
+        "lga": "Gboko",
+        "state": "Benue",
+        "kindred": "Kindred A"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Certificate not found"
+      }
+    ]
+  },
+  {
+    "name": "View Certificate",
+    "description": "Returns an HTML page for viewing the certificate in the browser.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "viewCertificate",
+    "httpMethod": "GET",
+    "endpoint": "view/:id",
+    "fullUrl": "/api/indigene/certificate/view/:id",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "text/html",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/indigene/certificate/view/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "HTML certificate view page",
+      "data": "<html>...</html>"
+    },
+    "successExample": "HTML page rendered from templates/certificate-view.html",
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Certificate not found"
+      },
+      {
+        "statusCode": 500,
+        "message": "Template not found"
+      }
+    ]
+  },
+  {
+    "name": "Get All Certificate Requests",
+    "description": "Returns all certificate requests sorted by most recent, with populated user and approver data. Admin only.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "getCertsRequest",
+    "httpMethod": "GET",
+    "endpoint": "get-all-request",
+    "fullUrl": "/api/indigene/certificate/get-all-request",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["global_admin", "admin"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/indigene/certificate/get-all-request",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "All certificate requests retrieved",
+      "data": [
+        {
+          "_id": "687ad12ab5...",
+          "userId": {
+            "_id": "687ad12ab5...",
+            "firstname": "John",
+            "lastname": "Doe",
+            "email": "john@gmail.com",
+            "stateOfOrigin": "Benue",
+            "lgaOfOrigin": "Gboko",
+            "isProfileCompleted": false
+          },
+          "firstname": "John",
+          "lastname": "Doe",
+          "middlename": "Smith",
+          "gender": "Male",
+          "ward": "Ward 1",
+          "phone": "08012345678",
+          "kindred": "Kindred A",
+          "village": "Village Name",
+          "status": "Pending",
+          "lgaOfOrigin": "Gboko",
+          "refNumber": "550e8400-e29b-41d4-a716-446655440000",
+          "certificateNumber": 1001,
+          "approvedBy": {
+            "_id": "687ad12ab5...",
+            "firstname": "Admin",
+            "lastname": "User",
+            "email": "admin@gmail.com"
+          },
+          "created_at": "2026-07-13T12:00:00.000Z",
+          "updated_at": "2026-07-13T12:00:00.000Z"
+        }
+      ]
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "All certificate requests retrieved",
+      "data": [
+        {
+          "_id": "687ad12ab5...",
+          "userId": {
+            "_id": "687ad12ab5...",
+            "firstname": "John",
+            "lastname": "Doe",
+            "email": "john@gmail.com",
+            "stateOfOrigin": "Benue",
+            "lgaOfOrigin": "Gboko",
+            "isProfileCompleted": false
+          },
+          "firstname": "John",
+          "lastname": "Doe",
+          "middlename": "Smith",
+          "gender": "Male",
+          "ward": "Ward 1",
+          "phone": "08012345678",
+          "kindred": "Kindred A",
+          "village": "Village Name",
+          "status": "Pending",
+          "lgaOfOrigin": "Gboko",
+          "refNumber": "550e8400-e29b-41d4-a716-446655440000",
+          "certificateNumber": 1001,
+          "approvedBy": {
+            "_id": "687ad12ab5...",
+            "firstname": "Admin",
+            "lastname": "User",
+            "email": "admin@gmail.com"
+          },
+          "created_at": "2026-07-13T12:00:00.000Z",
+          "updated_at": "2026-07-13T12:00:00.000Z"
+        }
+      ]
+    },
+    "errorResponses": [
+      {
+        "statusCode": 403,
+        "message": "User does not have required permission"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Approve Certificate",
+    "description": "Approves a pending certificate request. Sets status to Approved and records the approver.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "approveCert",
+    "httpMethod": "PATCH",
+    "endpoint": ":id/approve",
+    "fullUrl": "/api/indigene/certificate/:id/approve",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["support_admin", "global_admin", "admin"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "approvedBy": "687ad12ab5..."
+    },
+    "requestExample": {
+      "approvedBy": "687ad12ab5..."
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId, from path param)",
+      "approvedBy: string, from @Body('approvedBy'), the user ID of the approver"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Certificate approved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "status": "Approved",
+        "approvalDate": "2026-07-13T12:00:00.000Z",
+        "approvedBy": "687ad12ab5..."
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Certificate approved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Approved",
+        "approvalDate": "2026-07-13T12:00:00.000Z",
+        "approvedBy": "687ad12ab5..."
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Certificate not found"
+      },
+      {
+        "statusCode": 403,
+        "message": "User does not have required permission"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Reject Certificate",
+    "description": "Rejects a pending certificate request with a reason. Notifies the user via email.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "rejectCert",
+    "httpMethod": "PATCH",
+    "endpoint": ":id/reject",
+    "fullUrl": "/api/indigene/certificate/:id/reject",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["support_admin", "global_admin", "admin"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "rejectionReason": "Incomplete documentation",
+      "approvedBy": "687ad12ab5..."
+    },
+    "requestExample": {
+      "rejectionReason": "Incomplete documentation",
+      "approvedBy": "687ad12ab5..."
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId, from path param)",
+      "rejectionReason: string, from @Body('rejectionReason')",
+      "approvedBy: string, from @Body('approvedBy'), the user ID of the rejector"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Certificate rejected",
+      "data": {
+        "_id": "687ad12ab5...",
+        "status": "Rejected",
+        "rejectionReason": "Incomplete documentation",
+        "approvedBy": "687ad12ab5..."
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Certificate rejected",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Rejected",
+        "rejectionReason": "Incomplete documentation",
+        "approvedBy": "687ad12ab5..."
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Certificate not found"
+      },
+      {
+        "statusCode": 403,
+        "message": "User does not have required permission"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Resubmit Certificate Request",
+    "description": "Resubmits a rejected certificate request with updated data. Increments the resubmission attempts counter.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "resubmitRequest",
+    "httpMethod": "POST",
+    "endpoint": ":id/resubmit",
+    "fullUrl": "/api/indigene/certificate/:id/resubmit",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "firstname": "John",
+      "lastname": "Doe",
+      "middlename": "Smith",
+      "gender": "Male",
+      "lgaOfOrigin": "Gboko",
+      "ward": "Ward 1",
+      "phone": "08012345678",
+      "kindred": "Kindred A",
+      "village": "Village Name"
+    },
+    "requestExample": {
+      "firstname": "John",
+      "lastname": "Doe",
+      "middlename": "Smith",
+      "gender": "Male",
+      "lgaOfOrigin": "Gboko",
+      "ward": "Ward 1",
+      "phone": "08012345678",
+      "kindred": "Kindred A",
+      "village": "Village Name"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "All fields optional (uses UpdateCertificateDto)",
+      "firstname: @IsString, optional",
+      "lastname: @IsString, optional",
+      "middlename: @IsString, optional",
+      "gender: @IsEnum(Gender ['Male','Female']), optional",
+      "lgaOfOrigin: @IsString, optional",
+      "ward: @IsString, optional",
+      "phone: @IsString, optional",
+      "kindred: @IsString, optional",
+      "village: @IsString, optional"
+    ],
+    "successResponse": {
+      "statusCode": 201,
+      "message": "Certificate resubmitted",
+      "data": {
+        "_id": "687ad12ab5...",
+        "status": "Pending",
+        "resubmissionAttempts": 1,
+        "lastResubmittedAt": "2026-07-13T12:00:00.000Z"
+      }
+    },
+    "successExample": {
+      "statusCode": 201,
+      "success": true,
+      "message": "Certificate resubmitted",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Pending",
+        "resubmissionAttempts": 1,
+        "lastResubmittedAt": "2026-07-13T12:00:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Certificate cannot be resubmitted"
+      },
+      {
+        "statusCode": 404,
+        "message": "Certificate not found"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get Paginated Certificates",
+    "description": "Returns a paginated list of all certificates.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "getPaginatedData",
+    "httpMethod": "GET",
+    "endpoint": "/",
+    "fullUrl": "/api/indigene/certificate/",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {},
+    "queryParams": {
+      "page": 1,
+      "limit": 10
+    },
+    "requestPayload": {},
+    "requestExample": "GET /api/indigene/certificate/?page=1&limit=10",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "page: number, optional, default: 1",
+      "limit: number, optional, default: 10"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Certificates retrieved",
+      "data": {
+        "data": [
+          {
+            "_id": "687ad12ab5...",
+            "firstname": "John",
+            "lastname": "Doe",
+            "status": "Pending",
+            "created_at": "2026-07-13T12:00:00.000Z"
+          }
+        ],
+        "hasNextPage": false
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Certificates retrieved",
+      "data": {
+        "data": [
+          {
+            "_id": "687ad12ab5...",
+            "userId": "687ad12ab5...",
+            "firstname": "John",
+            "lastname": "Doe",
+            "middlename": "Smith",
+            "gender": "Male",
+            "ward": "Ward 1",
+            "phone": "08012345678",
+            "kindred": "Kindred A",
+            "village": "Village Name",
+            "status": "Pending",
+            "lgaOfOrigin": "Gboko",
+            "refNumber": "550e8400-e29b-41d4-a716-446655440000",
+            "certificateNumber": 1001,
+            "created_at": "2026-07-13T12:00:00.000Z",
+            "updated_at": "2026-07-13T12:00:00.000Z"
+          }
+        ],
+        "hasNextPage": false
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get Certificates By LGA",
+    "description": "Returns all certificates matching the specified Local Government Area.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "getCertificatesByLga",
+    "httpMethod": "GET",
+    "endpoint": "by-lga",
+    "fullUrl": "/api/indigene/certificate/by-lga",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {},
+    "queryParams": {
+      "lga": "Gboko"
+    },
+    "requestPayload": {},
+    "requestExample": "GET /api/indigene/certificate/by-lga?lga=Gboko",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "lga: string, required (query parameter)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Certificates by LGA retrieved",
+      "data": [
+        {
+          "_id": "687ad12ab5...",
+          "firstname": "John",
+          "lastname": "Doe",
+          "lgaOfOrigin": "Gboko",
+          "status": "Approved"
+        }
+      ]
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Certificates by LGA retrieved",
+      "data": [
+        {
+          "_id": "687ad12ab5...",
+          "userId": "687ad12ab5...",
+          "firstname": "John",
+          "lastname": "Doe",
+          "lgaOfOrigin": "Gboko",
+          "status": "Approved",
+          "created_at": "2026-07-13T12:00:00.000Z"
+        }
+      ]
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "LGA parameter is required"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get Latest Certificate",
+    "description": "Returns the most recently created certificate.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "getLatestCertificate",
+    "httpMethod": "GET",
+    "endpoint": "latest",
+    "fullUrl": "/api/indigene/certificate/latest",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/indigene/certificate/latest",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Latest certificate retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Pending",
+        "created_at": "2026-07-13T12:00:00.000Z"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Latest certificate retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Pending",
+        "created_at": "2026-07-13T12:00:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "No certificates found"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get Latest Approved Certificate",
+    "description": "Returns the most recently approved certificate.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "getLatestApprovedCertificate",
+    "httpMethod": "GET",
+    "endpoint": "latest-approved",
+    "fullUrl": "/api/indigene/certificate/latest-approved",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/indigene/certificate/latest-approved",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Latest approved certificate retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Approved",
+        "approvalDate": "2026-07-13T12:00:00.000Z"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Latest approved certificate retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Approved",
+        "approvalDate": "2026-07-13T12:00:00.000Z",
+        "created_at": "2026-07-13T12:00:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "No approved certificates found"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get Approved Certificates (Paginated)",
+    "description": "Returns paginated approved certificate requests. Support admin only.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "getApprovedCert",
+    "httpMethod": "GET",
+    "endpoint": "approval",
+    "fullUrl": "/api/indigene/certificate/approval",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["support_admin"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {},
+    "queryParams": {
+      "page": 1,
+      "limit": 10
+    },
+    "requestPayload": {},
+    "requestExample": "GET /api/indigene/certificate/approval?page=1&limit=10",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "page: number, optional, default: 1",
+      "limit: number, optional, default: 10"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Approved certificates retrieved",
+      "data": {
+        "data": [
+          {
+            "_id": "687ad12ab5...",
+            "firstname": "John",
+            "lastname": "Doe",
+            "status": "Approved"
+          }
+        ],
+        "hasNextPage": false
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Approved certificates retrieved",
+      "data": {
+        "data": [
+          {
+            "_id": "687ad12ab5...",
+            "userId": "687ad12ab5...",
+            "firstname": "John",
+            "lastname": "Doe",
+            "status": "Approved",
+            "approvalDate": "2026-07-13T12:00:00.000Z",
+            "created_at": "2026-07-13T12:00:00.000Z"
+          }
+        ],
+        "hasNextPage": false
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 403,
+        "message": "User does not have required permission"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get Requests By Statuses",
+    "description": "Returns paginated certificate requests filtered by statuses. Default statuses: Pending,Rejected.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "getRequestsByStatuses",
+    "httpMethod": "GET",
+    "endpoint": "request",
+    "fullUrl": "/api/indigene/certificate/request",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["support_admin", "global_admin", "admin"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {},
+    "queryParams": {
+      "page": 1,
+      "limit": 10,
+      "statuses": "Pending,Rejected"
+    },
+    "requestPayload": {},
+    "requestExample": "GET /api/indigene/certificate/request?page=1&limit=10&statuses=Pending,Rejected",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "page: number, optional, default: 1",
+      "limit: number, optional, default: 10",
+      "statuses: string, optional, default: 'Pending,Rejected', comma-separated list of statuses"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Requests by statuses retrieved",
+      "data": {
+        "data": [
+          {
+            "_id": "687ad12ab5...",
+            "firstname": "John",
+            "lastname": "Doe",
+            "status": "Pending"
+          }
+        ],
+        "hasNextPage": false
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Requests by statuses retrieved",
+      "data": {
+        "data": [
+          {
+            "_id": "687ad12ab5...",
+            "userId": "687ad12ab5...",
+            "firstname": "John",
+            "lastname": "Doe",
+            "status": "Pending",
+            "created_at": "2026-07-13T12:00:00.000Z"
+          }
+        ],
+        "hasNextPage": false
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 403,
+        "message": "User does not have required permission"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get Certificate By ID",
+    "description": "Returns a single certificate by its MongoDB ObjectId with populated user data.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "getCert",
+    "httpMethod": "GET",
+    "endpoint": ":id/get",
+    "fullUrl": "/api/indigene/certificate/:id/get",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/indigene/certificate/687ad12ab5.../get",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Certificate retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": {
+          "_id": "687ad12ab5...",
+          "firstname": "John",
+          "lastname": "Doe",
+          "email": "john@gmail.com"
+        },
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Pending"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Certificate retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": {
+          "_id": "687ad12ab5...",
+          "firstname": "John",
+          "lastname": "Doe",
+          "email": "john@gmail.com"
+        },
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Pending",
+        "created_at": "2026-07-13T12:00:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Certificate not found"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get Certificate By User ID",
+    "description": "Returns a certificate by the user's ID with populated user data.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "getProfile",
+    "httpMethod": "GET",
+    "endpoint": ":id",
+    "fullUrl": "/api/indigene/certificate/:id",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/indigene/certificate/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (User ID)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Certificate retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": {
+          "_id": "687ad12ab5...",
+          "firstname": "John",
+          "lastname": "Doe"
+        },
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Pending"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Certificate retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": {
+          "_id": "687ad12ab5...",
+          "firstname": "John",
+          "lastname": "Doe"
+        },
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Pending",
+        "created_at": "2026-07-13T12:00:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Certificate not found"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get Requests By User ID",
+    "description": "Returns all certificate requests submitted by a specific user.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "getRequestsForId",
+    "httpMethod": "GET",
+    "endpoint": ":id/requests",
+    "fullUrl": "/api/indigene/certificate/:id/requests",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/indigene/certificate/687ad12ab5.../requests",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (User ID)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "User requests retrieved",
+      "data": [
+        {
+          "_id": "687ad12ab5...",
+          "firstname": "John",
+          "lastname": "Doe",
+          "status": "Pending"
+        }
+      ]
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "User requests retrieved",
+      "data": [
+        {
+          "_id": "687ad12ab5...",
+          "userId": "687ad12ab5...",
+          "firstname": "John",
+          "lastname": "Doe",
+          "status": "Pending",
+          "created_at": "2026-07-13T12:00:00.000Z"
+        }
+      ]
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "No requests found for this user"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get User Request (Admin)",
+    "description": "Returns a certificate request by ID with populated data. Admin only.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "getUserProfile",
+    "httpMethod": "GET",
+    "endpoint": ":id/request",
+    "fullUrl": "/api/indigene/certificate/:id/request",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["support_admin", "global_admin", "admin"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/indigene/certificate/687ad12ab5.../request",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (Certificate MongoDB ObjectId)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Certificate request retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": {
+          "_id": "687ad12ab5...",
+          "firstname": "John",
+          "lastname": "Doe"
+        },
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Pending"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Certificate request retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": {
+          "_id": "687ad12ab5...",
+          "firstname": "John",
+          "lastname": "Doe",
+          "email": "john@gmail.com"
+        },
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Pending",
+        "created_at": "2026-07-13T12:00:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Certificate not found"
+      },
+      {
+        "statusCode": 403,
+        "message": "User does not have required permission"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Delete Certificate",
+    "description": "Deletes a certificate record by its ID.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "deleteItem",
+    "httpMethod": "DELETE",
+    "endpoint": ":item",
+    "fullUrl": "/api/indigene/certificate/:item",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {
+      "item": ":item"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "DELETE /api/indigene/certificate/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "item: string, required (Certificate ID)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Certificate deleted",
+      "data": {
+        "deleted": true
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Certificate deleted",
+      "data": {
+        "deleted": true
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Certificate not found"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Stream PDF From URL",
+    "description": "Streams a PDF document from an encoded external URL. Public access with JWT bypass.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "getPdf",
+    "httpMethod": "GET",
+    "endpoint": "pdf/:encodedUrl",
+    "fullUrl": "/api/indigene/certificate/pdf/:encodedUrl",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "inline; filename=\"document.pdf\""
+    },
+    "pathParams": {
+      "encodedUrl": ":encodedUrl"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/indigene/certificate/pdf/https%3A%2F%2Fexample.com%2Fdoc.pdf",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "encodedUrl: string, required, must be URL-encoded"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "PDF stream",
+      "data": "<binary PDF stream>"
+    },
+    "successExample": "Binary PDF data with Content-Type: application/pdf",
+    "errorResponses": [
+      {
+        "statusCode": 500,
+        "message": "Error fetching PDF from external URL"
+      }
+    ]
+  },
+  {
+    "name": "Stream Document",
+    "description": "Streams a document (idCard or birthCertificate) from Cloudinary for a given certificate request. Detects MIME type from URL structure.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "streamDocument",
+    "httpMethod": "GET",
+    "endpoint": ":requestId/document/:docType",
+    "fullUrl": "/api/indigene/certificate/:requestId/document/:docType",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "image/jpeg | image/png | application/pdf",
+      "Content-Disposition": "inline; filename=\"<docType>.<ext>\"",
+      "Cache-Control": "public, max-age=86400"
+    },
+    "pathParams": {
+      "requestId": ":requestId",
+      "docType": ":docType"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/indigene/certificate/687ad12ab5.../document/idCard",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "requestId: string, required (Certificate request ID)",
+      "docType: string, required, allowed values: 'idCard' | 'birthCertificate'"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Document stream",
+      "data": "<binary document stream (image or PDF)>"
+    },
+    "successExample": "Binary image/PDF data streamed from Cloudinary",
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Document '<docType>' not found for this request."
+      },
+      {
+        "statusCode": 500,
+        "message": "Could not determine the type of the stored document."
+      },
+      {
+        "statusCode": 500,
+        "message": "Could not retrieve the document. Please try again later."
+      }
+    ]
+  },
+  {
+    "name": "Verify Certificate",
+    "description": "Publicly verifies a certificate's authenticity using its ID and hash. Renders a verification or invalid HTML page. Rate-limited to 5 requests per minute.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "verify",
+    "httpMethod": "GET",
+    "endpoint": "verify/:id/:hash",
+    "fullUrl": "/api/indigene/certificate/verify/:id/:hash",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "text/html"
+    },
+    "pathParams": {
+      "id": ":id",
+      "hash": ":hash"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/indigene/certificate/verify/687ad12ab5.../abc123hash",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (Certificate ID)",
+      "hash: string, required (Verification hash)",
+      "Throttle: 5 requests per 60 seconds"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "HTML verification page (valid or invalid)",
+      "data": "<html>...</html>"
+    },
+    "successExample": "HTML page rendered from templates/verification.hbs or templates/invalid.hbs",
+    "errorResponses": [
+      {
+        "statusCode": 429,
+        "message": "Too Many Requests — rate limit exceeded (5 per minute)"
+      }
+    ]
+  },
+  {
+    "name": "Request Reprint",
+    "description": "Initiates a reprint request for an existing certificate. Creates a payment transaction via Credo. Rate-limited to 3 requests per minute.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "requestReprint",
+    "httpMethod": "POST",
+    "endpoint": ":id/request-reprint",
+    "fullUrl": "/api/indigene/certificate/:id/request-reprint",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "documentId": "687ad12ab5...",
+      "userId": "687ad12ab5...",
+      "amount": 5000,
+      "email": "john@gmail.com",
+      "documentAmount": 3000,
+      "documentType": "certificate"
+    },
+    "requestExample": {
+      "documentId": "687ad12ab5...",
+      "userId": "687ad12ab5...",
+      "amount": 5000,
+      "email": "john@gmail.com",
+      "documentAmount": 3000,
+      "documentType": "certificate"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "documentId: string, required",
+      "userId: string, required",
+      "amount: number, required",
+      "email: string, required",
+      "documentAmount: number, required",
+      "documentType: 'certificate', required",
+      "Throttle: 3 requests per 60 seconds"
+    ],
+    "successResponse": {
+      "statusCode": 201,
+      "message": "Reprint request initiated",
+      "data": {
+        "success": true,
+        "message": "Reprint request initiated",
+        "data": {
+          "paymentReference": "REF-123456789",
+          "amount": 5000,
+          "skipCredo": false
+        }
+      }
+    },
+    "successExample": {
+      "statusCode": 201,
+      "success": true,
+      "message": "Reprint request initiated",
+      "data": {
+        "success": true,
+        "message": "Reprint request initiated",
+        "data": {
+          "paymentReference": "REF-123456789",
+          "amount": 5000,
+          "skipCredo": false
+        }
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Reprint not allowed for this certificate"
+      },
+      {
+        "statusCode": 404,
+        "message": "Certificate not found"
+      },
+      {
+        "statusCode": 429,
+        "message": "Too Many Requests — rate limit exceeded (3 per minute)"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Download Reprint",
+    "description": "Downloads a reprint of an existing certificate as a PDF. Rate-limited to 5 requests per minute.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "downloadReprint",
+    "httpMethod": "GET",
+    "endpoint": "reprint/download/:id",
+    "fullUrl": "/api/indigene/certificate/reprint/download/:id",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "attachment; filename=\"certificate-reprint.pdf\""
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/indigene/certificate/reprint/download/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (Certificate ID)",
+      "Throttle: 5 requests per 60 seconds",
+      "Business rule: Reprint payment must be completed",
+      "Business rule: Reprint download must not be expired"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Reprint PDF buffer",
+      "data": "<binary PDF buffer>"
+    },
+    "successExample": "Binary PDF data with Content-Type: application/pdf",
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Reprint payment not completed"
+      },
+      {
+        "statusCode": 400,
+        "message": "Reprint download window expired"
+      },
+      {
+        "statusCode": 404,
+        "message": "Certificate not found"
+      },
+      {
+        "statusCode": 429,
+        "message": "Too Many Requests — rate limit exceeded (5 per minute)"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Stream Certificate Inline",
+    "description": "Streams the indigene certificate PDF inline (displayed in browser) rather than as a download.",
+    "controller": "IndigeneCertificateController",
+    "methodName": "streamCertificate",
+    "httpMethod": "GET",
+    "endpoint": "stream/:id",
+    "fullUrl": "/api/indigene/certificate/stream/:id",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "inline; filename=\"certificate.pdf\""
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/indigene/certificate/stream/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (Certificate ID)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "PDF stream (inline)",
+      "data": "<binary PDF stream>"
+    },
+    "successExample": "Binary PDF data rendered inline in browser",
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Certificate not found"
+      },
+      {
+        "statusCode": 500,
+        "message": "Error generating certificate PDF"
+      }
+    ]
+  }
+]

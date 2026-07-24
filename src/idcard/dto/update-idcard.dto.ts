@@ -28,6 +28,18 @@ export class UpdateIdCardDto {
   @IsOptional()
   @IsString()
   lastname?: string;
+
+  @IsOptional()
+  @IsString()
+  middlename?: string;
+
+  @IsOptional()
+  @IsString()
+  dob?: string;
+
+  @IsOptional()
+  @IsString()
+  gender?: string;
 }
 
 export interface ResubmittableDocument {

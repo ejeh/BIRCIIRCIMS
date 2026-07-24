@@ -1,3 +1,10 @@
+import * as dotenv from 'dotenv';
+
+const result = dotenv.config();
+
+// console.log(result);
+// console.log('MONGO_URL:', process.env.MONGO_URL);
+
 // 1. First validate and set the environment
 const VALID_ENVIRONMENTS = ['development', 'production', 'test'] as const;
 type NodeEnv = (typeof VALID_ENVIRONMENTS)[number];

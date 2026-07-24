@@ -13,6 +13,7 @@ import {
   AdminSignUpDto,
   ChangePasswordDto,
   ForgottenPasswordDto,
+  Login2FADto,
   ResetPasswordDto,
   SignUpDto,
   Verify2FADto,
@@ -25,6 +26,8 @@ import config from 'src/config';
 import { UserPublicData } from 'src/users/users.dto';
 import * as bcrypt from 'bcryptjs';
 import { authenticator } from 'otplib';
+
+authenticator.options = { window: 1 };
 import { MailService } from 'src/mail/mail.service';
 import axios from 'axios';
 
@@ -402,12 +405,83 @@ export class AuthService {
         'Account is not activated. Please check your email for activation instructions.',
       );
     }
+
+    if (user.twoFactorEnabled) {
+      const tempToken = this.jwtService.sign(
+        { id: user.id, purpose: '2fa' },
+        { subject: `${user.id}`, expiresIn: '5m' },
+      );
+      return {
+        requires2FA: true,
+        tempToken,
+        message: 'Please provide your 2FA code',
+      };
+    }
+
     return {
       token: this.jwtService.sign(
         { ...user?.getPublicData() },
         { subject: `${user?.id}` },
       ),
       user: user?.getPublicData(),
+    };
+  }
+
+  async complete2FALogin(
+    login2FADto: Login2FADto,
+  ): Promise<{ token: string; user: UserPublicData }> {
+    const { tempToken, code } = login2FADto;
+
+    let payload: any;
+    try {
+      payload = this.jwtService.verify(tempToken);
+    } catch {
+      throw new UnauthorizedException(
+        'Invalid or expired token. Please log in again.',
+      );
+    }
+
+    if (payload.purpose !== '2fa') {
+      throw new UnauthorizedException('Invalid token purpose');
+    }
+
+    const userId = payload.id || payload.sub;
+    const user = await this.userModel.findById(userId);
+    if (!user || !user.twoFactorSecret) {
+      throw new UnauthorizedException('User not found or 2FA not configured');
+    }
+
+    // Check if code is a backup code first (flexible length)
+    if (code.length !== 6 || !/^\d{6}$/.test(code)) {
+      const isValidBackup = await this.validateBackupCode(userId, code);
+      if (isValidBackup) {
+        return {
+          token: this.jwtService.sign(
+            { ...user.getPublicData() },
+            { subject: `${user.id}` },
+          ),
+          user: user.getPublicData(),
+        };
+      }
+      throw new UnauthorizedException('Invalid 2FA code');
+    }
+
+    // Verify TOTP code with clock tolerance for server/app time drift
+    const isValid = authenticator.verify({
+      token: code,
+      secret: user.twoFactorSecret,
+    });
+
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid 2FA code');
+    }
+
+    return {
+      token: this.jwtService.sign(
+        { ...user.getPublicData() },
+        { subject: `${user.id}` },
+      ),
+      user: user.getPublicData(),
     };
   }
 
@@ -512,9 +586,6 @@ export class AuthService {
       throw new BadRequestException('2FA setup not initiated');
     }
 
-    // Add this debugging line
-    const currentTime = Math.floor(Date.now() / 1000);
-    // Try to verify with more detailed logging
     try {
       const isValid = authenticator.verify({
         token: code,
@@ -522,20 +593,16 @@ export class AuthService {
       });
 
       if (!isValid) {
-        // Let's try to generate a valid code for comparison
-        const validCode = authenticator.generate(user.twoFactorSecret);
-        console.log('Valid code should be:', validCode);
-
         throw new BadRequestException('Invalid verification code');
       }
 
       return true;
     } catch (error) {
-      console.error('Error during 2FA verification:', error);
-      throw error;
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException('2FA verification failed');
     }
-
-    return true;
   }
 
   async enable2FA(userId: string): Promise<{ backupCodes: string[] }> {
@@ -693,7 +760,8 @@ export class AuthService {
 
     try {
       const response = await axios.post(
-        `${this.baseUrl}/v1/ng/identities/nin-premium/${nin}`,
+        // `${this.baseUrl}/v1/ng/identities/nin-premium/${nin}`,
+        `${this.baseUrl}/v1/ng/identities/nin/${nin}`,
         {
           firstname: firstName,
           lastname: lastName,
@@ -707,7 +775,7 @@ export class AuthService {
         },
       );
 
-      // console.log('QoreId NIN verification response:', response.data);
+      console.log('QoreId NIN verification response:', response.data);
       return response.data;
     } catch (error: any) {
       console.error(

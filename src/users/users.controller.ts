@@ -255,40 +255,28 @@ export class UsersController {
 
   @Get('role-stats')
   async getRoleStats() {
-    // const globalAdminCount = 0; // Assuming there's always one global admin for simplicity
-    const globalAdminCount = await this.usersModel.countDocuments({
-      role: 'global_admin',
-    });
-    const superAdminCount = await this.usersModel.countDocuments({
-      role: 'super_admin',
-    });
-    const supportAdminCount = await this.usersModel.countDocuments({
-      role: 'support_admin',
-    });
-    const kindredHeadCount = await this.usersModel.countDocuments({
-      role: 'kindred_head',
-    });
-    const userCount = await this.usersModel.countDocuments({ role: 'user' });
+    const counts = await Promise.all(
+      Object.values(UserRole).map((role) =>
+        this.usersModel.countDocuments({ role }),
+      ),
+    );
 
-    return {
-      global_admin: {
-        count: globalAdminCount,
-        permissions: 'Full system access',
-      },
-      super_admin: {
-        count: superAdminCount,
-        permissions: 'Manage admins and system settings',
-      },
-      support_admin: {
-        count: supportAdminCount,
-        permissions: 'Manage requests, moderate users',
-      },
-      kindred_head: {
-        count: kindredHeadCount,
-        permissions: 'LGA/Kindred certificate requests',
-      },
-      user: { count: userCount, permissions: 'Submit requests only' },
-    };
+    const stats: Record<string, { count: number; permissions: string }> = {};
+    Object.values(UserRole).forEach((role, i) => {
+      stats[role] = {
+        count: counts[i],
+        permissions:
+          role === 'global_admin'
+            ? 'Full system access'
+            : role === 'admin'
+              ? 'Manage admins and system settings'
+              : role === 'support_admin'
+                ? 'Manage requests, moderate users'
+                : 'Submit requests only',
+      };
+    });
+
+    return stats;
   }
 
   @Get('analytics-stats')

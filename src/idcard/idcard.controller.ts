@@ -412,14 +412,14 @@ export class IdcardController {
       } else {
         // First-time download → activate 10-minute window
         card.downloaded = true;
-        card.downloadExpiryDate = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes for testing
-        // card.downloadExpiryDate = new Date(
-        //   Date.now() + 3 * 30 * 24 * 60 * 60 * 1000, // 3 months
-        // );
+        // card.downloadExpiryDate = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes for testing
+        card.downloadExpiryDate = new Date(
+          Date.now() + 3 * 30 * 24 * 60 * 60 * 1000, // 3 months
+        );
         await card.save();
       }
 
-      const date = new Date(user.DOB);
+      const date = new Date(card.dob);
       const dateOfIssue = new Date();
 
       const formattedDOB = date.toISOString().split('T')[0]; // Extracts YYYY-MM-DD
@@ -500,7 +500,10 @@ export class IdcardController {
   }
 
   private populateHtmlTemplate(html: string, data: any, user: any): string {
-    const dob = new Date(user.DOB);
+    // This strips the Mongoose wrapper entirely
+    const d = JSON.parse(JSON.stringify(data));
+
+    const dob = new Date(d.dob);
 
     const getBaseUrl = (): string =>
       config.isDev
@@ -526,15 +529,14 @@ export class IdcardController {
 
     return html
       .replace(/{{baseUrl}}/g, getBaseUrl())
-      .replace(/{{name}}/g, user.firstname + ' ' + user.middlename)
-      .replace(/{{surname}}/g, data.lastname)
+      .replace(/{{name}}/g, d.firstname + ' ' + d.middlename)
+      .replace(/{{surname}}/g, d.lastname)
       .replace(/{{dob}}/g, formattedDOB)
-      .replace(/{{bin}}/g, data.bin)
-      .replace(/{{passportPhoto}}/g, data.passportPhoto)
-      .replace(/{{qrCodeUrl}}/g, data.qrCodeUrl)
+      .replace(/{{bin}}/g, d.bin)
+      .replace(/{{passportPhoto}}/g, d.passportPhoto)
+      .replace(/{{qrCodeUrl}}/g, d.qrCodeUrl)
       .replace(/{{issueDate}}/g, formattedDateOfIssue)
-      .replace(/{{gender}}/g, user.gender)
-      .replace(/{{documentAmount}}/g, data.documentAmount);
+      .replace(/{{gender}}/g, d.gender);
   }
 
   private async markCardAsDownloaded(id: string): Promise<void> {

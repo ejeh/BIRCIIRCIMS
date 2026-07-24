@@ -22,6 +22,7 @@ import {
   AuthenticatedUser,
   ChangePasswordDto,
   ForgottenPasswordDto,
+  Login2FADto,
   LoginDto,
   ResetPasswordDto,
   SignUpDto,
@@ -51,7 +52,6 @@ export class AuthController {
     const getBasePath = () => {
       return config.isDev ? '/source' : '';
     };
-    console.log('getBasePath:', getBasePath());
 
     const result = await this.authService.activate(params);
 
@@ -95,6 +95,14 @@ export class AuthController {
   @ApiResponse({ type: AuthenticatedUser })
   login(@Req() req: AppRequest, @Body() loginDto: LoginDto) {
     return this.authService.login(req?.user);
+  }
+
+  @Post('login/2fa')
+  @ApiOperation({ summary: 'Complete login with 2FA code' })
+  @ApiResponse({ status: 200, description: 'Login completed successfully' })
+  @ApiResponse({ status: 401, description: 'Invalid 2FA code' })
+  async loginWith2FA(@Body() login2FADto: Login2FADto) {
+    return this.authService.complete2FALogin(login2FADto);
   }
 
   @Post('forgot-password')
@@ -152,14 +160,14 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('2fa/enable')
   async enable2FA(@Req() req) {
-    const { backupCodes } = await this.authService.enable2FA(req.user.userId);
+    const { backupCodes } = await this.authService.enable2FA(req.user.id);
     return { message: '2FA enabled successfully', backupCodes };
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('2fa/disable')
   async disable2FA(@Req() req) {
-    await this.authService.disable2FA(req.user.userId);
+    await this.authService.disable2FA(req.user.id);
     return { message: '2FA disabled successfully' };
   }
 
