@@ -562,7 +562,7 @@ export class AuthService {
         { _id: userId },
         { $set: { twoFactorSecret: secret } },
       );
-      // Verify the update was successful
+
       if (updateResult.modifiedCount === 0) {
         throw new Error('Failed to update user with 2FA secret');
       }
