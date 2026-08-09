@@ -731,7 +731,7 @@ export class AuthService {
         {
           headers: {
             'X-API-Key': process.env.ECHOVERIFY_API_KEY, // EchoVerify API key
-            'X-Environment': 'live', // or "test"
+            'X-Environment': 'test', // or "live" for production
             'Content-Type': 'application/json',
           },
         },
