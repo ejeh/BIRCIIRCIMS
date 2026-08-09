@@ -171,23 +171,55 @@ export class AuthController {
     return { message: '2FA disabled successfully' };
   }
 
+  // @Post('verify')
+  // async verifyNIN(
+  //   @Body() body: { nin: string; firstName: string; lastName: string },
+  // ) {
+  //   const { nin, firstName, lastName } = body;
+
+  //   if (!nin || nin.length !== 11) {
+  //     throw new BadRequestException('Invalid NIN format');
+  //   }
+
+  //   if (!firstName || !lastName) {
+  //     throw new BadRequestException(
+  //       'First name and last name are required for NIN verification',
+  //     );
+  //   }
+
+  //   const result = await this.authService.verifyNIN(nin, firstName, lastName);
+
+  //   if (!result || !result.status) {
+  //     throw new BadRequestException('NIN not found or invalid');
+  //   }
+
+  //   return {
+  //     success: true,
+  //     message: 'NIN verified successfully',
+  //     data: {
+  //       firstname: result?.nin?.firstName,
+  //       lastname: result?.nin?.lastName,
+  //       middlename: result?.nin?.middleName,
+  //       dob: result?.nin?.birthdate,
+  //       phone: result?.nin?.mobile,
+  //       stateOfOrigin: result?.nin?.state_of_origin,
+  //       lga: result?.nin?.lga_of_origin,
+  //       NIN: result?.nin?.nin,
+  //     },
+  //   };
+  // }
+
   @Post('verify')
-  async verifyNIN(
-    @Body() body: { nin: string; firstName: string; lastName: string },
-  ) {
-    const { nin, firstName, lastName } = body;
+  async verifyNIN(@Body() body: { nin: string }) {
+    const { nin } = body;
 
     if (!nin || nin.length !== 11) {
       throw new BadRequestException('Invalid NIN format');
     }
 
-    if (!firstName || !lastName) {
-      throw new BadRequestException(
-        'First name and last name are required for NIN verification',
-      );
-    }
+    const result = await this.authService.verifyNIN(nin);
 
-    const result = await this.authService.verifyNIN(nin, firstName, lastName);
+    console.log('result', result);
 
     if (!result || !result.status) {
       throw new BadRequestException('NIN not found or invalid');
@@ -197,14 +229,14 @@ export class AuthController {
       success: true,
       message: 'NIN verified successfully',
       data: {
-        firstname: result?.nin?.firstName,
-        lastname: result?.nin?.lastName,
-        middlename: result?.nin?.middleName,
-        dob: result?.nin?.birthdate,
-        phone: result?.nin?.mobile,
-        stateOfOrigin: result?.nin?.state_of_origin,
-        lga: result?.nin?.lga_of_origin,
-        NIN: result?.nin?.nin,
+        firstname: result?.echoverify_response.data?.firstName,
+        lastname: result?.echoverify_response.data?.lastName,
+        middlename: result?.echoverify_response.data?.middleName,
+        dob: result?.echoverify_response.data?.dateOfBirth,
+        phone: result?.echoverify_response.data?.mobile,
+        // stateOfOrigin: result?. echoverify_response.data?.state_of_origin,
+        // lga: result?. echoverify_response.data?.lga_of_origin,
+        NIN: result?.echoverify_response.data?.idNumber,
       },
     };
   }

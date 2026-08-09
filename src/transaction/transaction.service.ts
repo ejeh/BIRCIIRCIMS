@@ -59,9 +59,12 @@ export class TransactionService {
       'REMITA_SERVICE_TYPE_ID',
     );
   }
-  private readonly baseUrl = 'https://api.credodemo.com'; // Update if needed
-  private readonly secretKey = process.env.CREDO_SECRET_KEY; // Store in .env
-  private readonly publicKey = process.env.CREDO_PUBLIC_KEY; // Store in .env
+  // private readonly baseUrl = 'https://api.credodemo.com'; // Update if needed
+  private readonly baseUrl = this.configService.get<string>('CREDO_BASE_URL'); // Store in .env
+  private readonly secretKey = this.configService.get<string>('SECRET_KEY'); // Store in .env
+  private readonly publicKey =
+    this.configService.get<string>('CREDO_PUBLIC_KEY'); // Store in .env
+  private readonly serviceCode = this.configService.get<string>('SERVICE_CODE'); // Store in .env
 
   async initializePayment(data: {
     auctioneerId?: string;
@@ -156,6 +159,8 @@ export class TransactionService {
         customer: { email: data.email },
         channels: ['card', 'bank'],
         initializeAccount: 0,
+        // Split settlement
+        serviceCode: this.serviceCode,
       };
 
       const url = `${this.baseUrl}/transaction/initialize`;

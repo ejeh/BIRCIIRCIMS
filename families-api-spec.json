@@ -1,0 +1,2372 @@
+[
+  {
+    "name": "Create Family",
+    "description": "Creates a new family. The authenticated user becomes the family head and is automatically added as a member with memberType 'head' and permissions ['*']. A unique familyNumber (BEN-FAM-YYYY-XXXXXX) is auto-generated.",
+    "controller": "FamiliesController",
+    "methodName": "create",
+    "httpMethod": "POST",
+    "endpoint": "",
+    "fullUrl": "/api/families",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {
+      "familyName": "string (required, min 2, max 100) - Family surname/name",
+      "address": "string (required, max 300) - Family residential address",
+      "state": "string (required) - e.g. 'Benue'",
+      "lga": "string (required) - Local Government Area",
+      "ward": "string (required) - Ward name",
+      "district": "string (optional) - e.g. 'Zone A'",
+      "village": "string (optional) - Village name",
+      "clan": "string (optional) - Clan name",
+      "kindred": "string (optional) - Kindred name"
+    },
+    "requestExample": {
+      "familyName": "Ogenyi Family",
+      "address": "No. 23, Otukpo Road, Makurdi",
+      "state": "Benue",
+      "lga": "Makurdi",
+      "ward": "Ward 1",
+      "district": "Zone A",
+      "village": "Gboko",
+      "clan": "Mbakor",
+      "kindred": "Mbakor"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "familyName: @IsNotEmpty, @IsString, @MinLength(2), @MaxLength(100)",
+      "address: @IsNotEmpty, @IsString, @MaxLength(300)",
+      "state: @IsNotEmpty, @IsString",
+      "lga: @IsNotEmpty, @IsString",
+      "ward: @IsNotEmpty, @IsString",
+      "district: @IsOptional, @IsString",
+      "village: @IsOptional, @IsString",
+      "clan: @IsOptional, @IsString",
+      "kindred: @IsOptional, @IsString"
+    ],
+    "successResponse": {
+      "statusCode": 201,
+      "message": "Family created",
+      "data": "FamilyDocument"
+    },
+    "successExample": {
+      "familyNumber": "BEN-FAM-2026-000001",
+      "familyName": "Ogenyi Family",
+      "address": "No. 23, Otukpo Road, Makurdi",
+      "state": "Benue",
+      "lga": "Makurdi",
+      "ward": "Ward 1",
+      "district": "Zone A",
+      "village": "Gboko",
+      "clan": "Mbakor",
+      "kindred": "Mbakor",
+      "status": "active",
+      "headId": "64a1b2c3d4e5f6a7b8c9d0e1",
+      "createdBy": "64a1b2c3d4e5f6a7b8c9d0e1",
+      "isDeleted": false,
+      "deletedAt": null,
+      "mergedInto": null,
+      "previousHeadId": null,
+      "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
+      "created_at": "2026-07-31T10:30:00.000Z",
+      "updated_at": "2026-07-31T10:30:00.000Z",
+      "__v": 0
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Invalid input data",
+        "description": "Returned when required fields are missing or fail validation"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 409,
+        "message": "You already head a family. A user can only head one family.",
+        "description": "Returned when the user is already the head of another active family"
+      },
+      {
+        "statusCode": 500,
+        "message": "Internal server error",
+        "description": "Returned when an unexpected server error occurs"
+      }
+    ]
+  },
+  {
+    "name": "List All Families",
+    "description": "Retrieves a paginated list of all families (non-deleted). Admin only. Supports search by familyName/familyNumber, filtering by status, lga, ward, and sorting.",
+    "controller": "FamiliesController",
+    "methodName": "findAll",
+    "httpMethod": "GET",
+    "endpoint": "",
+    "fullUrl": "/api/families",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["global_admin", "admin", "support_admin"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {
+      "page": {
+        "type": "number",
+        "required": false,
+        "default": 1,
+        "description": "Page number (min 1)"
+      },
+      "limit": {
+        "type": "number",
+        "required": false,
+        "default": 10,
+        "description": "Number of items per page (min 1)"
+      },
+      "search": {
+        "type": "string",
+        "required": false,
+        "description": "Case-insensitive search on familyName or familyNumber"
+      },
+      "status": {
+        "type": "string",
+        "required": false,
+        "enum": ["active", "inactive", "suspended", "merged"],
+        "description": "Filter by family status"
+      },
+      "lga": {
+        "type": "string",
+        "required": false,
+        "description": "Filter by Local Government Area"
+      },
+      "ward": {
+        "type": "string",
+        "required": false,
+        "description": "Filter by ward"
+      },
+      "sortBy": {
+        "type": "string",
+        "required": false,
+        "default": "created_at",
+        "description": "Field to sort by"
+      },
+      "sortOrder": {
+        "type": "string",
+        "required": false,
+        "default": "desc",
+        "enum": ["asc", "desc"],
+        "description": "Sort direction"
+      }
+    },
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "page: @IsOptional, @IsInt, @Min(1)",
+      "limit: @IsOptional, @IsInt, @Min(1)",
+      "search: @IsOptional, @IsString",
+      "status: @IsOptional, @IsEnum(FamilyStatus)",
+      "lga: @IsOptional, @IsString",
+      "ward: @IsOptional, @IsString",
+      "sortBy: @IsOptional, @IsString",
+      "sortOrder: @IsOptional, @IsString (asc|desc)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "data": ["FamilyDocument[]"],
+        "pagination": {
+          "total": "number",
+          "page": "number",
+          "limit": "number",
+          "totalPages": "number",
+          "hasNextPage": "boolean",
+          "hasPrevPage": "boolean"
+        }
+      }
+    },
+    "successExample": {
+      "data": [
+        {
+          "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
+          "familyNumber": "BEN-FAM-2026-000001",
+          "familyName": "Ogenyi Family",
+          "address": "No. 23, Otukpo Road, Makurdi",
+          "state": "Benue",
+          "lga": "Makurdi",
+          "ward": "Ward 1",
+          "district": "Zone A",
+          "village": "Gboko",
+          "clan": "Mbakor",
+          "kindred": "Mbakor",
+          "status": "active",
+          "headId": {
+            "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+            "firstname": "John",
+            "lastname": "Doe",
+            "email": "john.doe@example.com",
+            "phone": 2348012345678
+          },
+          "createdBy": "64a1b2c3d4e5f6a7b8c9d0e1",
+          "isDeleted": false,
+          "created_at": "2026-07-31T10:30:00.000Z",
+          "updated_at": "2026-07-31T10:30:00.000Z"
+        }
+      ],
+      "pagination": {
+        "total": 42,
+        "page": 1,
+        "limit": 10,
+        "totalPages": 5,
+        "hasNextPage": true,
+        "hasPrevPage": false
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "User does not have require permission",
+        "description": "Returned when the user role is not global_admin, admin, or support_admin"
+      }
+    ]
+  },
+  {
+    "name": "Get My Family",
+    "description": "Returns the family the authenticated user is an active member of, together with its members and dependents, and the user's own memberType.",
+    "controller": "FamiliesController",
+    "methodName": "getMyFamily",
+    "httpMethod": "GET",
+    "endpoint": "my",
+    "fullUrl": "/api/families/my",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "family": "FamilyDocument (headId populated with firstname, lastname, email, phone)",
+        "members": "FamilyMember[] (userId populated with firstname, lastname, email, phone, passportPhoto; dependentId populated)",
+        "dependents": "Dependent[]",
+        "myMemberType": "string (head | adult | dependent)"
+      }
+    },
+    "successExample": {
+      "family": {
+        "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
+        "familyNumber": "BEN-FAM-2026-000001",
+        "familyName": "Ogenyi Family",
+        "headId": {
+          "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+          "firstname": "John",
+          "lastname": "Doe",
+          "email": "john.doe@example.com",
+          "phone": 2348012345678
+        },
+        "address": "No. 23, Otukpo Road, Makurdi",
+        "state": "Benue",
+        "lga": "Makurdi",
+        "ward": "Ward 1",
+        "status": "active",
+        "created_at": "2026-07-31T10:30:00.000Z",
+        "updated_at": "2026-07-31T10:30:00.000Z"
+      },
+      "members": [
+        {
+          "_id": "64f1a2b3c4d5e6f7a8b9c0d2",
+          "familyId": "64f1a2b3c4d5e6f7a8b9c0d1",
+          "userId": {
+            "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+            "firstname": "John",
+            "lastname": "Doe",
+            "email": "john.doe@example.com",
+            "phone": 2348012345678,
+            "passportPhoto": "https://res.cloudinary.com/.../profile.jpg"
+          },
+          "dependentId": null,
+          "memberType": "head",
+          "relationship": "husband",
+          "status": "active",
+          "permissions": ["*"],
+          "joinedAt": "2026-07-31T10:30:00.000Z",
+          "addedBy": "64a1b2c3d4e5f6a7b8c9d0e1",
+          "isDeleted": false,
+          "created_at": "2026-07-31T10:30:00.000Z",
+          "updated_at": "2026-07-31T10:30:00.000Z"
+        }
+      ],
+      "dependents": [],
+      "myMemberType": "head"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 404,
+        "message": "You are not a member of any family",
+        "description": "Returned when the user has no active family membership"
+      }
+    ]
+  },
+  {
+    "name": "Get My Pending Invitations",
+    "description": "Returns all pending family invitations sent to the authenticated user.",
+    "controller": "FamiliesController",
+    "methodName": "getMyInvitations",
+    "httpMethod": "GET",
+    "endpoint": "my-invitations",
+    "fullUrl": "/api/families/my-invitations",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": [
+        {
+          "_id": "string",
+          "token": "string",
+          "family": {
+            "familyName": "string",
+            "familyNumber": "string"
+          },
+          "familyName": "string",
+          "sender": {
+            "_id": "string",
+            "firstname": "string",
+            "lastname": "string",
+            "email": "string"
+          },
+          "relationship": "string",
+          "message": "string",
+          "createdAt": "ISO Date",
+          "expiresAt": "ISO Date",
+          "status": "pending"
+        }
+      ]
+    },
+    "successExample": {
+      "data": [
+        {
+          "_id": "64f1a2b3c4d5e6f7a8b9c0d3",
+          "token": "5f4dcc3b5aa765d61d8327deb882cf99",
+          "family": {
+            "familyName": "Ikyogen Family",
+            "familyNumber": "BEN-FAM-2026-000014"
+          },
+          "familyName": "Ikyogen Family",
+          "sender": {
+            "_id": "64a1b2c3d4e5f6a7b8c9d0e2",
+            "firstname": "Tersoo",
+            "lastname": "Ikyogen",
+            "email": "tersoo@example.com"
+          },
+          "relationship": "brother",
+          "message": "Please join our family account",
+          "createdAt": "2026-07-30T09:00:00.000Z",
+          "expiresAt": "2026-08-06T09:00:00.000Z",
+          "status": "pending"
+        }
+      ]
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get Family by ID",
+    "description": "Returns a single family by its ID, including its members and dependents.",
+    "controller": "FamiliesController",
+    "methodName": "findOne",
+    "httpMethod": "GET",
+    "endpoint": ":id",
+    "fullUrl": "/api/families/:id",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "family": "FamilyDocument (headId populated)",
+        "members": "FamilyMember[] (userId populated with firstname, lastname, email, phone, passportPhoto; dependentId populated)",
+        "dependents": "Dependent[]"
+      }
+    },
+    "successExample": {
+      "family": {
+        "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
+        "familyNumber": "BEN-FAM-2026-000001",
+        "familyName": "Ogenyi Family",
+        "headId": {
+          "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+          "firstname": "John",
+          "lastname": "Doe",
+          "email": "john.doe@example.com",
+          "phone": 2348012345678
+        },
+        "address": "No. 23, Otukpo Road, Makurdi",
+        "state": "Benue",
+        "lga": "Makurdi",
+        "ward": "Ward 1",
+        "status": "active",
+        "isDeleted": false,
+        "created_at": "2026-07-31T10:30:00.000Z",
+        "updated_at": "2026-07-31T10:30:00.000Z"
+      },
+      "members": [],
+      "dependents": []
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 404,
+        "message": "Family not found",
+        "description": "Returned when the family does not exist or has been soft-deleted"
+      }
+    ]
+  },
+  {
+    "name": "Update Family",
+    "description": "Updates the details of a family. Only the family head (or an admin) can update a family. All fields are optional.",
+    "controller": "FamiliesController",
+    "methodName": "update",
+    "httpMethod": "PATCH",
+    "endpoint": ":id",
+    "fullUrl": "/api/families/:id",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "FamilyRoleGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "familyName": "string (optional, max 100)",
+      "address": "string (optional, max 300)",
+      "state": "string (optional)",
+      "lga": "string (optional)",
+      "ward": "string (optional)",
+      "district": "string (optional)",
+      "village": "string (optional)",
+      "clan": "string (optional)",
+      "kindred": "string (optional)"
+    },
+    "requestExample": {
+      "familyName": "Ogenyi Great Family",
+      "address": "No. 45, High Level, Makurdi",
+      "ward": "Ward 2"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "familyName: @IsOptional, @IsString, @MaxLength(100)",
+      "address: @IsOptional, @IsString, @MaxLength(300)",
+      "state/lga/ward/district/village/clan/kindred: @IsOptional, @IsString"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": "FamilyDocument (updated)"
+    },
+    "successExample": {
+      "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
+      "familyNumber": "BEN-FAM-2026-000001",
+      "familyName": "Ogenyi Great Family",
+      "address": "No. 45, High Level, Makurdi",
+      "state": "Benue",
+      "lga": "Makurdi",
+      "ward": "Ward 2",
+      "status": "active",
+      "headId": "64a1b2c3d4e5f6a7b8c9d0e1",
+      "createdBy": "64a1b2c3d4e5f6a7b8c9d0e1",
+      "isDeleted": false,
+      "created_at": "2026-07-31T10:30:00.000Z",
+      "updated_at": "2026-07-31T12:45:00.000Z"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Invalid input data",
+        "description": "Returned when field values fail validation"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "Only family head can update family",
+        "description": "Returned when the authenticated user is not the family head or an admin"
+      },
+      {
+        "statusCode": 404,
+        "message": "Family not found",
+        "description": "Returned when the family does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Delete Family",
+    "description": "Soft-deletes a family. Sets isDeleted=true and deletedAt, and marks all members as removed. Only the family head (or an admin) can delete.",
+    "controller": "FamiliesController",
+    "methodName": "remove",
+    "httpMethod": "DELETE",
+    "endpoint": ":id",
+    "fullUrl": "/api/families/:id",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "FamilyRoleGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Family deleted successfully",
+      "data": {}
+    },
+    "successExample": {
+      "message": "Family deleted successfully"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "Only family head can delete family",
+        "description": "Returned when the authenticated user is not the family head or an admin"
+      },
+      {
+        "statusCode": 404,
+        "message": "Family not found",
+        "description": "Returned when the family does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Invite Member",
+    "description": "Invites an existing registered user (by email) to join the family. Creates a FamilyInvitation with a token valid for 7 days, sends an email with accept/reject links, creates a system notification for the receiver, and logs an audit entry.",
+    "controller": "FamiliesController",
+    "methodName": "inviteMember",
+    "httpMethod": "POST",
+    "endpoint": ":id/invite",
+    "fullUrl": "/api/families/:id/invite",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "FamilyRoleGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "receiverEmail": "string (required) - Email of the user to invite",
+      "relationship": "string (required) - Enum of RelationshipType",
+      "message": "string (optional) - Personal message"
+    },
+    "requestExample": {
+      "receiverEmail": "jane.doe@example.com",
+      "relationship": "wife",
+      "message": "Please join our family account"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "receiverEmail: @IsNotEmpty, @IsString",
+      "relationship: @IsNotEmpty, @IsEnum(RelationshipType)",
+      "message: @IsOptional, @IsString",
+      "RelationshipType values: husband, wife, father, mother, son, daughter, brother, sister, guardian, ward, grandfather, grandmother, grandson, granddaughter, uncle, aunt, cousin, other"
+    ],
+    "successResponse": {
+      "statusCode": 201,
+      "message": "Invitation sent",
+      "data": {
+        "invitation": "FamilyInvitationDocument",
+        "token": "string"
+      }
+    },
+    "successExample": {
+      "invitation": {
+        "_id": "64f1a2b3c4d5e6f7a8b9c0d3",
+        "familyId": "64f1a2b3c4d5e6f7a8b9c0d1",
+        "senderId": "64a1b2c3d4e5f6a7b8c9d0e1",
+        "receiverId": "64a1b2c3d4e5f6a7b8c9d0e5",
+        "token": "5f4dcc3b5aa765d61d8327deb882cf99",
+        "expiresAt": "2026-08-07T10:30:00.000Z",
+        "status": "pending",
+        "relationship": "wife",
+        "message": "Please join our family account",
+        "respondedAt": null,
+        "isDeleted": false,
+        "created_at": "2026-07-31T10:30:00.000Z",
+        "updated_at": "2026-07-31T10:30:00.000Z"
+      },
+      "token": "5f4dcc3b5aa765d61d8327deb882cf99"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Invalid input data",
+        "description": "Returned when required fields are missing or relationship is invalid"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "Only family head can invite members",
+        "description": "Returned when the authenticated user is not the family head or an admin"
+      },
+      {
+        "statusCode": 404,
+        "message": "User with this email not found",
+        "description": "Returned when no registered user exists with the given email"
+      },
+      {
+        "statusCode": 409,
+        "message": "User is already a member of this family",
+        "description": "Returned when the invited user is already a family member"
+      },
+      {
+        "statusCode": 409,
+        "message": "An invitation has already been sent to this user",
+        "description": "Returned when a pending invitation already exists for the user"
+      }
+    ]
+  },
+  {
+    "name": "Accept Invitation (Public)",
+    "description": "Public endpoint. Accepts a family invitation using the token from the email link. Adds the receiver as an active adult member, notifies the sender, and logs an audit entry.",
+    "controller": "FamiliesController",
+    "methodName": "acceptInvitation",
+    "httpMethod": "GET",
+    "endpoint": "invite/accept/:token",
+    "fullUrl": "/api/families/invite/accept/:token",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "token": {
+        "type": "string",
+        "description": "The invitation token from the email link"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "token: @IsNotEmpty, @IsString"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Invitation accepted successfully",
+      "data": {}
+    },
+    "successExample": {
+      "message": "Invitation accepted successfully"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Invitation has expired",
+        "description": "Returned when the invitation is past its expiresAt date"
+      },
+      {
+        "statusCode": 404,
+        "message": "Invitation not found or already responded to",
+        "description": "Returned when the token is invalid or the invitation is no longer pending"
+      }
+    ]
+  },
+  {
+    "name": "Reject Invitation (Public)",
+    "description": "Public endpoint. Rejects a family invitation using the token from the email link. Marks the invitation as rejected and logs an audit entry.",
+    "controller": "FamiliesController",
+    "methodName": "rejectInvitation",
+    "httpMethod": "GET",
+    "endpoint": "invite/reject/:token",
+    "fullUrl": "/api/families/invite/reject/:token",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "token": {
+        "type": "string",
+        "description": "The invitation token from the email link"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "token: @IsNotEmpty, @IsString"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Invitation rejected",
+      "data": {}
+    },
+    "successExample": {
+      "message": "Invitation rejected"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Invitation not found or already responded to",
+        "description": "Returned when the token is invalid or the invitation is no longer pending"
+      }
+    ]
+  },
+  {
+    "name": "Add Member",
+    "description": "Adds an existing user (by userId) directly as an adult member of the family, without an invitation. Only the family head (or an admin) can add members.",
+    "controller": "FamiliesController",
+    "methodName": "addMember",
+    "httpMethod": "POST",
+    "endpoint": ":id/members",
+    "fullUrl": "/api/families/:id/members",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "FamilyRoleGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "userId": "string (required) - The user ID of the member to add",
+      "relationship": "string (required) - Enum of RelationshipType"
+    },
+    "requestExample": {
+      "userId": "64a1b2c3d4e5f6a7b8c9d0e5",
+      "relationship": "wife"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "userId: @IsNotEmpty, @IsString",
+      "relationship: @IsNotEmpty, @IsEnum(RelationshipType)"
+    ],
+    "successResponse": {
+      "statusCode": 201,
+      "message": "Member added",
+      "data": "FamilyMemberDocument"
+    },
+    "successExample": {
+      "_id": "64f1a2b3c4d5e6f7a8b9c0d4",
+      "familyId": "64f1a2b3c4d5e6f7a8b9c0d1",
+      "userId": "64a1b2c3d4e5f6a7b8c9d0e5",
+      "dependentId": null,
+      "memberType": "adult",
+      "relationship": "wife",
+      "status": "active",
+      "permissions": [],
+      "joinedAt": "2026-07-31T14:00:00.000Z",
+      "addedBy": "64a1b2c3d4e5f6a7b8c9d0e1",
+      "isDeleted": false,
+      "created_at": "2026-07-31T14:00:00.000Z",
+      "updated_at": "2026-07-31T14:00:00.000Z"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Invalid input data",
+        "description": "Returned when required fields are missing or relationship is invalid"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "Only family head can add members",
+        "description": "Returned when the authenticated user is not the family head or an admin"
+      },
+      {
+        "statusCode": 404,
+        "message": "Family not found",
+        "description": "Returned when the family does not exist"
+      },
+      {
+        "statusCode": 409,
+        "message": "User is already a family member",
+        "description": "Returned when the user is already a member of the family"
+      }
+    ]
+  },
+  {
+    "name": "Remove Member",
+    "description": "Removes a family member (soft delete). The family head cannot be removed. Only the family head (or an admin) can remove members.",
+    "controller": "FamiliesController",
+    "methodName": "removeMember",
+    "httpMethod": "DELETE",
+    "endpoint": ":id/members/:memberId",
+    "fullUrl": "/api/families/:id/members/:memberId",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "FamilyRoleGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      },
+      "memberId": {
+        "type": "string",
+        "description": "The unique identifier of the family member (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Member removed successfully",
+      "data": {}
+    },
+    "successExample": {
+      "message": "Member removed successfully"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Cannot remove family head",
+        "description": "Returned when trying to remove the head member"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "Only family head can remove members",
+        "description": "Returned when the authenticated user is not the family head or an admin"
+      },
+      {
+        "statusCode": 404,
+        "message": "Member not found",
+        "description": "Returned when the member does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Update Member",
+    "description": "Updates a family member's relationship, status, or permissions. Only the family head (or an admin) can update members. Logs a role_changed audit action.",
+    "controller": "FamiliesController",
+    "methodName": "updateMember",
+    "httpMethod": "PATCH",
+    "endpoint": ":id/members/:memberId",
+    "fullUrl": "/api/families/:id/members/:memberId",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "FamilyRoleGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      },
+      "memberId": {
+        "type": "string",
+        "description": "The unique identifier of the family member (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "relationship": "string (optional) - Enum of RelationshipType",
+      "status": "string (optional) - Enum of MemberStatus (active | invited | suspended | removed)",
+      "permissions": "string[] (optional)"
+    },
+    "requestExample": {
+      "relationship": "wife",
+      "status": "active",
+      "permissions": ["family:read", "family:documents"]
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "relationship: @IsOptional, @IsEnum(RelationshipType)",
+      "status: @IsOptional, @IsEnum(MemberStatus)",
+      "permissions: @IsOptional, string[]"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": "FamilyMemberDocument (updated)"
+    },
+    "successExample": {
+      "_id": "64f1a2b3c4d5e6f7a8b9c0d4",
+      "familyId": "64f1a2b3c4d5e6f7a8b9c0d1",
+      "userId": "64a1b2c3d4e5f6a7b8c9d0e5",
+      "dependentId": null,
+      "memberType": "adult",
+      "relationship": "wife",
+      "status": "active",
+      "permissions": ["family:read", "family:documents"],
+      "joinedAt": "2026-07-31T14:00:00.000Z",
+      "addedBy": "64a1b2c3d4e5f6a7b8c9d0e1",
+      "isDeleted": false,
+      "created_at": "2026-07-31T14:00:00.000Z",
+      "updated_at": "2026-07-31T15:20:00.000Z"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Invalid input data",
+        "description": "Returned when relationship or status enum values are invalid"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "Only family head can update members",
+        "description": "Returned when the authenticated user is not the family head or an admin"
+      },
+      {
+        "statusCode": 404,
+        "message": "Member not found",
+        "description": "Returned when the member does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Transfer Headship",
+    "description": "Transfers family headship to another active family member. The current head becomes an adult member, and the new head receives full permissions and a system notification.",
+    "controller": "FamiliesController",
+    "methodName": "transferHeadship",
+    "httpMethod": "PATCH",
+    "endpoint": ":id/transfer-headship",
+    "fullUrl": "/api/families/:id/transfer-headship",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "FamilyRoleGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "newHeadId": "string (required) - The user ID of the new family head"
+    },
+    "requestExample": {
+      "newHeadId": "64a1b2c3d4e5f6a7b8c9d0e5"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "newHeadId: @IsNotEmpty, @IsString"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Headship transferred successfully",
+      "data": {}
+    },
+    "successExample": {
+      "message": "Headship transferred successfully"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Invalid input data",
+        "description": "Returned when newHeadId is missing"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "Only the current head can transfer headship",
+        "description": "Returned when the authenticated user is not the family head or an admin"
+      },
+      {
+        "statusCode": 404,
+        "message": "New head must be an active family member",
+        "description": "Returned when the target user is not an active member of the family"
+      }
+    ]
+  },
+  {
+    "name": "Add Dependent",
+    "description": "Adds a dependent (child, elderly, ward) to the family. Creates a Dependent record and links it to a FamilyMember with memberType 'dependent'. Only the family head (or an admin) can add dependents.",
+    "controller": "FamiliesController",
+    "methodName": "addDependent",
+    "httpMethod": "POST",
+    "endpoint": ":id/dependents",
+    "fullUrl": "/api/families/:id/dependents",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "FamilyRoleGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "firstName": "string (required)",
+      "lastName": "string (required)",
+      "middleName": "string (optional)",
+      "dob": "string (required, ISO date, e.g. 2018-05-15)",
+      "gender": "string (required, e.g. Male/Female)",
+      "nin": "string (optional)",
+      "birthCertificateNumber": "string (optional)",
+      "stateOfOrigin": "string (optional)",
+      "lgaOfOrigin": "string (optional)",
+      "relationship": "string (required) - Enum of RelationshipType (e.g. son, daughter, ward, grandson)"
+    },
+    "requestExample": {
+      "firstName": "Adaeze",
+      "lastName": "Ogenyi",
+      "middleName": "Ngozi",
+      "dob": "2018-05-15",
+      "gender": "Female",
+      "nin": "12345678901",
+      "birthCertificateNumber": "BC-2020-001234",
+      "stateOfOrigin": "Benue",
+      "lgaOfOrigin": "Makurdi",
+      "relationship": "daughter"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "firstName: @IsNotEmpty, @IsString",
+      "lastName: @IsNotEmpty, @IsString",
+      "middleName: @IsOptional, @IsString",
+      "dob: @IsNotEmpty, @IsDateString",
+      "gender: @IsNotEmpty, @IsString",
+      "nin: @IsOptional, @IsString",
+      "birthCertificateNumber: @IsOptional, @IsString",
+      "stateOfOrigin: @IsOptional, @IsString",
+      "lgaOfOrigin: @IsOptional, @IsString",
+      "relationship: @IsNotEmpty, @IsEnum(RelationshipType)"
+    ],
+    "successResponse": {
+      "statusCode": 201,
+      "message": "Dependent added",
+      "data": "DependentDocument"
+    },
+    "successExample": {
+      "_id": "64f1a2b3c4d5e6f7a8b9c0d5",
+      "firstName": "Adaeze",
+      "lastName": "Ogenyi",
+      "middleName": "Ngozi",
+      "dob": "2018-05-15T00:00:00.000Z",
+      "gender": "Female",
+      "nin": "12345678901",
+      "birthCertificateNumber": "BC-2020-001234",
+      "stateOfOrigin": "Benue",
+      "lgaOfOrigin": "Makurdi",
+      "parentId": "64a1b2c3d4e5f6a7b8c9d0e1",
+      "guardianId": null,
+      "passportPhoto": null,
+      "familyId": "64f1a2b3c4d5e6f7a8b9c0d1",
+      "status": "active",
+      "isDeleted": false,
+      "created_at": "2026-07-31T16:00:00.000Z",
+      "updated_at": "2026-07-31T16:00:00.000Z",
+      "__v": 0
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Invalid input data",
+        "description": "Returned when required fields are missing or relationship/dob is invalid"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "Only family head can add dependents",
+        "description": "Returned when the authenticated user is not the family head or an admin"
+      },
+      {
+        "statusCode": 404,
+        "message": "Family not found",
+        "description": "Returned when the family does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Update Dependent",
+    "description": "Updates a dependent's details. All fields are optional. Only the family head (or an admin) can update dependents.",
+    "controller": "FamiliesController",
+    "methodName": "updateDependent",
+    "httpMethod": "PATCH",
+    "endpoint": ":id/dependents/:dependentId",
+    "fullUrl": "/api/families/:id/dependents/:dependentId",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "FamilyRoleGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      },
+      "dependentId": {
+        "type": "string",
+        "description": "The unique identifier of the dependent (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "firstName": "string (optional)",
+      "lastName": "string (optional)",
+      "middleName": "string (optional)",
+      "dob": "string (optional, ISO date)",
+      "gender": "string (optional)",
+      "nin": "string (optional)",
+      "birthCertificateNumber": "string (optional)",
+      "stateOfOrigin": "string (optional)",
+      "lgaOfOrigin": "string (optional)",
+      "relationship": "string (optional) - Enum of RelationshipType"
+    },
+    "requestExample": {
+      "middleName": "Ngozi Mary",
+      "gender": "Female"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "firstName/lastName/middleName/gender/nin/birthCertificateNumber/stateOfOrigin/lgaOfOrigin: @IsOptional, @IsString",
+      "dob: @IsOptional, @IsDateString",
+      "relationship: @IsOptional, @IsEnum(RelationshipType)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": "DependentDocument (updated)"
+    },
+    "successExample": {
+      "_id": "64f1a2b3c4d5e6f7a8b9c0d5",
+      "firstName": "Adaeze",
+      "lastName": "Ogenyi",
+      "middleName": "Ngozi Mary",
+      "dob": "2018-05-15T00:00:00.000Z",
+      "gender": "Female",
+      "nin": "12345678901",
+      "birthCertificateNumber": "BC-2020-001234",
+      "stateOfOrigin": "Benue",
+      "lgaOfOrigin": "Makurdi",
+      "parentId": "64a1b2c3d4e5f6a7b8c9d0e1",
+      "familyId": "64f1a2b3c4d5e6f7a8b9c0d1",
+      "status": "active",
+      "isDeleted": false,
+      "created_at": "2026-07-31T16:00:00.000Z",
+      "updated_at": "2026-07-31T17:10:00.000Z"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Invalid input data",
+        "description": "Returned when field values fail validation"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "Only family head can update dependents",
+        "description": "Returned when the authenticated user is not the family head or an admin"
+      },
+      {
+        "statusCode": 404,
+        "message": "Dependent not found",
+        "description": "Returned when the dependent does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Remove Dependent",
+    "description": "Removes a dependent (soft delete) and unlinks its family member records. Only the family head (or an admin) can remove dependents.",
+    "controller": "FamiliesController",
+    "methodName": "removeDependent",
+    "httpMethod": "DELETE",
+    "endpoint": ":id/dependents/:dependentId",
+    "fullUrl": "/api/families/:id/dependents/:dependentId",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "FamilyRoleGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      },
+      "dependentId": {
+        "type": "string",
+        "description": "The unique identifier of the dependent (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Dependent removed successfully",
+      "data": {}
+    },
+    "successExample": {
+      "message": "Dependent removed successfully"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "Only family head can remove dependents",
+        "description": "Returned when the authenticated user is not the family head or an admin"
+      },
+      {
+        "statusCode": 404,
+        "message": "Family not found",
+        "description": "Returned when the family does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Get Family Dashboard",
+    "description": "Returns a dashboard summary for a family: counts of members/adults/dependents, application and payment stats, recent activities, members, dependents, and invitations sent by the current user.",
+    "controller": "FamiliesController",
+    "methodName": "getDashboard",
+    "httpMethod": "GET",
+    "endpoint": ":id/dashboard",
+    "fullUrl": "/api/families/:id/dashboard",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "FamilyRoleGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "familyNumber": "string",
+        "familyName": "string",
+        "headId": "ObjectId",
+        "summary": {
+          "totalMembers": "number",
+          "adults": "number",
+          "dependents": "number",
+          "pendingInvitations": "number",
+          "pendingApplications": "number",
+          "approvedApplications": "number",
+          "rejectedApplications": "number",
+          "pendingPayments": "number",
+          "completedPayments": "number"
+        },
+        "recentActivities": "FamilyAuditLog[] (actorId populated with firstname, lastname)",
+        "members": "FamilyMember[] (userId and dependentId populated)",
+        "dependents": "FamilyMember[] where addedBy = current user and memberType = dependent (dependentId populated)",
+        "sentInvitations": "FamilyInvitation[] (receiverId populated with firstname, lastname, email)"
+      }
+    },
+    "successExample": {
+      "familyNumber": "BEN-FAM-2026-000001",
+      "familyName": "Ogenyi Family",
+      "headId": "64a1b2c3d4e5f6a7b8c9d0e1",
+      "summary": {
+        "totalMembers": 5,
+        "adults": 3,
+        "dependents": 2,
+        "pendingInvitations": 1,
+        "pendingApplications": 2,
+        "approvedApplications": 1,
+        "rejectedApplications": 0,
+        "pendingPayments": 1,
+        "completedPayments": 3
+      },
+      "recentActivities": [
+        {
+          "_id": "64f1a2b3c4d5e6f7a8b9c0d6",
+          "familyId": "64f1a2b3c4d5e6f7a8b9c0d1",
+          "actorId": {
+            "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+            "firstname": "John",
+            "lastname": "Doe"
+          },
+          "action": "member_added",
+          "description": "Family created and member added as head",
+          "metadata": {
+            "memberType": "head"
+          },
+          "ipAddress": null,
+          "userAgent": null,
+          "created_at": "2026-07-31T10:30:00.000Z",
+          "updated_at": "2026-07-31T10:30:00.000Z"
+        }
+      ],
+      "members": [],
+      "dependents": [],
+      "sentInvitations": [
+        {
+          "_id": "64f1a2b3c4d5e6f7a8b9c0d3",
+          "email": "jane.doe@example.com",
+          "receiver": {
+            "_id": "64a1b2c3d4e5f6a7b8c9d0e5",
+            "firstname": "Jane",
+            "lastname": "Doe",
+            "email": "jane.doe@example.com"
+          },
+          "createdAt": "2026-07-31T10:30:00.000Z",
+          "expiresAt": "2026-08-07T10:30:00.000Z",
+          "status": "pending"
+        }
+      ]
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "You are not an active member of this family",
+        "description": "Returned when the authenticated user is not an active member or admin"
+      },
+      {
+        "statusCode": 404,
+        "message": "Family not found",
+        "description": "Returned when the family does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Get Family Applications",
+    "description": "Returns all certificate and ID card applications submitted by family members, merged and sorted by created date descending. Each item includes a 'type' field ('certificate' or 'idcard').",
+    "controller": "FamiliesController",
+    "methodName": "getApplications",
+    "httpMethod": "GET",
+    "endpoint": ":id/applications",
+    "fullUrl": "/api/families/:id/applications",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "FamilyRoleGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": [
+        {
+          "type": "certificate | idcard",
+          "reference": "string (certificate refNumber, '-' for idcard)",
+          "createdAt": "ISO Date",
+          "...": "spread of Certificate or IdCard document"
+        }
+      ]
+    },
+    "successExample": [
+      {
+        "type": "certificate",
+        "reference": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "createdAt": "2026-07-29T08:00:00.000Z",
+        "_id": "64f1a2b3c4d5e6f7a8b9c0d7",
+        "userId": "64a1b2c3d4e5f6a7b8c9d0e1",
+        "status": "pending",
+        "firstname": "John",
+        "lastname": "Doe",
+        "email": "john.doe@example.com",
+        "refNumber": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "lgaOfOrigin": "Makurdi",
+        "created_at": "2026-07-29T08:00:00.000Z"
+      },
+      {
+        "type": "idcard",
+        "reference": "-",
+        "createdAt": "2026-07-28T09:30:00.000Z",
+        "_id": "64f1a2b3c4d5e6f7a8b9c0d8",
+        "userId": "64a1b2c3d4e5f6a7b8c9d0e5",
+        "status": "approved",
+        "firstname": "Jane",
+        "lastname": "Doe",
+        "email": "jane.doe@example.com",
+        "card_type": "Standard",
+        "bin": "BEN123456",
+        "created_at": "2026-07-28T09:30:00.000Z"
+      }
+    ],
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "You are not an active member of this family",
+        "description": "Returned when the authenticated user is not an active member or admin"
+      },
+      {
+        "statusCode": 404,
+        "message": "Family not found",
+        "description": "Returned when the family does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Get Family Payments",
+    "description": "Returns all payments (transactions) made by family members, sorted by createdAt descending. Each item includes a generated description like '<paymentType> payment'.",
+    "controller": "FamiliesController",
+    "methodName": "getPayments",
+    "httpMethod": "GET",
+    "endpoint": ":id/payments",
+    "fullUrl": "/api/families/:id/payments",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "FamilyRoleGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": [
+        {
+          "description": "string (e.g. 'certificate payment')",
+          "...": "spread of Transaction document"
+        }
+      ]
+    },
+    "successExample": [
+      {
+        "_id": "64f1a2b3c4d5e6f7a8b9c0d9",
+        "userId": "64a1b2c3d4e5f6a7b8c9d0e1",
+        "certificateId": "64f1a2b3c4d5e6f7a8b9c0d7",
+        "cardId": null,
+        "auctioneerId": null,
+        "reference": "TRX-20260729-0001",
+        "amount": 2500,
+        "documentAmount": 0,
+        "totalAmount": 2500,
+        "email": "john.doe@example.com",
+        "status": "success",
+        "currency": "NGN",
+        "paymentType": "certificate",
+        "customer": {
+          "firstname": "John",
+          "lastname": "Doe",
+          "email": "john.doe@example.com",
+          "phoneNo": "08012345678"
+        },
+        "verified": true,
+        "receiptUrl": null,
+        "receiptUploadedAt": null,
+        "createdAt": "2026-07-29T08:05:00.000Z",
+        "verifiedAt": "2026-07-29T08:05:00.000Z",
+        "description": "certificate payment"
+      }
+    ],
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "You are not an active member of this family",
+        "description": "Returned when the authenticated user is not an active member or admin"
+      },
+      {
+        "statusCode": 404,
+        "message": "Family not found",
+        "description": "Returned when the family does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Get Family Documents",
+    "description": "Returns a paginated list of documents uploaded for a family (non-deleted), sorted by created date descending.",
+    "controller": "FamiliesController",
+    "methodName": "getDocuments",
+    "httpMethod": "GET",
+    "endpoint": ":id/documents",
+    "fullUrl": "/api/families/:id/documents",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "FamilyRoleGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {
+      "page": {
+        "type": "number",
+        "required": false,
+        "default": 1,
+        "description": "Page number"
+      },
+      "limit": {
+        "type": "number",
+        "required": false,
+        "default": 20,
+        "description": "Number of items per page"
+      }
+    },
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "data": "FamilyDocumentDocument[] (uploadedBy and verifiedBy populated with firstname, lastname)",
+        "total": "number",
+        "page": "number",
+        "limit": "number",
+        "totalPages": "number"
+      }
+    },
+    "successExample": {
+      "data": [
+        {
+          "_id": "64f1a2b3c4d5e6f7a8b9c0dA",
+          "familyId": "64f1a2b3c4d5e6f7a8b9c0d1",
+          "documentType": "birth_certificate",
+          "fileName": "Adaeze-birth-certificate.pdf",
+          "fileUrl": "https://res.cloudinary.com/.../family-documents/adaeze.pdf",
+          "mimeType": "application/pdf",
+          "fileSize": 245760,
+          "description": "Birth certificate for Adaeze",
+          "uploadedBy": {
+            "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+            "firstname": "John",
+            "lastname": "Doe"
+          },
+          "isVerified": false,
+          "verifiedBy": null,
+          "verifiedAt": null,
+          "isDeleted": false,
+          "created_at": "2026-07-31T18:00:00.000Z",
+          "updated_at": "2026-07-31T18:00:00.000Z"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "limit": 20,
+      "totalPages": 1
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "You are not an active member of this family",
+        "description": "Returned when the authenticated user is not an active member or admin"
+      },
+      {
+        "statusCode": 404,
+        "message": "Family not found",
+        "description": "Returned when the family does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Upload Family Document",
+    "description": "Uploads a family document to Cloudinary and creates a FamilyDocument record. Only the family head (or an admin) can upload. Accepted mime types: image/jpeg, image/png, image/jpg, image/webp, application/pdf (max 10MB).",
+    "controller": "FamiliesController",
+    "methodName": "uploadDocument",
+    "httpMethod": "POST",
+    "endpoint": ":id/documents",
+    "fullUrl": "/api/families/:id/documents",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "FamilyRoleGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "multipart/form-data"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "file": "File (required) - The document file",
+      "documentType": "string (required) - Enum of DocumentType",
+      "description": "string (optional)"
+    },
+    "requestExample": {},
+    "multipart": {
+      "enabled": true,
+      "files": [
+        {
+          "fieldName": "file",
+          "required": true,
+          "maxSize": "10MB",
+          "mimeType": "image/jpeg, image/png, image/jpg, image/webp, application/pdf"
+        }
+      ],
+      "fields": {
+        "documentType": {
+          "type": "string",
+          "required": true,
+          "enum": "marriage_certificate, birth_certificate, family_photograph, utility_bill, proof_of_address, other"
+        },
+        "description": {
+          "type": "string",
+          "required": false
+        }
+      }
+    },
+    "validation": [
+      "file: required (throws 400 'File is required' if missing)",
+      "documentType: normalized via normalizeDocumentType; must be one of DocumentType values or a normalized form",
+      "Valid values: marriage_certificate, birth_certificate, family_photograph, utility_bill, proof_of_address, other"
+    ],
+    "successResponse": {
+      "statusCode": 201,
+      "message": "Document uploaded",
+      "data": "FamilyDocumentDocument"
+    },
+    "successExample": {
+      "_id": "64f1a2b3c4d5e6f7a8b9c0dA",
+      "familyId": "64f1a2b3c4d5e6f7a8b9c0d1",
+      "documentType": "birth_certificate",
+      "fileName": "Adaeze-birth-certificate.pdf",
+      "fileUrl": "https://res.cloudinary.com/.../family-documents/adaeze.pdf",
+      "mimeType": "application/pdf",
+      "fileSize": 245760,
+      "description": "Birth certificate for Adaeze",
+      "uploadedBy": "64a1b2c3d4e5f6a7b8c9d0e1",
+      "isVerified": false,
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "isDeleted": false,
+      "created_at": "2026-07-31T18:00:00.000Z",
+      "updated_at": "2026-07-31T18:00:00.000Z",
+      "__v": 0
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "File is required",
+        "description": "Returned when no file is attached"
+      },
+      {
+        "statusCode": 400,
+        "message": "Invalid documentType: '<value>'. Valid values: marriage_certificate, birth_certificate, family_photograph, utility_bill, proof_of_address, other",
+        "description": "Returned when documentType is not one of the valid values"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "Only family head can upload documents",
+        "description": "Returned when the authenticated user is not the family head or an admin"
+      },
+      {
+        "statusCode": 404,
+        "message": "Family not found",
+        "description": "Returned when the family does not exist"
+      },
+      {
+        "statusCode": 500,
+        "message": "File upload failed",
+        "description": "Returned when the Cloudinary upload fails"
+      }
+    ]
+  },
+  {
+    "name": "Delete Family Document",
+    "description": "Deletes a family document (soft delete) and removes the file from Cloudinary. Only the family head (or an admin) can delete documents.",
+    "controller": "FamiliesController",
+    "methodName": "deleteDocument",
+    "httpMethod": "DELETE",
+    "endpoint": ":id/documents/:documentId",
+    "fullUrl": "/api/families/:id/documents/:documentId",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "FamilyRoleGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      },
+      "documentId": {
+        "type": "string",
+        "description": "The unique identifier of the document (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Document deleted successfully",
+      "data": {}
+    },
+    "successExample": {
+      "message": "Document deleted successfully"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "Only family head can delete documents",
+        "description": "Returned when the authenticated user is not the family head or an admin"
+      },
+      {
+        "statusCode": 404,
+        "message": "Document not found",
+        "description": "Returned when the document does not exist or has been deleted"
+      }
+    ]
+  },
+  {
+    "name": "Verify Family Document (Admin)",
+    "description": "Verifies or un-verifies a family document. Admin only. Sets isVerified, verifiedBy, and verifiedAt.",
+    "controller": "FamiliesController",
+    "methodName": "verifyDocument",
+    "httpMethod": "PATCH",
+    "endpoint": ":id/documents/:documentId/verify",
+    "fullUrl": "/api/families/:id/documents/:documentId/verify",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["global_admin", "admin"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      },
+      "documentId": {
+        "type": "string",
+        "description": "The unique identifier of the document (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "isVerified": "boolean (required) - true to verify, false to un-verify"
+    },
+    "requestExample": {
+      "isVerified": true
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "isVerified: raw @Body('isVerified') boolean"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": "FamilyDocumentDocument (updated)"
+    },
+    "successExample": {
+      "_id": "64f1a2b3c4d5e6f7a8b9c0dA",
+      "familyId": "64f1a2b3c4d5e6f7a8b9c0d1",
+      "documentType": "birth_certificate",
+      "fileName": "Adaeze-birth-certificate.pdf",
+      "fileUrl": "https://res.cloudinary.com/.../family-documents/adaeze.pdf",
+      "mimeType": "application/pdf",
+      "fileSize": 245760,
+      "description": "Birth certificate for Adaeze",
+      "uploadedBy": "64a1b2c3d4e5f6a7b8c9d0e1",
+      "isVerified": true,
+      "verifiedBy": "64a1b2c3d4e5f6a7b8c9d0f1",
+      "verifiedAt": "2026-08-01T09:00:00.000Z",
+      "isDeleted": false,
+      "created_at": "2026-07-31T18:00:00.000Z",
+      "updated_at": "2026-08-01T09:00:00.000Z"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "User does not have require permission",
+        "description": "Returned when the user role is not global_admin or admin"
+      },
+      {
+        "statusCode": 404,
+        "message": "Document not found",
+        "description": "Returned when the document does not exist or belongs to a different family"
+      }
+    ]
+  },
+  {
+    "name": "Get Family Activity Log",
+    "description": "Returns a paginated list of audit log entries for a family, sorted by created date descending.",
+    "controller": "FamiliesController",
+    "methodName": "getActivityLog",
+    "httpMethod": "GET",
+    "endpoint": ":id/activity-log",
+    "fullUrl": "/api/families/:id/activity-log",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "FamilyRoleGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {
+      "page": {
+        "type": "number",
+        "required": false,
+        "default": 1,
+        "description": "Page number"
+      },
+      "limit": {
+        "type": "number",
+        "required": false,
+        "default": 20,
+        "description": "Number of items per page"
+      }
+    },
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "data": "FamilyAuditLog[] (actorId populated with firstname, lastname, email)",
+        "pagination": {
+          "total": "number",
+          "page": "number",
+          "limit": "number",
+          "totalPages": "number"
+        }
+      }
+    },
+    "successExample": {
+      "data": [
+        {
+          "_id": "64f1a2b3c4d5e6f7a8b9c0d6",
+          "familyId": "64f1a2b3c4d5e6f7a8b9c0d1",
+          "actorId": {
+            "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+            "firstname": "John",
+            "lastname": "Doe",
+            "email": "john.doe@example.com"
+          },
+          "action": "document_uploaded",
+          "description": null,
+          "metadata": {
+            "documentId": "64f1a2b3c4d5e6f7a8b9c0dA",
+            "documentType": "birth_certificate"
+          },
+          "ipAddress": null,
+          "userAgent": null,
+          "created_at": "2026-07-31T18:00:00.000Z",
+          "updated_at": "2026-07-31T18:00:00.000Z"
+        }
+      ],
+      "pagination": {
+        "total": 8,
+        "page": 1,
+        "limit": 20,
+        "totalPages": 1
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "You are not an active member of this family",
+        "description": "Returned when the authenticated user is not an active member or admin"
+      },
+      {
+        "statusCode": 404,
+        "message": "Family not found",
+        "description": "Returned when the family does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Suspend Family (Admin)",
+    "description": "Suspends a family by setting its status to 'suspended'. Admin only.",
+    "controller": "FamiliesController",
+    "methodName": "suspendFamily",
+    "httpMethod": "PATCH",
+    "endpoint": ":id/suspend",
+    "fullUrl": "/api/families/:id/suspend",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["global_admin", "admin"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": "FamilyDocument (updated, status = suspended)"
+    },
+    "successExample": {
+      "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
+      "familyNumber": "BEN-FAM-2026-000001",
+      "familyName": "Ogenyi Family",
+      "status": "suspended",
+      "headId": "64a1b2c3d4e5f6a7b8c9d0e1",
+      "isDeleted": false,
+      "updated_at": "2026-08-02T08:00:00.000Z"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "User does not have require permission",
+        "description": "Returned when the user role is not global_admin or admin"
+      },
+      {
+        "statusCode": 404,
+        "message": "Family not found",
+        "description": "Returned when the family does not exist"
+      }
+    ]
+  },
+  {
+    "name": "Activate Family (Admin)",
+    "description": "Activates a suspended family by setting its status to 'active'. Admin only.",
+    "controller": "FamiliesController",
+    "methodName": "activateFamily",
+    "httpMethod": "PATCH",
+    "endpoint": ":id/activate",
+    "fullUrl": "/api/families/:id/activate",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["global_admin", "admin"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The unique identifier of the family (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": "FamilyDocument (updated, status = active)"
+    },
+    "successExample": {
+      "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
+      "familyNumber": "BEN-FAM-2026-000001",
+      "familyName": "Ogenyi Family",
+      "status": "active",
+      "headId": "64a1b2c3d4e5f6a7b8c9d0e1",
+      "isDeleted": false,
+      "updated_at": "2026-08-03T08:00:00.000Z"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Missing or invalid JWT token"
+      },
+      {
+        "statusCode": 403,
+        "message": "User does not have require permission",
+        "description": "Returned when the user role is not global_admin or admin"
+      },
+      {
+        "statusCode": 404,
+        "message": "Family not found",
+        "description": "Returned when the family does not exist"
+      }
+    ]
+  }
+]

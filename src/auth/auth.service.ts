@@ -308,18 +308,24 @@ export class AuthService {
     }
 
     // 3️⃣ Verify NIN with QoreId
-    const verification = await this.verifyNIN(NIN, firstname, lastname);
+    // const verification = await this.verifyNIN(NIN, firstname, lastname);
+    // if (!verification || !verification.status) {
+    //   throw new BadRequestException('NIN verification failed');
+    // }
+
+    // 3️⃣ Verify NIN with ECHOVERIFY
+    const verification = await this.verifyNIN(NIN);
     if (!verification || !verification.status) {
       throw new BadRequestException('NIN verification failed');
     }
 
-    const verifiedData = verification?.nin;
+    const verifiedData = verification.echoverify_response?.data;
     // 4️⃣ Match user-submitted data with verified record
     if (
-      verifiedData?.firstname?.toLowerCase() !== firstname.toLowerCase() ||
-      verifiedData?.lastname?.toLowerCase() !== lastname.toLowerCase() ||
-      verifiedData?.state_of_origin?.toLowerCase() !==
-        stateOfOrigin.toLowerCase()
+      verifiedData?.firstName?.toLowerCase() !== firstname.toLowerCase() ||
+      verifiedData?.lastName?.toLowerCase() !== lastname.toLowerCase()
+      // verifiedData?.state_of_origin?.toLowerCase() !==
+      //   stateOfOrigin.toLowerCase()
     ) {
       throw new BadRequestException('User details do not match the NIN record');
     }
@@ -562,7 +568,7 @@ export class AuthService {
         { _id: userId },
         { $set: { twoFactorSecret: secret } },
       );
-
+      // Verify the update was successful
       if (updateResult.modifiedCount === 0) {
         throw new Error('Failed to update user with 2FA secret');
       }
@@ -711,78 +717,77 @@ export class AuthService {
     return results;
   }
 
-  // async verifyNIN(nin: string) {
-  //   try {
-  //     const response = await axios.post(
-  //       // 'https://echoverify.ng/api/v1/verify',
-  //       'https://api.qoreid.com/v1/ng/identities/nin/{idNumber}',
-  //       {
-  //         product_slug: 'nin-verification',
-  //         payload: {
-  //           id: nin, // EchoVerify expects `id`, not `nin`
-  //           isSubjectConsent: true, // true if you have consent
-  //         },
-  //       },
-  //       {
-  //         headers: {
-  //           'X-API-Key': process.env.ECHOVERIFY_API_KEY, // EchoVerify API key
-  //           'X-Environment': 'test', // or "live"
-  //           'Content-Type': 'application/json',
-  //         },
-  //       },
-  //     );
-
-  //     return response.data;
-  //   } catch (error: any) {
-  //     console.error(
-  //       'EchoVerify NIN verification error:',
-  //       error.response?.data || error.message,
-  //     );
-
-  //     throw new BadRequestException(
-  //       error.response?.data?.message ||
-  //         'NIN verification failed. Please check the NIN and try again.',
-  //     );
-  //   }
-  // }
-
-  async getQoreIdToken() {
-    const response = await axios.post('https://api.qoreid.com/token', {
-      clientId: process.env.Test_Client_ID,
-      secret: process.env.Test_Secret_Key,
-    });
-
-    return response.data.accessToken;
-  }
-
-  async verifyNIN(nin: string, firstName: string, lastName: string) {
-    const token = await this.getQoreIdToken();
-
+  async verifyNIN(nin: string) {
     try {
       const response = await axios.post(
-        // `${this.baseUrl}/v1/ng/identities/nin-premium/${nin}`,
-        `${this.baseUrl}/v1/ng/identities/nin/${nin}`,
+        'https://echoverify.ng/api/v1/verify',
         {
-          firstname: firstName,
-          lastname: lastName,
+          product_slug: 'nin-verification',
+          payload: {
+            id: nin, // EchoVerify expects `id`, not `nin`
+            isSubjectConsent: true, // true if you have consent
+          },
         },
         {
           headers: {
+            'X-API-Key': process.env.ECHOVERIFY_API_KEY, // EchoVerify API key
+            'X-Environment': 'live', // or "test"
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
           },
         },
       );
 
-      console.log('QoreId NIN verification response:', response.data);
       return response.data;
     } catch (error: any) {
       console.error(
-        'QoreId NIN verification error:',
+        'EchoVerify NIN verification error:',
         error.response?.data || error.message,
       );
-      throw error.response?.data || error.message;
+
+      throw new BadRequestException(
+        error.response?.data?.message ||
+          'NIN verification failed. Please check the NIN and try again.',
+      );
     }
   }
+
+  // async getQoreIdToken() {
+  //   const response = await axios.post('https://api.qoreid.com/token', {
+  //     clientId: process.env.Test_Client_ID,
+  //     secret: process.env.Test_Secret_Key,
+  //   });
+
+  //   return response.data.accessToken;
+  // }
+
+  // async verifyNIN(nin: string, firstName: string, lastName: string) {
+  //   const token = await this.getQoreIdToken();
+
+  //   try {
+  //     const response = await axios.post(
+  //       // `${this.baseUrl}/v1/ng/identities/nin-premium/${nin}`,
+  //       `${this.baseUrl}/v1/ng/identities/nin/${nin}`,
+  //       {
+  //         firstname: firstName,
+  //         lastname: lastName,
+  //       },
+  //       {
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //           Authorization: `Bearer ${token}`,
+  //           Accept: 'application/json',
+  //         },
+  //       },
+  //     );
+
+  //     console.log('QoreId NIN verification response:', response.data);
+  //     return response.data;
+  //   } catch (error: any) {
+  //     console.error(
+  //       'QoreId NIN verification error:',
+  //       error.response?.data || error.message,
+  //     );
+  //     throw error.response?.data || error.message;
+  //   }
+  // }
 }
