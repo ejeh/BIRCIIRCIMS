@@ -58,4 +58,14 @@ export class NotificationsGateway
       this.server.to(socketId).emit('notification:new', notification);
     }
   }
+
+  // 🔢 Emit real-time unread count to a specific user
+  sendUnreadCount(userId: string, count: number) {
+    const socketId = this.activeUsers.get(userId);
+    if (socketId) {
+      this.server
+        .to(socketId)
+        .emit('notification:unread', { unreadCount: count });
+    }
+  }
 }

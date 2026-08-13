@@ -321,6 +321,7 @@ export class AuthService {
 
     const verifiedData = verification.echoverify_response?.data;
     // 4️⃣ Match user-submitted data with verified record
+
     if (
       verifiedData?.firstName?.toLowerCase() !== firstname.toLowerCase() ||
       verifiedData?.lastName?.toLowerCase() !== lastname.toLowerCase()

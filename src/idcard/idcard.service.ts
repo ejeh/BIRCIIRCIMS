@@ -19,6 +19,7 @@ import path from 'path';
 import * as fs from 'fs';
 import { Types } from 'mongoose';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { NotificationTarget } from 'src/notifications/dto/send-notification.dto';
 import { UserDocument } from 'src/users/users.schema';
 import { ResubmissionService } from '../common/services/resubmission.service';
 import { ReprintResponseDto } from 'src/indigene-certificate/dto/request-reprint.dto';
@@ -163,6 +164,22 @@ export class IdcardService {
         requestId: cardRequest._id.toString(),
         submittedAt: cardRequest.createdAt || new Date(),
       });
+
+      // Notify admins in-app (parity with the email list above)
+      await this.notificationsService
+        .sendNotification({
+          title: 'New ID Card Request',
+          message: `${user.firstname} ${user.lastname} (${user.email}) submitted a new ID card request.`,
+          type: 'idcard',
+          link: '/admin/certificate-requests',
+          target: NotificationTarget.ROLE,
+          roles: ['global_admin', 'admin', 'support_admin'],
+        })
+        .catch((notifError) => {
+          this.logger.error(
+            `Error sending in-app admin notification: ${notifError.message}`,
+          );
+        });
 
       this.logger.log(
         `Admin notification sent for request: ${cardRequest._id} to ${adminEmails.length} admin(s)`,

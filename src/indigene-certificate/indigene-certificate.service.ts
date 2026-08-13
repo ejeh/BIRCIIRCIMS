@@ -17,6 +17,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { UserDocument } from 'src/users/users.schema';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { NotificationTarget } from 'src/notifications/dto/send-notification.dto';
 import { ResubmissionService } from '../common/services/resubmission.service';
 import { Counter, CounterDocument } from './counter.schema';
 import { UsersService } from 'src/users/users.service';
@@ -156,6 +157,22 @@ export class IndigeneCertificateService {
         requestId: certificateRequest._id.toString(),
         submittedAt: certificateRequest.createdAt || new Date(),
       });
+
+      // Notify admins in-app (parity with the email list above)
+      await this.notificationsService
+        .sendNotification({
+          title: 'New Certificate of Origin Request',
+          message: `${user.firstname} ${user.lastname} (${user.email}) submitted a new certificate of origin request.`,
+          type: 'certificate',
+          link: '/admin/certificate-requests',
+          target: NotificationTarget.ROLE,
+          roles: ['global_admin', 'admin', 'support_admin'],
+        })
+        .catch((notifError) => {
+          this.logger.error(
+            `Error sending in-app admin notification: ${notifError.message}`,
+          );
+        });
 
       this.logger.log(
         `Admin notification sent for request: ${certificateRequest._id} to ${adminEmails.length} admin(s)`,

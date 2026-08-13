@@ -2056,7 +2056,7 @@ export class UsersService {
       .slice(0, 5);
 
     // Fetch unread notifications
-    const [notifications, unreadCount] = await Promise.all([
+    const [notificationsResult, unreadResult] = await Promise.all([
       this.notificationsService.getUserNotifications(userId),
       this.notificationsService.getUnreadCount(userId),
     ]);
@@ -2090,8 +2090,8 @@ export class UsersService {
         approvedRequests,
         pendingRequests,
         profileCompletionPercentage: userDoc.profileCompletionPercentage || 0,
-        notifications,
-        unreadCount,
+        notifications: notificationsResult.data,
+        unreadCount: unreadResult.unreadCount,
       },
     };
   }

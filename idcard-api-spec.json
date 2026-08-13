@@ -1,0 +1,1882 @@
+[
+  {
+    "name": "Create ID Card Request",
+    "description": "Creates a new ID card request. Requires multipart/form-data with three files (passportPhoto, utilityBill, ref_letter). Files are validated (MIME/extension, max 1MB, passport photo quality) and uploaded to Cloudinary. A unique BIN (e.g. '1234 567 8901') and a 4-year expiration date are auto-generated. Throws if the user already has a Pending request or an Approved request with pending payment.",
+    "controller": "IdcardController",
+    "methodName": "createIdCard",
+    "httpMethod": "POST",
+    "endpoint": "create",
+    "fullUrl": "/api/idcard/create",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "multipart/form-data"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {
+      "firstname": "John (string, required)",
+      "lastname": "Doe (string, required)",
+      "middlename": "Smith (string, required)",
+      "email": "john.doe@example.com (string, required)",
+      "gender": "Male (string, required)",
+      "dob": "1995-06-15 (string, required)",
+      "phone": "08012345678 (string, required)",
+      "card_type": "standard (string, optional)",
+      "passportPhoto": "file (required, image/jpeg|jpg|png, max 1MB, min 350x450px)",
+      "utilityBill": "file (required, image or PDF, max 1MB)",
+      "ref_letter": "file (required, image or PDF, max 1MB)"
+    },
+    "requestExample": {
+      "firstname": "John",
+      "lastname": "Doe",
+      "middlename": "Smith",
+      "email": "john.doe@example.com",
+      "gender": "Male",
+      "dob": "1995-06-15",
+      "phone": "08012345678",
+      "card_type": "standard",
+      "passportPhoto": "(file upload)",
+      "utilityBill": "(file upload)",
+      "ref_letter": "(file upload)"
+    },
+    "multipart": {
+      "enabled": true,
+      "files": [
+        {
+          "fieldName": "passportPhoto",
+          "type": "image/jpeg, image/png, image/jpg",
+          "extensions": [".jpeg", ".jpg", ".png"],
+          "maxSize": "1MB",
+          "required": true,
+          "qualityCheck": "PassportPhotoQualityPipe (brightness/sharpness, min 350x450px)"
+        },
+        {
+          "fieldName": "utilityBill",
+          "type": "application/pdf, image/jpeg, image/png, image/jpg",
+          "extensions": [".pdf", ".jpeg", ".jpg", ".png"],
+          "maxSize": "1MB",
+          "required": true
+        },
+        {
+          "fieldName": "ref_letter",
+          "type": "application/pdf, image/jpeg, image/png, image/jpg",
+          "extensions": [".pdf", ".jpeg", ".jpg", ".png"],
+          "maxSize": "1MB",
+          "required": true
+        }
+      ],
+      "fields": {}
+    },
+    "validation": [
+      "firstname: @IsString, @IsNotEmpty, required",
+      "lastname: @IsString, @IsNotEmpty, required",
+      "middlename: @IsString, @IsNotEmpty, required",
+      "email: @IsString, @IsNotEmpty, required",
+      "gender: @IsString, @IsNotEmpty, required",
+      "dob: @IsString, @IsNotEmpty, required",
+      "phone: @IsString, @IsNotEmpty, required",
+      "card_type: @IsString, optional",
+      "Business rule: User must not have an existing Pending ID card request",
+      "Business rule: User must not have an Approved request with pending payment"
+    ],
+    "successResponse": {
+      "statusCode": 201,
+      "message": "ID card request created",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "middlename": "Smith",
+        "email": "john.doe@example.com",
+        "gender": "Male",
+        "dob": "1995-06-15",
+        "phone": "08012345678",
+        "card_type": "standard",
+        "passportPhoto": "https://res.cloudinary.com/.../idcards/passportPhoto/xxx.jpg",
+        "utilityBill": "https://res.cloudinary.com/.../idcards/utility_bills/xxx.pdf",
+        "ref_letter": "https://res.cloudinary.com/.../idcards/ref_letters/xxx.pdf",
+        "bin": "1234 567 8901",
+        "status": "Pending",
+        "dateOfIssue": "2026-08-12T10:00:00.000Z",
+        "dateOfExpiration": "2030-08-12T10:00:00.000Z",
+        "paymentStatus": "pending",
+        "resubmissionAllowed": true,
+        "resubmissionAttempts": 0,
+        "downloaded": false,
+        "downloadCount": 0,
+        "reprintCount": 0,
+        "reprintPaymentStatus": "NotRequired",
+        "requiresReprintPayment": false,
+        "created_at": "2026-08-12T10:00:00.000Z",
+        "updated_at": "2026-08-12T10:00:00.000Z"
+      }
+    },
+    "successExample": {
+      "statusCode": 201,
+      "success": true,
+      "message": "ID card request created",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "middlename": "Smith",
+        "email": "john.doe@example.com",
+        "gender": "Male",
+        "dob": "1995-06-15",
+        "phone": "08012345678",
+        "card_type": "standard",
+        "passportPhoto": "https://res.cloudinary.com/.../idcards/passportPhoto/xxx.jpg",
+        "utilityBill": "https://res.cloudinary.com/.../idcards/utility_bills/xxx.pdf",
+        "ref_letter": "https://res.cloudinary.com/.../idcards/ref_letters/xxx.pdf",
+        "bin": "1234 567 8901",
+        "status": "Pending",
+        "dateOfIssue": "2026-08-12T10:00:00.000Z",
+        "dateOfExpiration": "2030-08-12T10:00:00.000Z",
+        "paymentStatus": "pending",
+        "resubmissionAllowed": true,
+        "resubmissionAttempts": 0,
+        "downloaded": false,
+        "downloadCount": 0,
+        "reprintCount": 0,
+        "reprintPaymentStatus": "NotRequired",
+        "requiresReprintPayment": false,
+        "created_at": "2026-08-12T10:00:00.000Z",
+        "updated_at": "2026-08-12T10:00:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "passportPhoto file is required."
+      },
+      {
+        "statusCode": 400,
+        "message": "Passport Photo must be an image (.jpg, .jpeg, .png)"
+      },
+      {
+        "statusCode": 400,
+        "message": "File 'passportPhoto' exceeds the maximum size of 1MB."
+      },
+      {
+        "statusCode": 409,
+        "message": "A pending card request already exists for this user."
+      },
+      {
+        "statusCode": 409,
+        "message": "You have a pending payment to make."
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Update ID Card Request",
+    "description": "Updates an existing ID card request owned by the authenticated user. Supports multipart/form-data for optional file replacement (passportPhoto, utilityBill, ref_letter). Only allowed when the request status is Pending or Rejected.",
+    "controller": "IdcardController",
+    "methodName": "updateIdCard",
+    "httpMethod": "PATCH",
+    "endpoint": ":id",
+    "fullUrl": "/api/idcard/:id",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "multipart/form-data"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "firstname": "John (string, optional)",
+      "lastname": "Doe (string, optional)",
+      "middlename": "Smith (string, optional)",
+      "email": "john.doe@example.com (string, optional)",
+      "gender": "Male (string, optional)",
+      "dob": "1995-06-15 (string, optional)",
+      "phone": "08012345678 (string, optional)",
+      "card_type": "standard (string, optional)",
+      "passportPhoto": "file (optional, replaces existing)",
+      "utilityBill": "file (optional, replaces existing)",
+      "ref_letter": "file (optional, replaces existing)"
+    },
+    "requestExample": {
+      "phone": "08098765432",
+      "passportPhoto": "(file upload)"
+    },
+    "multipart": {
+      "enabled": true,
+      "files": [
+        {
+          "fieldName": "passportPhoto",
+          "type": "image/jpeg, image/png, image/jpg",
+          "extensions": [".jpeg", ".jpg", ".png"],
+          "maxSize": "1MB",
+          "required": false
+        },
+        {
+          "fieldName": "utilityBill",
+          "type": "application/pdf, image/jpeg, image/png, image/jpg",
+          "extensions": [".pdf", ".jpeg", ".jpg", ".png"],
+          "maxSize": "1MB",
+          "required": false
+        },
+        {
+          "fieldName": "ref_letter",
+          "type": "application/pdf, image/jpeg, image/png, image/jpg",
+          "extensions": [".pdf", ".jpeg", ".jpg", ".png"],
+          "maxSize": "1MB",
+          "required": false
+        }
+      ],
+      "fields": {}
+    },
+    "validation": [
+      "All body fields optional",
+      "Business rule: Request must belong to the authenticated user",
+      "Business rule: Status must be 'Pending' or 'Rejected'",
+      "Business rule: Cannot edit an approved or processed request"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "ID card request updated",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "phone": "08098765432",
+        "status": "Pending",
+        "updated_at": "2026-08-12T10:05:00.000Z"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "ID card request updated",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "phone": "08098765432",
+        "status": "Pending",
+        "updated_at": "2026-08-12T10:05:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "ID Card request not found."
+      },
+      {
+        "statusCode": 400,
+        "message": "Cannot edit a request that is already approved or processed."
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get All ID Card Requests",
+    "description": "Returns all ID card requests sorted by newest first, with populated user and approver data. Admin only.",
+    "controller": "IdcardController",
+    "methodName": "getCertsRequest",
+    "httpMethod": "GET",
+    "endpoint": "get-all-request",
+    "fullUrl": "/api/idcard/get-all-request",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["global_admin", "admin"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/idcard/get-all-request",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "Roles: global_admin, admin"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "All ID card requests retrieved",
+      "data": [
+        {
+          "_id": "687ad12ab5...",
+          "userId": {
+            "_id": "687ad12ab5...",
+            "firstname": "John",
+            "lastname": "Doe",
+            "email": "john@gmail.com",
+            "stateOfOrigin": "Benue",
+            "lgaOfOrigin": "Gboko",
+            "isProfileCompleted": false
+          },
+          "firstname": "John",
+          "lastname": "Doe",
+          "middlename": "Smith",
+          "gender": "Male",
+          "dob": "1995-06-15",
+          "phone": "08012345678",
+          "bin": "1234 567 8901",
+          "status": "Pending",
+          "passportPhoto": "https://res.cloudinary.com/.../xxx.jpg",
+          "approvedBy": {
+            "_id": "687ad12ab5...",
+            "firstname": "Admin",
+            "lastname": "User",
+            "email": "admin@gmail.com"
+          },
+          "created_at": "2026-08-12T10:00:00.000Z",
+          "updated_at": "2026-08-12T10:00:00.000Z"
+        }
+      ]
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "All ID card requests retrieved",
+      "data": [
+        {
+          "_id": "687ad12ab5...",
+          "userId": {
+            "_id": "687ad12ab5...",
+            "firstname": "John",
+            "lastname": "Doe",
+            "email": "john@gmail.com",
+            "stateOfOrigin": "Benue",
+            "lgaOfOrigin": "Gboko",
+            "isProfileCompleted": false
+          },
+          "firstname": "John",
+          "lastname": "Doe",
+          "middlename": "Smith",
+          "gender": "Male",
+          "dob": "1995-06-15",
+          "phone": "08012345678",
+          "bin": "1234 567 8901",
+          "status": "Pending",
+          "passportPhoto": "https://res.cloudinary.com/.../xxx.jpg",
+          "approvedBy": {
+            "_id": "687ad12ab5...",
+            "firstname": "Admin",
+            "lastname": "User",
+            "email": "admin@gmail.com"
+          },
+          "created_at": "2026-08-12T10:00:00.000Z",
+          "updated_at": "2026-08-12T10:00:00.000Z"
+        }
+      ]
+    },
+    "errorResponses": [
+      {
+        "statusCode": 403,
+        "message": "User does not have required permission"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get Card Requests By Statuses",
+    "description": "Returns paginated ID card requests filtered by one or more statuses. Default statuses: Pending,Rejected. Admin only.",
+    "controller": "IdcardController",
+    "methodName": "getRequestsByStatuses",
+    "httpMethod": "GET",
+    "endpoint": "card-request",
+    "fullUrl": "/api/idcard/card-request",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["admin", "global_admin"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {},
+    "queryParams": {
+      "page": 1,
+      "limit": 10,
+      "statuses": "Pending,Rejected"
+    },
+    "requestPayload": {},
+    "requestExample": "GET /api/idcard/card-request?page=1&limit=10&statuses=Pending,Rejected",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "page: number, optional, default: 1",
+      "limit: number, optional, default: 10",
+      "statuses: string, optional, default: 'Pending,Rejected', comma-separated list of statuses",
+      "Roles: admin, global_admin"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Card requests by statuses retrieved",
+      "data": {
+        "data": [
+          {
+            "_id": "687ad12ab5...",
+            "userId": "687ad12ab5...",
+            "firstname": "John",
+            "lastname": "Doe",
+            "status": "Pending",
+            "created_at": "2026-08-12T10:00:00.000Z"
+          }
+        ],
+        "hasNextPage": false
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Card requests by statuses retrieved",
+      "data": {
+        "data": [
+          {
+            "_id": "687ad12ab5...",
+            "userId": "687ad12ab5...",
+            "firstname": "John",
+            "lastname": "Doe",
+            "status": "Pending",
+            "created_at": "2026-08-12T10:00:00.000Z"
+          }
+        ],
+        "hasNextPage": false
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 403,
+        "message": "User does not have required permission"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get Latest ID Card",
+    "description": "Returns the most recently created ID card request.",
+    "controller": "IdcardController",
+    "methodName": "getLatestCertificate",
+    "httpMethod": "GET",
+    "endpoint": "latest",
+    "fullUrl": "/api/idcard/latest",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/idcard/latest",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Latest ID card request retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Pending",
+        "created_at": "2026-08-12T10:00:00.000Z"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Latest ID card request retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Pending",
+        "created_at": "2026-08-12T10:00:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "No ID card requests found"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get Latest Approved ID Card",
+    "description": "Returns the most recently approved ID card request.",
+    "controller": "IdcardController",
+    "methodName": "getLatestApprovedCertificate",
+    "httpMethod": "GET",
+    "endpoint": "latest-approved",
+    "fullUrl": "/api/idcard/latest-approved",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/idcard/latest-approved",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Latest approved ID card retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Approved",
+        "approvalDate": "2026-08-12T10:00:00.000Z"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Latest approved ID card retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Approved",
+        "approvalDate": "2026-08-12T10:00:00.000Z",
+        "created_at": "2026-08-12T10:00:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "No approved ID cards found"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Approve ID Card",
+    "description": "Approves a pending ID card request. Sets status to Approved, records approvalDate and approvedBy, and sends an in-app notification to the user. Admin only.",
+    "controller": "IdcardController",
+    "methodName": "approveCert",
+    "httpMethod": "PATCH",
+    "endpoint": ":id/approve",
+    "fullUrl": "/api/idcard/:id/approve",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["global_admin", "admin"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "approvedBy": "687ad12ab5..."
+    },
+    "requestExample": {
+      "approvedBy": "687ad12ab5..."
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId, from path param)",
+      "approvedBy: string, from @Body('approvedBy'), the user ID of the approver"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "ID card approved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "status": "Approved",
+        "approvalDate": "2026-08-12T10:00:00.000Z",
+        "approvedBy": "687ad12ab5..."
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "ID card approved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Approved",
+        "approvalDate": "2026-08-12T10:00:00.000Z",
+        "approvedBy": "687ad12ab5..."
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "ID card request not found"
+      },
+      {
+        "statusCode": 403,
+        "message": "User does not have required permission"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Reject ID Card",
+    "description": "Rejects a pending ID card request with a reason. Sends a rejection email to the user, sets status to Rejected, records rejectionReason/approvedBy, and enables resubmission. Admin only.",
+    "controller": "IdcardController",
+    "methodName": "rejectCert",
+    "httpMethod": "PATCH",
+    "endpoint": ":id/reject",
+    "fullUrl": "/api/idcard/:id/reject",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["global_admin", "admin"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "rejectionReason": "Incomplete documentation",
+      "approvedBy": "687ad12ab5..."
+    },
+    "requestExample": {
+      "rejectionReason": "Incomplete documentation",
+      "approvedBy": "687ad12ab5..."
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId, from path param)",
+      "rejectionReason: string, required, from @Body('rejectionReason')",
+      "approvedBy: string, from @Body('approvedBy'), the user ID of the rejector"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "ID card rejected",
+      "data": {
+        "_id": "687ad12ab5...",
+        "status": "Rejected",
+        "rejectionReason": "Incomplete documentation",
+        "approvedBy": "687ad12ab5..."
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "ID card rejected",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Rejected",
+        "rejectionReason": "Incomplete documentation",
+        "approvedBy": "687ad12ab5..."
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "User not found"
+      },
+      {
+        "statusCode": 403,
+        "message": "User does not have required permission"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get Requests By User ID",
+    "description": "Returns all ID card requests submitted by a specific user, sorted newest first, with the user populated.",
+    "controller": "IdcardController",
+    "methodName": "getRequestsForId",
+    "httpMethod": "GET",
+    "endpoint": ":id/requests",
+    "fullUrl": "/api/idcard/:id/requests",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/idcard/687ad12ab5.../requests",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (User ID)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "User requests retrieved",
+      "data": [
+        {
+          "_id": "687ad12ab5...",
+          "userId": {
+            "_id": "687ad12ab5...",
+            "firstname": "John",
+            "lastname": "Doe",
+            "email": "john@gmail.com"
+          },
+          "firstname": "John",
+          "lastname": "Doe",
+          "status": "Pending",
+          "created_at": "2026-08-12T10:00:00.000Z"
+        }
+      ]
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "User requests retrieved",
+      "data": [
+        {
+          "_id": "687ad12ab5...",
+          "userId": {
+            "_id": "687ad12ab5...",
+            "firstname": "John",
+            "lastname": "Doe",
+            "email": "john@gmail.com"
+          },
+          "firstname": "John",
+          "lastname": "Doe",
+          "status": "Pending",
+          "created_at": "2026-08-12T10:00:00.000Z"
+        }
+      ]
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "No requests found for this user"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get ID Card Request By ID",
+    "description": "Returns a single ID card request by its MongoDB ObjectId with populated user and approver data.",
+    "controller": "IdcardController",
+    "methodName": "getIdcardRequest",
+    "httpMethod": "GET",
+    "endpoint": ":id/request",
+    "fullUrl": "/api/idcard/:id/request",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/idcard/687ad12ab5.../request",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "ID card request retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": {
+          "_id": "687ad12ab5...",
+          "firstname": "John",
+          "lastname": "Doe",
+          "email": "john@gmail.com",
+          "stateOfOrigin": "Benue",
+          "lgaOfOrigin": "Gboko"
+        },
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Pending",
+        "bin": "1234 567 8901",
+        "created_at": "2026-08-12T10:00:00.000Z"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "ID card request retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": {
+          "_id": "687ad12ab5...",
+          "firstname": "John",
+          "lastname": "Doe",
+          "email": "john@gmail.com",
+          "stateOfOrigin": "Benue",
+          "lgaOfOrigin": "Gboko"
+        },
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Pending",
+        "bin": "1234 567 8901",
+        "created_at": "2026-08-12T10:00:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "User not found"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Delete ID Card Request",
+    "description": "Deletes an ID card request and its associated files (passportPhoto, utilityBill, ref_letter) from Cloudinary.",
+    "controller": "IdcardController",
+    "methodName": "deleteItem",
+    "httpMethod": "DELETE",
+    "endpoint": ":item",
+    "fullUrl": "/api/idcard/:item",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {
+      "item": ":item"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "DELETE /api/idcard/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "item: string, required (ID card ID)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "ID card request deleted successfully",
+      "data": {
+        "success": true,
+        "message": "ID card request deleted successfully"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "ID card request deleted successfully",
+      "data": {
+        "success": true,
+        "message": "ID card request deleted successfully"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "ID Card record not found"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Download ID Card PDF",
+    "description": "Downloads the ID card as a PDF (from templates/card-template.html via puppeteer). Generates a QR code and secure verification hash, enforces a download limit (max 3) and download window (10 minutes after first download). Public endpoint.",
+    "controller": "IdcardController",
+    "methodName": "downloadCertificate",
+    "httpMethod": "GET",
+    "endpoint": "download/:id",
+    "fullUrl": "/api/idcard/download/:id",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "attachment; filename=\"card.pdf\""
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/idcard/download/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "PDF file stream",
+      "data": "<binary PDF stream>"
+    },
+    "successExample": "Binary PDF data with Content-Type: application/pdf",
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Card not found"
+      },
+      {
+        "statusCode": 400,
+        "message": "Download window has expired. Please request a new card."
+      },
+      {
+        "statusCode": 403,
+        "message": "Download limit of 3 reached for this window. Please request a reprint."
+      },
+      {
+        "statusCode": 500,
+        "message": "Internal server error"
+      }
+    ]
+  },
+  {
+    "name": "Download ID Card (QR Route)",
+    "description": "Downloads the ID card as a PDF using templates/idcard-view.html. No download limit enforced. Public endpoint used by QR-code verification pages.",
+    "controller": "IdcardController",
+    "methodName": "downloadIdCard",
+    "httpMethod": "GET",
+    "endpoint": "download/idcard/:id",
+    "fullUrl": "/api/idcard/download/idcard/:id",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "attachment; filename=\"idcard.pdf\""
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/idcard/download/idcard/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "PDF file stream",
+      "data": "<binary PDF stream>"
+    },
+    "successExample": "Binary PDF data with Content-Type: application/pdf",
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "ID Card not found"
+      },
+      {
+        "statusCode": 500,
+        "message": "Internal server error"
+      }
+    ]
+  },
+  {
+    "name": "Get ID Card Public Details",
+    "description": "Returns limited public details of an ID card (id, firstname, lastname, bin) for QR-code verification pages. Public endpoint.",
+    "controller": "IdcardController",
+    "methodName": "getIdCardDetails",
+    "httpMethod": "GET",
+    "endpoint": "idcard/:id",
+    "fullUrl": "/api/idcard/idcard/:id",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/idcard/idcard/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "ID card details retrieved",
+      "data": {
+        "id": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "bin": "1234 567 8901"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "ID card details retrieved",
+      "data": {
+        "id": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "bin": "1234 567 8901"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "ID Card not found"
+      }
+    ]
+  },
+  {
+    "name": "View ID Card",
+    "description": "Returns an HTML page for viewing the ID card in the browser (templates/idcard-view.html). Public endpoint.",
+    "controller": "IdcardController",
+    "methodName": "viewIdCard",
+    "httpMethod": "GET",
+    "endpoint": "view/:id",
+    "fullUrl": "/api/idcard/view/:id",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "text/html",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/idcard/view/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "HTML ID card view page",
+      "data": "<html>...</html>"
+    },
+    "successExample": "HTML page rendered from templates/idcard-view.html",
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "ID Card not found"
+      },
+      {
+        "statusCode": 500,
+        "message": "Template not found"
+      }
+    ]
+  },
+  {
+    "name": "Get Location Stats",
+    "description": "Returns aggregated ID card request counts per LGA with approximate coordinates for map visualisation.",
+    "controller": "IdcardController",
+    "methodName": "getLocationStats",
+    "httpMethod": "GET",
+    "endpoint": "location-stats",
+    "fullUrl": "/api/idcard/location-stats",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/idcard/location-stats",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Location stats retrieved",
+      "data": [
+        {
+          "name": "Makurdi",
+          "totalRequests": 25,
+          "lat": 7.733,
+          "lng": 8.536
+        },
+        {
+          "name": "Gboko",
+          "totalRequests": 12,
+          "lat": 7.321,
+          "lng": 9.002
+        }
+      ]
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Location stats retrieved",
+      "data": [
+        {
+          "name": "Makurdi",
+          "totalRequests": 25,
+          "lat": 7.733,
+          "lng": 8.536
+        },
+        {
+          "name": "Gboko",
+          "totalRequests": 12,
+          "lat": 7.321,
+          "lng": 9.002
+        }
+      ]
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get ID Card By User ID",
+    "description": "Returns the ID card request whose userId matches the given user ID.",
+    "controller": "IdcardController",
+    "methodName": "getProfile",
+    "httpMethod": "GET",
+    "endpoint": ":id",
+    "fullUrl": "/api/idcard/:id",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/idcard/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (User ID)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "ID card retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Pending",
+        "bin": "1234 567 8901"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "ID card retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Pending",
+        "bin": "1234 567 8901"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Resubmit ID Card Request",
+    "description": "Resubmits a rejected ID card request with corrected data. Optionally uploads a replacement document; when a file is uploaded, documentTypeToUpdate must specify which field to replace ('utilityBill' | 'ref_letter' | 'passportPhoto'). Old Cloudinary file is deleted.",
+    "controller": "IdcardController",
+    "methodName": "resubmitRequest",
+    "httpMethod": "POST",
+    "endpoint": ":id/resubmit",
+    "fullUrl": "/api/idcard/:id/resubmit",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "multipart/form-data"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "documentTypeToUpdate": "'utilityBill' | 'ref_letter' | 'passportPhoto' (optional, required when uploading a file)",
+      "userId": "string (optional)",
+      "phone": "08012345678 (optional)",
+      "email": "john.doe@example.com (optional)",
+      "firstname": "John (optional)",
+      "lastname": "Doe (optional)",
+      "middlename": "Smith (optional)",
+      "dob": "1995-06-15 (optional)",
+      "gender": "Male (optional)",
+      "passportPhoto": "file (optional)",
+      "utilityBill": "file (optional)",
+      "ref_letter": "file (optional)"
+    },
+    "requestExample": {
+      "documentTypeToUpdate": "passportPhoto",
+      "passportPhoto": "(file upload)"
+    },
+    "multipart": {
+      "enabled": true,
+      "files": [
+        {
+          "fieldName": "passportPhoto",
+          "type": "image/jpeg, image/png, image/jpg",
+          "extensions": [".jpeg", ".jpg", ".png"],
+          "maxSize": "1MB",
+          "required": false
+        },
+        {
+          "fieldName": "utilityBill",
+          "type": "application/pdf, image/jpeg, image/png, image/jpg",
+          "extensions": [".pdf", ".jpeg", ".jpg", ".png"],
+          "maxSize": "1MB",
+          "required": false
+        },
+        {
+          "fieldName": "ref_letter",
+          "type": "application/pdf, image/jpeg, image/png, image/jpg",
+          "extensions": [".pdf", ".jpeg", ".jpg", ".png"],
+          "maxSize": "1MB",
+          "required": false
+        }
+      ],
+      "fields": {}
+    },
+    "validation": [
+      "documentTypeToUpdate: @IsIn(['utilityBill','ref_letter','passportPhoto']), optional",
+      "userId: @IsString, optional",
+      "phone: @IsString, optional",
+      "email: @IsEmail, optional",
+      "firstname: @IsString, optional",
+      "lastname: @IsString, optional",
+      "middlename: @IsString, optional",
+      "dob: @IsString, optional",
+      "gender: @IsString, optional",
+      "Business rule: When uploading a file, documentTypeToUpdate must be specified",
+      "Business rule: The uploaded file fieldname must match documentTypeToUpdate"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "ID card resubmitted",
+      "data": {
+        "_id": "687ad12ab5...",
+        "status": "Pending",
+        "resubmissionAllowed": true,
+        "resubmissionAttempts": 1,
+        "lastResubmittedAt": "2026-08-12T10:00:00.000Z"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "ID card resubmitted",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Pending",
+        "resubmissionAllowed": true,
+        "resubmissionAttempts": 1,
+        "lastResubmittedAt": "2026-08-12T10:00:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "When uploading a file, you must specify \"documentTypeToUpdate\" in the request body."
+      },
+      {
+        "statusCode": 400,
+        "message": "The specified document type \"passportPhoto\" was not found in the uploaded files."
+      },
+      {
+        "statusCode": 400,
+        "message": "ID card cannot be resubmitted"
+      },
+      {
+        "statusCode": 404,
+        "message": "ID card not found"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get ID Card By ID (Admin)",
+    "description": "Returns a single ID card request by its MongoDB ObjectId with populated user and approver data.",
+    "controller": "IdcardController",
+    "methodName": "getCert",
+    "httpMethod": "GET",
+    "endpoint": ":id/get",
+    "fullUrl": "/api/idcard/:id/get",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/idcard/687ad12ab5.../get",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "ID card retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": {
+          "_id": "687ad12ab5...",
+          "firstname": "John",
+          "lastname": "Doe",
+          "email": "john@gmail.com",
+          "stateOfOrigin": "Benue",
+          "lgaOfOrigin": "Gboko"
+        },
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Pending",
+        "bin": "1234 567 8901"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "ID card retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": {
+          "_id": "687ad12ab5...",
+          "firstname": "John",
+          "lastname": "Doe",
+          "email": "john@gmail.com",
+          "stateOfOrigin": "Benue",
+          "lgaOfOrigin": "Gboko"
+        },
+        "firstname": "John",
+        "lastname": "Doe",
+        "status": "Pending",
+        "bin": "1234 567 8901",
+        "created_at": "2026-08-12T10:00:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "User not found"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Stream PDF From URL",
+    "description": "Streams a PDF document from a URL-encoded external URL. Requires authentication.",
+    "controller": "IdcardController",
+    "methodName": "getPdf",
+    "httpMethod": "GET",
+    "endpoint": "pdf/:encodedUrl",
+    "fullUrl": "/api/idcard/pdf/:encodedUrl",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "inline; filename=\"document.pdf\""
+    },
+    "pathParams": {
+      "encodedUrl": ":encodedUrl"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/idcard/pdf/https%3A%2F%2Fexample.com%2Fdoc.pdf",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "encodedUrl: string, required, must be URL-encoded"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "PDF stream",
+      "data": "<binary PDF stream>"
+    },
+    "successExample": "Binary PDF data with Content-Type: application/pdf",
+    "errorResponses": [
+      {
+        "statusCode": 500,
+        "message": "Error fetching PDF from external URL"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Stream Document",
+    "description": "Streams a document (utilityBill or ref_letter) from Cloudinary for a given ID card request. Detects MIME type from the URL structure. Public endpoint.",
+    "controller": "IdcardController",
+    "methodName": "streamDocument",
+    "httpMethod": "GET",
+    "endpoint": ":requestId/document/:docType",
+    "fullUrl": "/api/idcard/:requestId/document/:docType",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "image/jpeg | image/png | application/pdf",
+      "Content-Disposition": "inline; filename=\"<docType>.<ext>\"",
+      "Cache-Control": "public, max-age=86400"
+    },
+    "pathParams": {
+      "requestId": ":requestId",
+      "docType": ":docType"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/idcard/687ad12ab5.../document/utilityBill",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "requestId: string, required (ID card request ID)",
+      "docType: string, required, allowed values: 'utilityBill' | 'ref_letter'"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Document stream",
+      "data": "<binary document stream (image or PDF)>"
+    },
+    "successExample": "Binary image/PDF data streamed from Cloudinary",
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Document 'utilityBill' not found for this request."
+      },
+      {
+        "statusCode": 500,
+        "message": "Could not determine the type of the stored document."
+      },
+      {
+        "statusCode": 500,
+        "message": "Could not retrieve the document. Please try again later."
+      }
+    ]
+  },
+  {
+    "name": "Verify ID Card",
+    "description": "Publicly verifies an ID card's authenticity using its ID and verification hash. Renders an HTML verification page (valid or invalid). Rate-limited to 5 requests per minute.",
+    "controller": "IdcardController",
+    "methodName": "verify",
+    "httpMethod": "GET",
+    "endpoint": "verify/:id/:hash",
+    "fullUrl": "/api/idcard/verify/:id/:hash",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "text/html"
+    },
+    "pathParams": {
+      "id": ":id",
+      "hash": ":hash"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/idcard/verify/687ad12ab5.../abc123hash",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (ID card ID)",
+      "hash: string, required (Verification hash)",
+      "Throttle: 5 requests per 60 seconds"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "HTML verification page (valid or invalid)",
+      "data": "<html>...</html>"
+    },
+    "successExample": "HTML page rendered from views/id-card-verification.hbs or views/invalid.hbs",
+    "errorResponses": [
+      {
+        "statusCode": 429,
+        "message": "Too Many Requests — rate limit exceeded (5 per minute)"
+      }
+    ]
+  },
+  {
+    "name": "Request Reprint",
+    "description": "Initiates a reprint request for an existing ID card. Validates ownership and that the download window is expired or limit reached, then creates a payment transaction via Credo. Rate-limited to 3 requests per minute.",
+    "controller": "IdcardController",
+    "methodName": "requestReprint",
+    "httpMethod": "POST",
+    "endpoint": ":id/request-reprint",
+    "fullUrl": "/api/idcard/:id/request-reprint",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "documentId": "687ad12ab5...",
+      "userId": "687ad12ab5...",
+      "amount": 5000,
+      "email": "john@gmail.com",
+      "documentAmount": 3000,
+      "documentType": "idcard"
+    },
+    "requestExample": {
+      "documentId": "687ad12ab5...",
+      "userId": "687ad12ab5...",
+      "amount": 5000,
+      "email": "john@gmail.com",
+      "documentAmount": 3000,
+      "documentType": "idcard"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "documentId: string, required",
+      "userId: string, required",
+      "amount: number, required",
+      "email: string, required",
+      "documentAmount: number, required",
+      "documentType: 'idcard', required",
+      "Business rule: Authenticated user must own the ID card",
+      "Business rule: Download window must be expired or download limit reached",
+      "Throttle: 3 requests per 60 seconds"
+    ],
+    "successResponse": {
+      "statusCode": 201,
+      "message": "Reprint request received",
+      "data": {
+        "success": true,
+        "message": "Reprint request received. Complete payment to proceed.",
+        "data": {
+          "paymentReference": "REF-123456789",
+          "amount": 5000,
+          "skipCredo": false
+        }
+      }
+    },
+    "successExample": {
+      "statusCode": 201,
+      "success": true,
+      "message": "Reprint request received",
+      "data": {
+        "success": true,
+        "message": "Reprint request received. Complete payment to proceed.",
+        "data": {
+          "paymentReference": "REF-123456789",
+          "amount": 5000,
+          "skipCredo": false
+        }
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Download window is still active and you have downloads remaining. Please download from your dashboard."
+      },
+      {
+        "statusCode": 404,
+        "message": "Id Card not found"
+      },
+      {
+        "statusCode": 403,
+        "message": "Not authorized to request reprint for this idCard"
+      },
+      {
+        "statusCode": 500,
+        "message": "Failed to initialize payment. Try again later."
+      },
+      {
+        "statusCode": 429,
+        "message": "Too Many Requests — rate limit exceeded (3 per minute)"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Download Reprint",
+    "description": "Downloads a reprint of an existing ID card as a PDF. Requires completed reprint payment and a non-expired reprint download window. Regenerates QR code and verification hash, increments reprint count. Rate-limited to 5 requests per minute.",
+    "controller": "IdcardController",
+    "methodName": "downloadReprint",
+    "httpMethod": "GET",
+    "endpoint": "reprint/download/:id",
+    "fullUrl": "/api/idcard/reprint/download/:id",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "attachment; filename=\"auctioneer-lincence-reprint.pdf\""
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/idcard/reprint/download/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (ID card ID)",
+      "Throttle: 5 requests per 60 seconds",
+      "Business rule: Authenticated user must own the ID card",
+      "Business rule: Reprint payment must be completed (reprintPaymentStatus = 'Paid')",
+      "Business rule: Reprint download window must not be expired"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Reprint PDF buffer",
+      "data": "<binary PDF buffer>"
+    },
+    "successExample": "Binary PDF data with Content-Type: application/pdf",
+    "errorResponses": [
+      {
+        "statusCode": 402,
+        "message": "Reprint payment is required to download this ID Card."
+      },
+      {
+        "statusCode": 410,
+        "message": "The reprint download window has expired. Please request a new reprint."
+      },
+      {
+        "statusCode": 404,
+        "message": "Id Card not found"
+      },
+      {
+        "statusCode": 403,
+        "message": "Not authorized to request reprint for this idCard"
+      },
+      {
+        "statusCode": 429,
+        "message": "Too Many Requests — rate limit exceeded (5 per minute)"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  }
+]

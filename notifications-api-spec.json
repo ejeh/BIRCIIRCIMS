@@ -1,0 +1,600 @@
+[
+  {
+    "name": "Send Notification (Admin)",
+    "description": "Creates and delivers a notification. Requires GLOBAL_ADMIN, SUPPORT_ADMIN or ADMIN role. Can target a single user, all users, users by role, or users by LGA of residence. Recipients receive a real-time WebSocket push via the 'notification:new' event and an updated unread count via 'notification:unread'.",
+    "controller": "NotificationsController",
+    "methodName": "sendNotification",
+    "httpMethod": "POST",
+    "endpoint": "",
+    "fullUrl": "/api/notifications",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["GLOBAL_ADMIN", "SUPPORT_ADMIN", "ADMIN"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {
+      "title": "string (required)",
+      "message": "string (required)",
+      "type": "string (optional, one of: general, idcard, certificate, system, alert, auctioneer, payment, receipt; default: general)",
+      "link": "string (optional, frontend route the notification links to)",
+      "target": "string (optional, one of: user, all, role, lga; default: user)",
+      "userId": "string (optional, MongoId, required when target is 'user')",
+      "lga": "string (optional, required when target is 'lga', matches user lgaOfResidence)",
+      "roles": "string[] (optional, roles to target when target is 'role'; default: ['user'])"
+    },
+    "requestExample": {
+      "title": "Certificate approved",
+      "message": "Your certificate of origin has been approved.",
+      "type": "certificate",
+      "link": "/certificates/64a1b2c3d4e5f6a7b8c9d0e1",
+      "target": "role",
+      "roles": ["user"]
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "title: @IsString, @IsNotEmpty (required)",
+      "message: @IsString, @IsNotEmpty (required)",
+      "type: @IsOptional, @IsString",
+      "link: @IsOptional, @IsString",
+      "target: @IsOptional, @IsEnum(NotificationTarget)",
+      "userId: @IsOptional, @IsMongoId",
+      "lga: @IsOptional, @IsString",
+      "roles: @IsOptional, @IsArray, @IsString({ each: true })"
+    ],
+    "successResponse": {
+      "statusCode": 201,
+      "message": "Notification sent to N recipient(s)",
+      "data": {
+        "success": "boolean",
+        "message": "string",
+        "delivered": "number",
+        "data": "Notification[]"
+      }
+    },
+    "successExample": {
+      "success": true,
+      "message": "Notification sent to 3 recipient(s)",
+      "delivered": 3,
+      "data": [
+        {
+          "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+          "userId": "64a1b2c3d4e5f6a7b8c9d0e2",
+          "title": "Certificate approved",
+          "message": "Your certificate of origin has been approved.",
+          "type": "certificate",
+          "read": false,
+          "link": "/certificates/64a1b2c3d4e5f6a7b8c9d0e1",
+          "lga": "Aba South",
+          "createdAt": "2024-06-20T14:30:00.000Z",
+          "updatedAt": "2024-06-20T14:30:00.000Z",
+          "expiresAt": "2024-07-20T14:30:00.000Z"
+        }
+      ]
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "userId is required when target is \"user\"",
+        "description": "Returned when target is user but no userId is supplied"
+      },
+      {
+        "statusCode": 400,
+        "message": "lga is required when target is \"lga\"",
+        "description": "Returned when target is lga but no lga is supplied"
+      },
+      {
+        "statusCode": 403,
+        "message": "User does not have require permission",
+        "description": "Returned when the authenticated user does not have an admin role"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Returned when no valid JWT token is provided"
+      }
+    ]
+  },
+  {
+    "name": "Get Notifications",
+    "description": "Returns the authenticated user's notifications, newest first, with pagination and optional type/read filters. The response meta includes the total count, current page, page size, total pages, and the user's unread count.",
+    "controller": "NotificationsController",
+    "methodName": "getUserNotifications",
+    "httpMethod": "GET",
+    "endpoint": "",
+    "fullUrl": "/api/notifications",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {
+      "page": {
+        "type": "number",
+        "required": false,
+        "default": 1,
+        "description": "Page number (1-based)"
+      },
+      "limit": {
+        "type": "number",
+        "required": false,
+        "default": 20,
+        "max": 100,
+        "description": "Number of items per page"
+      },
+      "type": {
+        "type": "string",
+        "required": false,
+        "description": "Filter by notification type (general, idcard, certificate, system, alert, auctioneer, payment, receipt)"
+      },
+      "read": {
+        "type": "string",
+        "required": false,
+        "description": "Filter by read status: 'true' or 'false'"
+      }
+    },
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "page: @IsOptional, @IsInt, @Min(1)",
+      "limit: @IsOptional, @IsInt, @Min(1), @Max(100)",
+      "type: @IsOptional, @IsString",
+      "read: @IsOptional, @IsString"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "data": "Notification[]",
+        "meta": {
+          "total": "number",
+          "page": "number",
+          "limit": "number",
+          "totalPages": "number",
+          "unreadCount": "number"
+        }
+      }
+    },
+    "successExample": {
+      "data": [
+        {
+          "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+          "userId": "64a1b2c3d4e5f6a7b8c9d0e2",
+          "title": "Identity card ready",
+          "message": "Your identity card is ready for collection.",
+          "type": "idcard",
+          "read": false,
+          "link": "/idcard/64a1b2c3d4e5f6a7b8c9d0e1",
+          "lga": "Aba South",
+          "createdAt": "2024-06-20T14:30:00.000Z",
+          "updatedAt": "2024-06-20T14:30:00.000Z",
+          "expiresAt": "2024-07-20T14:30:00.000Z"
+        },
+        {
+          "_id": "64a1b2c3d4e5f6a7b8c9d0e2",
+          "userId": "64a1b2c3d4e5f6a7b8c9d0e2",
+          "title": "Welcome",
+          "message": "Welcome to BIRC-IIRCIMS.",
+          "type": "system",
+          "read": true,
+          "link": null,
+          "lga": null,
+          "createdAt": "2024-06-19T09:15:00.000Z",
+          "updatedAt": "2024-06-19T09:15:00.000Z",
+          "expiresAt": "2024-07-19T09:15:00.000Z"
+        }
+      ],
+      "meta": {
+        "total": 42,
+        "page": 1,
+        "limit": 20,
+        "totalPages": 3,
+        "unreadCount": 5
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Invalid id: <id>",
+        "description": "Returned when the JWT sub is not a valid ObjectId"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Returned when no valid JWT token is provided"
+      }
+    ]
+  },
+  {
+    "name": "Get Unread Count",
+    "description": "Returns the number of unread notifications for the authenticated user. The same value is pushed in real time over WebSocket via the 'notification:unread' event.",
+    "controller": "NotificationsController",
+    "methodName": "getUnreadCount",
+    "httpMethod": "GET",
+    "endpoint": "unread-count",
+    "fullUrl": "/api/notifications/unread-count",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "unreadCount": "number"
+      }
+    },
+    "successExample": {
+      "unreadCount": 5
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Returned when no valid JWT token is provided"
+      }
+    ]
+  },
+  {
+    "name": "Mark All Notifications Read",
+    "description": "Marks every notification belonging to the authenticated user as read and pushes the updated unread count over WebSocket.",
+    "controller": "NotificationsController",
+    "methodName": "markAllAsRead",
+    "httpMethod": "PATCH",
+    "endpoint": "mark-all-read",
+    "fullUrl": "/api/notifications/mark-all-read",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "All notifications marked as read",
+      "data": {
+        "success": "boolean",
+        "message": "string",
+        "modifiedCount": "number"
+      }
+    },
+    "successExample": {
+      "success": true,
+      "message": "All notifications marked as read",
+      "modifiedCount": 37
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Returned when no valid JWT token is provided"
+      }
+    ]
+  },
+  {
+    "name": "Clear All Notifications",
+    "description": "Deletes every notification belonging to the authenticated user and pushes an unread count of zero over WebSocket.",
+    "controller": "NotificationsController",
+    "methodName": "clearAll",
+    "httpMethod": "DELETE",
+    "endpoint": "clear",
+    "fullUrl": "/api/notifications/clear",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "All notifications cleared",
+      "data": {
+        "message": "string"
+      }
+    },
+    "successExample": {
+      "message": "All notifications cleared"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Unauthorized",
+        "description": "Returned when no valid JWT token is provided"
+      }
+    ]
+  },
+  {
+    "name": "Get Single Notification",
+    "description": "Returns a single notification belonging to the authenticated user. A notification belonging to another user returns 404.",
+    "controller": "NotificationsController",
+    "methodName": "getNotification",
+    "httpMethod": "GET",
+    "endpoint": ":id",
+    "fullUrl": "/api/notifications/:id",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The notification id (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": "Notification"
+    },
+    "successExample": {
+      "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+      "userId": "64a1b2c3d4e5f6a7b8c9d0e2",
+      "title": "Payment received",
+      "message": "Your payment of N5,000 has been received.",
+      "type": "payment",
+      "read": false,
+      "link": "/transactions/64a1b2c3d4e5f6a7b8c9d0e1",
+      "lga": null,
+      "createdAt": "2024-06-20T14:30:00.000Z",
+      "updatedAt": "2024-06-20T14:30:00.000Z",
+      "expiresAt": "2024-07-20T14:30:00.000Z"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Notification not found",
+        "description": "Returned when the notification does not exist or does not belong to the authenticated user"
+      }
+    ]
+  },
+  {
+    "name": "Mark Notification Read",
+    "description": "Marks a single notification as read and pushes the updated unread count over WebSocket.",
+    "controller": "NotificationsController",
+    "methodName": "markAsRead",
+    "httpMethod": "PATCH",
+    "endpoint": ":id/mark-read",
+    "fullUrl": "/api/notifications/:id/mark-read",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The notification id (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": "Notification"
+    },
+    "successExample": {
+      "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+      "userId": "64a1b2c3d4e5f6a7b8c9d0e2",
+      "title": "Payment received",
+      "message": "Your payment of N5,000 has been received.",
+      "type": "payment",
+      "read": true,
+      "link": "/transactions/64a1b2c3d4e5f6a7b8c9d0e1",
+      "lga": null,
+      "createdAt": "2024-06-20T14:30:00.000Z",
+      "updatedAt": "2024-06-20T14:30:00.000Z",
+      "expiresAt": "2024-07-20T14:30:00.000Z"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Notification not found",
+        "description": "Returned when the notification does not exist or does not belong to the authenticated user"
+      }
+    ]
+  },
+  {
+    "name": "Delete Single Notification",
+    "description": "Deletes a single notification belonging to the authenticated user and pushes the updated unread count over WebSocket.",
+    "controller": "NotificationsController",
+    "methodName": "deleteNotification",
+    "httpMethod": "DELETE",
+    "endpoint": ":id",
+    "fullUrl": "/api/notifications/:id",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": {
+        "type": "string",
+        "description": "The notification id (MongoDB ObjectId)"
+      }
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {},
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Notification deleted",
+      "data": {
+        "message": "string"
+      }
+    },
+    "successExample": {
+      "message": "Notification deleted"
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Notification not found",
+        "description": "Returned when the notification does not exist or does not belong to the authenticated user"
+      }
+    ]
+  },
+  {
+    "name": "WebSocket Events",
+    "description": "Real-time notification push events emitted by the NotificationsGateway over Socket.IO. Connect with a socket.io client, passing the JWT in the handshake as `Authorization: Bearer <token>`. The server emits these events to the authenticated user's socket only.",
+    "controller": "NotificationsGateway",
+    "methodName": "socket.io",
+    "httpMethod": "WS",
+    "endpoint": "/",
+    "fullUrl": "socket.io (io.connect) with auth header",
+    "websocket": true,
+    "authentication": {
+      "required": true,
+      "guards": [],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token> (handshake header)"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": {
+      "connection": "io('http://<host>:<port>', { transportOptions: { polling: { extraHeaders: { Authorization: 'Bearer <token>' } } } })"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "",
+      "data": {
+        "notification:new": "Emitted when a new notification is created for the user. Payload is the full Notification document.",
+        "notification:unread": "Emitted when the user's unread count changes (mark read, mark all read, delete, clear, new notification). Payload is { unreadCount: number }"
+      }
+    },
+    "successExample": {
+      "event": "notification:new",
+      "payload": {
+        "_id": "64a1b2c3d4e5f6a7b8c9d0e1",
+        "userId": "64a1b2c3d4e5f6a7b8c9d0e2",
+        "title": "Certificate approved",
+        "message": "Your certificate of origin has been approved.",
+        "type": "certificate",
+        "read": false,
+        "link": "/certificates/64a1b2c3d4e5f6a7b8c9d0e1",
+        "lga": null,
+        "createdAt": "2024-06-20T14:30:00.000Z",
+        "updatedAt": "2024-06-20T14:30:00.000Z",
+        "expiresAt": "2024-07-20T14:30:00.000Z"
+      },
+      "unreadEvent": {
+        "event": "notification:unread",
+        "payload": {
+          "unreadCount": 4
+        }
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 401,
+        "message": "Disconnected",
+        "description": "The server disconnects the socket when no token is provided or the token is invalid"
+      }
+    ]
+  }
+]

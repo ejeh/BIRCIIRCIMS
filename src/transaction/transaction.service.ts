@@ -21,6 +21,7 @@ import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { NotificationTarget } from 'src/notifications/dto/send-notification.dto';
 import { fileUploadConfig } from 'src/config/file-upload.config';
 import { UsersService } from 'src/users/users.service';
 import { MailService } from 'src/mail/mail.service';
@@ -1372,6 +1373,22 @@ export class TransactionService {
         },
         paymentLabel,
       );
+
+      // Notify admins in-app (parity with the email list above)
+      await this.notificationsService
+        .sendNotification({
+          title: `New ${paymentLabel} - ${transaction.paymentType}`,
+          message: `${user.firstname} ${user.lastname} (${user.email}) paid ${transaction.currency || 'NGN'} ${transaction.totalAmount} (${transaction.reference}).`,
+          type: 'payment',
+          link: '/admin/transactions',
+          target: NotificationTarget.ROLE,
+          roles: ['global_admin', 'admin', 'support_admin'],
+        })
+        .catch((notifError) => {
+          this.logger.error(
+            `Error sending in-app admin notification: ${notifError.message}`,
+          );
+        });
 
       this.logger.log(
         `Admin payment notification sent for: ${transaction.reference} to ${adminEmails.length} admin(s)`,

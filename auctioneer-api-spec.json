@@ -1,0 +1,1333 @@
+[
+  {
+    "name": "Create Auctioneer License Request",
+    "description": "Creates a new auctioneer license request. Requires multipart/form-data with the taxClearance file (PDF or image, max 5MB) uploaded to Cloudinary (folder: certificates/tax_clearance). License reference data is auto-generated (licenceRefNumber e.g. 'BNT 1', formattedNumber e.g. '0001'). Throws if the user already has a Pending request or an Approved request with pending payment.",
+    "controller": "AuctioneerController",
+    "methodName": "createAuctioneer",
+    "httpMethod": "POST",
+    "endpoint": "create",
+    "fullUrl": "/api/auctioneer/create",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "multipart/form-data"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {
+      "userId": "687ad12ab5... (string, required)",
+      "name": "John Doe (string, required)",
+      "email": "john.doe@example.com (string, required, unique)",
+      "phone": "08012345678 (string, required)",
+      "NIN": "12345678901 (string, required, unique)",
+      "address": "123 Main St (string, required)",
+      "LGA": "Gboko (string, required)",
+      "state": "Benue (string, required)",
+      "gender": "Male | Female (enum, required)",
+      "taxClearance": "file (required, PDF or image, max 5MB)"
+    },
+    "requestExample": {
+      "userId": "687ad12ab5...",
+      "name": "John Doe",
+      "email": "john.doe@example.com",
+      "phone": "08012345678",
+      "NIN": "12345678901",
+      "address": "123 Main St",
+      "LGA": "Gboko",
+      "state": "Benue",
+      "gender": "Male",
+      "taxClearance": "(file upload)"
+    },
+    "multipart": {
+      "enabled": true,
+      "files": [
+        {
+          "fieldName": "taxClearance",
+          "type": "application/pdf, image/jpeg, image/png, image/jpg",
+          "extensions": [".pdf", ".jpeg", ".jpg", ".png"],
+          "maxSize": "5MB",
+          "required": true
+        }
+      ],
+      "fields": {}
+    },
+    "validation": [
+      "userId: @IsNotEmpty, @IsString, required",
+      "name: @IsNotEmpty, @IsString, required",
+      "email: @IsNotEmpty, @IsString, required, unique",
+      "phone: @IsNotEmpty, @IsString, required",
+      "NIN: @IsNotEmpty, @IsString, required, unique",
+      "address: @IsNotEmpty, @IsString, required",
+      "LGA: @IsNotEmpty, @IsString, required",
+      "state: @IsNotEmpty, @IsString, required",
+      "gender: @IsNotEmpty, @IsEnum(Gender ['Male','Female']), required",
+      "taxClearance: @IsOptional, @IsString, must be PDF/Image (file filter)",
+      "Business rule: User must not have an existing Pending auctioneer request",
+      "Business rule: User must not have an Approved request with pending payment"
+    ],
+    "successResponse": {
+      "statusCode": 201,
+      "message": "Auctioneer license request created",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "name": "John Doe",
+        "email": "john.doe@example.com",
+        "phone": "08012345678",
+        "NIN": "12345678901",
+        "address": "123 Main St",
+        "LGA": "Gboko",
+        "state": "Benue",
+        "gender": "Male",
+        "taxClearance": "https://res.cloudinary.com/.../certificates/tax_clearance/xxx.pdf",
+        "status": "Pending",
+        "licenceRefSequence": 1,
+        "licenceRefNumber": "BNT 1",
+        "sequenceNumber": 1,
+        "formattedNumber": "0001",
+        "paymentStatus": "pending",
+        "resubmissionAllowed": true,
+        "resubmissionAttempts": 0,
+        "downloaded": false,
+        "downloadCount": 0,
+        "reprintCount": 0,
+        "reprintPaymentStatus": "NotRequired",
+        "requiresReprintPayment": false,
+        "created_at": "2026-08-12T10:00:00.000Z",
+        "updated_at": "2026-08-12T10:00:00.000Z"
+      }
+    },
+    "successExample": {
+      "statusCode": 201,
+      "success": true,
+      "message": "Auctioneer license request created",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "name": "John Doe",
+        "email": "john.doe@example.com",
+        "phone": "08012345678",
+        "NIN": "12345678901",
+        "address": "123 Main St",
+        "LGA": "Gboko",
+        "state": "Benue",
+        "gender": "Male",
+        "taxClearance": "https://res.cloudinary.com/.../certificates/tax_clearance/xxx.pdf",
+        "status": "Pending",
+        "licenceRefSequence": 1,
+        "licenceRefNumber": "BNT 1",
+        "sequenceNumber": 1,
+        "formattedNumber": "0001",
+        "paymentStatus": "pending",
+        "resubmissionAllowed": true,
+        "resubmissionAttempts": 0,
+        "downloaded": false,
+        "downloadCount": 0,
+        "reprintCount": 0,
+        "reprintPaymentStatus": "NotRequired",
+        "requiresReprintPayment": false,
+        "created_at": "2026-08-12T10:00:00.000Z",
+        "updated_at": "2026-08-12T10:00:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Invalid file type"
+      },
+      {
+        "statusCode": 400,
+        "message": "Tax Clearance upload failed: <error>"
+      },
+      {
+        "statusCode": 409,
+        "message": "A pending Auctioneer request already exists for this user."
+      },
+      {
+        "statusCode": 409,
+        "message": "You have a pending payment to make."
+      },
+      {
+        "statusCode": 409,
+        "message": "Auctioneer licence request already exists."
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Update Auctioneer License Request",
+    "description": "Updates an existing auctioneer license request owned by the authenticated user. Supports multipart/form-data for an optional taxClearance file replacement (PDF or image, max 5MB). Only allowed when the request status is Pending or Rejected. License reference numbers are NOT regenerated on update.",
+    "controller": "AuctioneerController",
+    "methodName": "updateAuctioneer",
+    "httpMethod": "PATCH",
+    "endpoint": ":id",
+    "fullUrl": "/api/auctioneer/:id",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "multipart/form-data"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "userId": "687ad12ab5... (string, optional)",
+      "name": "John Doe (string, optional)",
+      "email": "john.doe@example.com (string, optional)",
+      "phone": "08012345678 (string, optional)",
+      "NIN": "12345678901 (string, optional)",
+      "address": "123 Main St (string, optional)",
+      "LGA": "Gboko (string, optional)",
+      "state": "Benue (string, optional)",
+      "gender": "Male | Female (enum, optional)",
+      "taxClearance": "file (optional, replaces existing, PDF or image, max 5MB)"
+    },
+    "requestExample": {
+      "address": "456 New St",
+      "phone": "08098765432",
+      "taxClearance": "(file upload, optional)"
+    },
+    "multipart": {
+      "enabled": true,
+      "files": [
+        {
+          "fieldName": "taxClearance",
+          "type": "application/pdf, image/jpeg, image/png, image/jpg",
+          "extensions": [".pdf", ".jpeg", ".jpg", ".png"],
+          "maxSize": "5MB",
+          "required": false
+        }
+      ],
+      "fields": {}
+    },
+    "validation": [
+      "userId: @IsString, optional",
+      "name: @IsString, optional",
+      "email: @IsString, optional",
+      "phone: @IsString, optional",
+      "NIN: @IsString, optional",
+      "address: @IsString, optional",
+      "LGA: @IsString, optional",
+      "state: @IsString, optional",
+      "gender: @IsEnum(Gender ['Male','Female']), optional",
+      "taxClearance: @IsString, optional (file)",
+      "Business rule: Request must belong to the authenticated user",
+      "Business rule: Status must be 'Pending' or 'Rejected'",
+      "Business rule: Cannot edit a request that is already approved or processed"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Auctioneer request updated",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "name": "John Doe",
+        "address": "456 New St",
+        "phone": "08098765432",
+        "status": "Pending",
+        "taxClearance": "https://res.cloudinary.com/.../certificates/tax_clearance/xxx.pdf",
+        "updated_at": "2026-08-12T10:05:00.000Z"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Auctioneer request updated",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "name": "John Doe",
+        "address": "456 New St",
+        "phone": "08098765432",
+        "status": "Pending",
+        "taxClearance": "https://res.cloudinary.com/.../certificates/tax_clearance/xxx.pdf",
+        "updated_at": "2026-08-12T10:05:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Auctioneer request not found."
+      },
+      {
+        "statusCode": 400,
+        "message": "Cannot edit a request that is already approved or processed."
+      },
+      {
+        "statusCode": 400,
+        "message": "Tax Clearance must be a PDF or Image"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get All Auctioneer Requests",
+    "description": "Returns all auctioneer license requests sorted by newest first, with populated user and approver data. Admin only.",
+    "controller": "AuctioneerController",
+    "methodName": "getAuctRequest",
+    "httpMethod": "GET",
+    "endpoint": "/",
+    "fullUrl": "/api/auctioneer/",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["global_admin", "admin"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {},
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/auctioneer/",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "Roles: global_admin, admin"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "All auctioneer requests retrieved",
+      "data": [
+        {
+          "_id": "687ad12ab5...",
+          "userId": {
+            "_id": "687ad12ab5...",
+            "firstname": "John",
+            "lastname": "Doe",
+            "email": "john@gmail.com",
+            "stateOfOrigin": "Benue",
+            "lgaOfOrigin": "Gboko",
+            "isProfileCompleted": false
+          },
+          "name": "John Doe",
+          "email": "john.doe@example.com",
+          "phone": "08012345678",
+          "NIN": "12345678901",
+          "LGA": "Gboko",
+          "state": "Benue",
+          "gender": "Male",
+          "status": "Pending",
+          "licenceRefNumber": "BNT 1",
+          "formattedNumber": "0001",
+          "taxClearance": "https://res.cloudinary.com/.../certificates/tax_clearance/xxx.pdf",
+          "approvedBy": {
+            "_id": "687ad12ab5...",
+            "firstname": "Admin",
+            "lastname": "User",
+            "email": "admin@gmail.com"
+          },
+          "created_at": "2026-08-12T10:00:00.000Z",
+          "updated_at": "2026-08-12T10:00:00.000Z"
+        }
+      ]
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "All auctioneer requests retrieved",
+      "data": [
+        {
+          "_id": "687ad12ab5...",
+          "userId": {
+            "_id": "687ad12ab5...",
+            "firstname": "John",
+            "lastname": "Doe",
+            "email": "john@gmail.com",
+            "stateOfOrigin": "Benue",
+            "lgaOfOrigin": "Gboko",
+            "isProfileCompleted": false
+          },
+          "name": "John Doe",
+          "email": "john.doe@example.com",
+          "phone": "08012345678",
+          "NIN": "12345678901",
+          "LGA": "Gboko",
+          "state": "Benue",
+          "gender": "Male",
+          "status": "Pending",
+          "licenceRefNumber": "BNT 1",
+          "formattedNumber": "0001",
+          "taxClearance": "https://res.cloudinary.com/.../certificates/tax_clearance/xxx.pdf",
+          "approvedBy": {
+            "_id": "687ad12ab5...",
+            "firstname": "Admin",
+            "lastname": "User",
+            "email": "admin@gmail.com"
+          },
+          "created_at": "2026-08-12T10:00:00.000Z",
+          "updated_at": "2026-08-12T10:00:00.000Z"
+        }
+      ]
+    },
+    "errorResponses": [
+      {
+        "statusCode": 403,
+        "message": "User does not have required permission"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Approve Auctioneer License",
+    "description": "Approves a pending auctioneer license request. Sets status to Approved, records approvalDate, issueDate, expiryDate (1 year from approval) and approvedBy, and sends an in-app notification to the user. Admin only.",
+    "controller": "AuctioneerController",
+    "methodName": "approveCert",
+    "httpMethod": "PATCH",
+    "endpoint": ":id/approve",
+    "fullUrl": "/api/auctioneer/:id/approve",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["global_admin", "admin"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "approvedBy": "687ad12ab5..."
+    },
+    "requestExample": {
+      "approvedBy": "687ad12ab5..."
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId, from path param)",
+      "approvedBy: string, from @Body('approvedBy'), the user ID of the approver"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Auctioneer license approved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "status": "Approved",
+        "approvalDate": "2026-08-12T10:00:00.000Z",
+        "issueDate": "2026-08-12T10:00:00.000Z",
+        "expiryDate": "2027-08-12T10:00:00.000Z",
+        "approvedBy": "687ad12ab5..."
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Auctioneer license approved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "name": "John Doe",
+        "status": "Approved",
+        "approvalDate": "2026-08-12T10:00:00.000Z",
+        "issueDate": "2026-08-12T10:00:00.000Z",
+        "expiryDate": "2027-08-12T10:00:00.000Z",
+        "approvedBy": "687ad12ab5..."
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Auctioneer request not found"
+      },
+      {
+        "statusCode": 403,
+        "message": "User does not have required permission"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Reject Auctioneer License",
+    "description": "Rejects a pending auctioneer license request with a reason. Sends a rejection email to the user, sets status to Rejected, records rejectionReason/approvedBy, and enables resubmission. Admin only.",
+    "controller": "AuctioneerController",
+    "methodName": "rejectCert",
+    "httpMethod": "PATCH",
+    "endpoint": ":id/reject",
+    "fullUrl": "/api/auctioneer/:id/reject",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["global_admin", "admin"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "rejectionReason": "Incomplete documentation",
+      "approvedBy": "687ad12ab5..."
+    },
+    "requestExample": {
+      "rejectionReason": "Incomplete documentation",
+      "approvedBy": "687ad12ab5..."
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId, from path param)",
+      "rejectionReason: string, required, from @Body('rejectionReason')",
+      "approvedBy: string, from @Body('approvedBy'), the user ID of the rejector"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Auctioneer license rejected",
+      "data": {
+        "_id": "687ad12ab5...",
+        "status": "Rejected",
+        "rejectionReason": "Incomplete documentation",
+        "approvedBy": "687ad12ab5..."
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Auctioneer license rejected",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "name": "John Doe",
+        "status": "Rejected",
+        "rejectionReason": "Incomplete documentation",
+        "approvedBy": "687ad12ab5..."
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "User not found"
+      },
+      {
+        "statusCode": 403,
+        "message": "User does not have required permission"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Resubmit Auctioneer License Request",
+    "description": "Resubmits a rejected auctioneer license request with corrected data. Optionally uploads a replacement taxClearance document; the old Cloudinary file is deleted.",
+    "controller": "AuctioneerController",
+    "methodName": "resubmitRequest",
+    "httpMethod": "POST",
+    "endpoint": ":id/resubmit",
+    "fullUrl": "/api/auctioneer/:id/resubmit",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "multipart/form-data"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "userId": "687ad12ab5... (string, optional)",
+      "name": "John Doe (string, optional)",
+      "email": "john.doe@example.com (string, optional)",
+      "phone": "08012345678 (string, optional)",
+      "NIN": "12345678901 (string, optional)",
+      "address": "123 Main St (string, optional)",
+      "LGA": "Gboko (string, optional)",
+      "state": "Benue (string, optional)",
+      "gender": "Male | Female (enum, optional)",
+      "taxClearance": "file (optional, replaces existing, PDF or image, max 5MB)"
+    },
+    "requestExample": {
+      "address": "456 New St",
+      "taxClearance": "(file upload, optional)"
+    },
+    "multipart": {
+      "enabled": true,
+      "files": [
+        {
+          "fieldName": "taxClearance",
+          "type": "application/pdf, image/jpeg, image/png, image/jpg",
+          "extensions": [".pdf", ".jpeg", ".jpg", ".png"],
+          "maxSize": "5MB",
+          "required": false
+        }
+      ],
+      "fields": {}
+    },
+    "validation": [
+      "userId: @IsString, optional",
+      "name: @IsString, optional",
+      "email: @IsString, optional",
+      "phone: @IsString, optional",
+      "NIN: @IsString, optional",
+      "address: @IsString, optional",
+      "LGA: @IsString, optional",
+      "state: @IsString, optional",
+      "gender: @IsEnum(Gender ['Male','Female']), optional",
+      "taxClearance: @IsString, optional (file)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Auctioneer license request resubmitted successfully.",
+      "data": {
+        "_id": "687ad12ab5...",
+        "status": "Pending",
+        "resubmissionAllowed": true,
+        "resubmissionAttempts": 1,
+        "lastResubmittedAt": "2026-08-12T10:00:00.000Z"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Auctioneer license request resubmitted successfully.",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": "687ad12ab5...",
+        "name": "John Doe",
+        "status": "Pending",
+        "resubmissionAllowed": true,
+        "resubmissionAttempts": 1,
+        "lastResubmittedAt": "2026-08-12T10:00:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Record not found"
+      },
+      {
+        "statusCode": 400,
+        "message": "Auctioneer license request cannot be resubmitted"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get Requests By User ID",
+    "description": "Returns all auctioneer license requests submitted by a specific user, sorted newest first, with the user populated.",
+    "controller": "AuctioneerController",
+    "methodName": "getRequestsForId",
+    "httpMethod": "GET",
+    "endpoint": ":id/requests",
+    "fullUrl": "/api/auctioneer/:id/requests",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/auctioneer/687ad12ab5.../requests",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (User ID)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "User requests retrieved",
+      "data": [
+        {
+          "_id": "687ad12ab5...",
+          "userId": {
+            "_id": "687ad12ab5...",
+            "firstname": "John",
+            "lastname": "Doe",
+            "email": "john@gmail.com"
+          },
+          "name": "John Doe",
+          "status": "Pending",
+          "created_at": "2026-08-12T10:00:00.000Z"
+        }
+      ]
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "User requests retrieved",
+      "data": [
+        {
+          "_id": "687ad12ab5...",
+          "userId": {
+            "_id": "687ad12ab5...",
+            "firstname": "John",
+            "lastname": "Doe",
+            "email": "john@gmail.com"
+          },
+          "name": "John Doe",
+          "status": "Pending",
+          "created_at": "2026-08-12T10:00:00.000Z"
+        }
+      ]
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "No requests found for this user"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Get Auctioneer Request By ID (Admin)",
+    "description": "Returns a single auctioneer license request by its MongoDB ObjectId with populated user data. Admin only.",
+    "controller": "AuctioneerController",
+    "methodName": "getUserProfile",
+    "httpMethod": "GET",
+    "endpoint": ":id/request",
+    "fullUrl": "/api/auctioneer/:id/request",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard", "RolesGuard"],
+      "roles": ["global_admin", "admin"],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/auctioneer/687ad12ab5.../request",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId)",
+      "Roles: global_admin, admin"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Auctioneer request retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": {
+          "_id": "687ad12ab5...",
+          "firstname": "John",
+          "lastname": "Doe",
+          "email": "john@gmail.com",
+          "passportPhoto": "https://res.cloudinary.com/.../xxx.jpg",
+          "isProfileCompleted": false
+        },
+        "name": "John Doe",
+        "status": "Pending",
+        "licenceRefNumber": "BNT 1",
+        "formattedNumber": "0001",
+        "created_at": "2026-08-12T10:00:00.000Z"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Auctioneer request retrieved",
+      "data": {
+        "_id": "687ad12ab5...",
+        "userId": {
+          "_id": "687ad12ab5...",
+          "firstname": "John",
+          "lastname": "Doe",
+          "email": "john@gmail.com",
+          "passportPhoto": "https://res.cloudinary.com/.../xxx.jpg",
+          "isProfileCompleted": false
+        },
+        "name": "John Doe",
+        "status": "Pending",
+        "licenceRefNumber": "BNT 1",
+        "formattedNumber": "0001",
+        "created_at": "2026-08-12T10:00:00.000Z"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "User not found"
+      },
+      {
+        "statusCode": 403,
+        "message": "User does not have required permission"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "View Auctioneer License",
+    "description": "Returns an HTML page for viewing the auctioneer license in the browser (templates/auctioneer-view.html). Public endpoint.",
+    "controller": "AuctioneerController",
+    "methodName": "viewCertificate",
+    "httpMethod": "GET",
+    "endpoint": "view/:id",
+    "fullUrl": "/api/auctioneer/view/:id",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "text/html",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/auctioneer/view/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "HTML auctioneer view page",
+      "data": "<html>...</html>"
+    },
+    "successExample": "HTML page rendered from templates/auctioneer-view.html",
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "auctioneer not found"
+      },
+      {
+        "statusCode": 500,
+        "message": "Template not found"
+      }
+    ]
+  },
+  {
+    "name": "Download Auctioneer License PDF",
+    "description": "Downloads the auctioneer license as a PDF (from templates/auctioneer-template.html via puppeteer). Generates QR code and secure verification hash, enforces a download limit (max 3) and download window (10 minutes after first download). Public endpoint.",
+    "controller": "AuctioneerController",
+    "methodName": "downloadCertificate",
+    "httpMethod": "GET",
+    "endpoint": "download/:id",
+    "fullUrl": "/api/auctioneer/download/:id",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "attachment; filename=\"auctioneer.pdf\""
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/auctioneer/download/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "PDF file stream",
+      "data": "<binary PDF stream>"
+    },
+    "successExample": "Binary PDF data with Content-Type: application/pdf",
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Auctioneer not found"
+      },
+      {
+        "statusCode": 403,
+        "message": "Download limit of 3 reached for this window. Please request a reprint."
+      },
+      {
+        "statusCode": 410,
+        "message": "The download window has expired. Please request a reprint to generate a new link."
+      },
+      {
+        "statusCode": 500,
+        "message": "Internal server error"
+      }
+    ]
+  },
+  {
+    "name": "Stream Document",
+    "description": "Streams the taxClearance document from Cloudinary for a given auctioneer request. Detects MIME type from the URL structure. Public endpoint.",
+    "controller": "AuctioneerController",
+    "methodName": "streamDocument",
+    "httpMethod": "GET",
+    "endpoint": ":requestId/document/:docType",
+    "fullUrl": "/api/auctioneer/:requestId/document/:docType",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "image/jpeg | image/png | application/pdf",
+      "Content-Disposition": "inline; filename=\"<docType>.<ext>\"",
+      "Cache-Control": "public, max-age=86400"
+    },
+    "pathParams": {
+      "requestId": ":requestId",
+      "docType": ":docType"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/auctioneer/687ad12ab5.../document/taxClearance",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "requestId: string, required (Auctioneer request ID)",
+      "docType: string, required, allowed value: 'taxClearance'"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Document stream",
+      "data": "<binary document stream (image or PDF)>"
+    },
+    "successExample": "Binary image/PDF data streamed from Cloudinary",
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Document 'taxClearance' not found for this request."
+      },
+      {
+        "statusCode": 500,
+        "message": "Could not determine the type of the stored document."
+      },
+      {
+        "statusCode": 500,
+        "message": "Could not retrieve the document. Please try again later."
+      }
+    ]
+  },
+  {
+    "name": "Get Auctioneer Public Details",
+    "description": "Returns limited public details of an auctioneer license (id, name, lga, state) resolved from the linked user record. Public endpoint.",
+    "controller": "AuctioneerController",
+    "methodName": "getAuctioneerDetails",
+    "httpMethod": "GET",
+    "endpoint": "auctioneer/:id",
+    "fullUrl": "/api/auctioneer/auctioneer/:id",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/auctioneer/auctioneer/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Auctioneer details retrieved",
+      "data": {
+        "id": "687ad12ab5...",
+        "name": "John Doe",
+        "lga": "Gboko",
+        "state": "Benue"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Auctioneer details retrieved",
+      "data": {
+        "id": "687ad12ab5...",
+        "name": "John Doe",
+        "lga": "Gboko",
+        "state": "Benue"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Certificate not found"
+      }
+    ]
+  },
+  {
+    "name": "Stream Auctioneer License Inline",
+    "description": "Streams the auctioneer license PDF inline (displayed in browser) rather than as a download. Enforces download limit and window. Public endpoint.",
+    "controller": "AuctioneerController",
+    "methodName": "streamAuctioneerLicence",
+    "httpMethod": "GET",
+    "endpoint": "stream/:id",
+    "fullUrl": "/api/auctioneer/stream/:id",
+    "authentication": {
+      "required": false,
+      "guards": [],
+      "roles": [],
+      "bearerToken": false
+    },
+    "headers": {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "inline; filename=\"auctioneer.pdf\""
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/auctioneer/stream/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (MongoDB ObjectId)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "PDF stream (inline)",
+      "data": "<binary PDF stream>"
+    },
+    "successExample": "Binary PDF data rendered inline in browser",
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Auctioneer not found"
+      },
+      {
+        "statusCode": 403,
+        "message": "Download limit of 3 reached for this window. Please request a reprint."
+      },
+      {
+        "statusCode": 410,
+        "message": "The download window has expired. Please request a reprint to generate a new link."
+      }
+    ]
+  },
+  {
+    "name": "Delete Auctioneer Request",
+    "description": "Deletes an auctioneer license request and its associated taxClearance file from Cloudinary.",
+    "controller": "AuctioneerController",
+    "methodName": "deleteItem",
+    "httpMethod": "DELETE",
+    "endpoint": ":item",
+    "fullUrl": "/api/auctioneer/:item",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>"
+    },
+    "pathParams": {
+      "item": ":item"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "DELETE /api/auctioneer/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "item: string, required (Auctioneer request ID)"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Auctioneer deleted successfully",
+      "data": {
+        "success": true,
+        "message": "Auctioneer deleted successfully"
+      }
+    },
+    "successExample": {
+      "statusCode": 200,
+      "success": true,
+      "message": "Auctioneer deleted successfully",
+      "data": {
+        "success": true,
+        "message": "Auctioneer deleted successfully"
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 404,
+        "message": "Auctioneer record not found"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Request Reprint",
+    "description": "Initiates a reprint request for an existing auctioneer license. Validates ownership and that the download window is expired or limit reached, then creates a payment transaction via Credo. Rate-limited to 3 requests per minute.",
+    "controller": "AuctioneerController",
+    "methodName": "requestReprint",
+    "httpMethod": "POST",
+    "endpoint": ":id/request-reprint",
+    "fullUrl": "/api/auctioneer/:id/request-reprint",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "application/json"
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {
+      "documentId": "687ad12ab5...",
+      "userId": "687ad12ab5...",
+      "amount": 5000,
+      "email": "john@gmail.com",
+      "documentAmount": 3000,
+      "documentType": "auctioneer"
+    },
+    "requestExample": {
+      "documentId": "687ad12ab5...",
+      "userId": "687ad12ab5...",
+      "amount": 5000,
+      "email": "john@gmail.com",
+      "documentAmount": 3000,
+      "documentType": "auctioneer"
+    },
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "documentId: string, required",
+      "userId: string, required",
+      "amount: number, required",
+      "email: string, required",
+      "documentAmount: number, required",
+      "documentType: 'auctioneer', required",
+      "Business rule: Authenticated user must own the auctioneer request",
+      "Business rule: Download window must be expired or download limit reached",
+      "Throttle: 3 requests per 60 seconds"
+    ],
+    "successResponse": {
+      "statusCode": 201,
+      "message": "Reprint request received",
+      "data": {
+        "success": true,
+        "message": "Reprint request received. Complete payment to proceed.",
+        "data": {
+          "paymentReference": "REF-123456789",
+          "amount": 5000,
+          "skipCredo": false
+        }
+      }
+    },
+    "successExample": {
+      "statusCode": 201,
+      "success": true,
+      "message": "Reprint request received",
+      "data": {
+        "success": true,
+        "message": "Reprint request received. Complete payment to proceed.",
+        "data": {
+          "paymentReference": "REF-123456789",
+          "amount": 5000,
+          "skipCredo": false
+        }
+      }
+    },
+    "errorResponses": [
+      {
+        "statusCode": 400,
+        "message": "Download window is still active and you have downloads remaining. Please download from your dashboard."
+      },
+      {
+        "statusCode": 404,
+        "message": "Auctioneer not found"
+      },
+      {
+        "statusCode": 403,
+        "message": "Not authorized to request reprint for this auctioneer"
+      },
+      {
+        "statusCode": 500,
+        "message": "Failed to initialize payment. Try again later."
+      },
+      {
+        "statusCode": 429,
+        "message": "Too Many Requests — rate limit exceeded (3 per minute)"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  },
+  {
+    "name": "Download Reprint",
+    "description": "Downloads a reprint of an existing auctioneer license as a PDF. Requires completed reprint payment and a non-expired reprint download window. Regenerates QR code and verification hash, increments reprint count. Rate-limited to 5 requests per minute.",
+    "controller": "AuctioneerController",
+    "methodName": "downloadReprint",
+    "httpMethod": "GET",
+    "endpoint": "reprint/download/:id",
+    "fullUrl": "/api/auctioneer/reprint/download/:id",
+    "authentication": {
+      "required": true,
+      "guards": ["JwtAuthGuard"],
+      "roles": [],
+      "bearerToken": true
+    },
+    "headers": {
+      "Authorization": "Bearer <token>",
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "attachment; filename=\"auctioneer-lincence-reprint.pdf\""
+    },
+    "pathParams": {
+      "id": ":id"
+    },
+    "queryParams": {},
+    "requestPayload": {},
+    "requestExample": "GET /api/auctioneer/reprint/download/687ad12ab5...",
+    "multipart": {
+      "enabled": false,
+      "files": [],
+      "fields": {}
+    },
+    "validation": [
+      "id: string, required (Auctioneer request ID)",
+      "Throttle: 5 requests per 60 seconds",
+      "Business rule: Authenticated user must own the auctioneer request",
+      "Business rule: Reprint payment must be completed (reprintPaymentStatus = 'Paid')",
+      "Business rule: Reprint download window must not be expired"
+    ],
+    "successResponse": {
+      "statusCode": 200,
+      "message": "Reprint PDF buffer",
+      "data": "<binary PDF buffer>"
+    },
+    "successExample": "Binary PDF data with Content-Type: application/pdf",
+    "errorResponses": [
+      {
+        "statusCode": 402,
+        "message": "Reprint payment is required to download this auctioneer."
+      },
+      {
+        "statusCode": 410,
+        "message": "The download window has expired. Please request a reprint to generate a new link."
+      },
+      {
+        "statusCode": 404,
+        "message": "Auctioneer not found"
+      },
+      {
+        "statusCode": 403,
+        "message": "Not authorized to request reprint for this auctioneer"
+      },
+      {
+        "statusCode": 429,
+        "message": "Too Many Requests — rate limit exceeded (5 per minute)"
+      },
+      {
+        "statusCode": 401,
+        "message": "Unauthorized — invalid or missing JWT token"
+      }
+    ]
+  }
+]

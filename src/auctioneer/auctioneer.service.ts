@@ -24,6 +24,7 @@ import {
   CounterDocument,
 } from 'src/indigene-certificate/counter.schema';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { NotificationTarget } from 'src/notifications/dto/send-notification.dto';
 import { UserNotFoundException } from 'src/common/exception';
 import { ResubmissionService } from 'src/common/services/resubmission.service';
 import { fileUploadConfig } from 'src/config/file-upload.config';
@@ -138,6 +139,22 @@ export class AuctioneerService {
         requestId: auctioneerRequest._id.toString(),
         submittedAt: auctioneerRequest.createdAt || new Date(),
       });
+
+      // Notify admins in-app (parity with the email list above)
+      await this.notificationsService
+        .sendNotification({
+          title: 'New Auctioneer License Request',
+          message: `${user.firstname} ${user.lastname} (${user.email}) submitted a new auctioneer license request.`,
+          type: 'auctioneer',
+          link: '/admin/auctioneer-requests',
+          target: NotificationTarget.ROLE,
+          roles: ['global_admin', 'admin', 'support_admin'],
+        })
+        .catch((notifError) => {
+          this.logger.error(
+            `Error sending in-app admin notification: ${notifError.message}`,
+          );
+        });
 
       this.logger.log(
         `Admin notification sent for request: ${auctioneerRequest._id} to ${adminEmails.length} admin(s)`,
